@@ -1,0 +1,4 @@
+node_modules/
+dist/
+internals/**/*.js
+!internals/bin/src/
