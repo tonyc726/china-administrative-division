@@ -2,15 +2,21 @@
   "name": "china-administrative-division",
   "version": "0.0.0",
   "description": "Administrative division codes and infos of the People's Republic of China",
-  "repository": "",
+  "repository": "https://github.com/tonyc726/china-administrative-division.git",
   "author": "tonyc726 <zhujf620@gmail.com>",
   "license": "MIT",
-  "keywords": [],
+  "keywords": [
+    "china",
+    "Administrative division codes",
+    "GB2260",
+    "GB2260—1999",
+    "中国",
+    "行政区划",
+    "行政区划代码"
+  ],
   "engines": {
     "node": ">=6"
   },
-  "main": "index.js",
-  "jsnext:main": "src/index.js",
   "scripts": {
     "prebuild": "rimraf -g '{,!(node_modules)/**/}dist/'",
     "build": "babel --copy-files --out-dir dist --ignore *.test.js src",
@@ -38,11 +44,15 @@
     "rimraf": "^2.6.1",
     "semantic-release": "^7.0.2"
   },
-  "dependencies": {},
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "iconv-lite": "^0.4.19",
+    "request-promise": "^4.2.1",
+    "urlencode": "^1.1.0"
+  },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
-  },
-  "private": false
+  }
 }
