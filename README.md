@@ -1,4 +1,4 @@
-# china-administrative-division - 中华人民共和国行政区划代码（县及县以上）
+# 中华人民共和国行政区划代码
 
 [![Build Status](https://travis-ci.org/tonyc726/china-administrative-division.svg?style=flat-square&branch=master)](https://travis-ci.org/tonyc726/china-administrative-division)
 [![bitHound Code](https://www.bithound.io/github/tonyc726/china-administrative-division/badges/code.svg)](https://www.bithound.io/github/tonyc726/china-administrative-division)
