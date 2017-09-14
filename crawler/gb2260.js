@@ -17,26 +17,6 @@ const requestOptions = (uri) => (
 );
 
 /**
- * 解析入口地址，区分最近一年及往年的信息
- *
- * @param {String} entryUrl - 民政部中《中华人民共和国行政区划代码》的入口地址
- */
-const parseEntryUrl = async (
-  entryUrl = 'http://www.mca.gov.cn/article/sj/tjbz/a/'
-) => {
-  const html = await request(entryUrl);
-  const $ = cheerio.load(html);
-  // eslint-disable-next-line array-callback-return
-  $('table.article').find('a.artitlelist').each((i, m) => {
-    if (i === 0) {
-      parseNewestList($(m).attr('href'));
-    } else {
-      parseOldList($(m).attr('href'));
-    }
-  });
-};
-
-/**
  * 解析最近一年的数据列表
  *
  * @param {String} entryUrl - 最近一年数据的入口地址
@@ -157,11 +137,28 @@ const makeCodeFile = (filename, content) => {
   console.log(`makeCodeFile: ${filename}.json`);
   console.log('------------------\n');
   fs.writeFileSync(
-    path.join(__dirname, `../data/${filename}.json`),
+    path.join(__dirname, `../data/GB2260/${filename}.json`),
     JSON.stringify(content, null, 2),
     'utf8'
   );
 };
 
-
-parseEntryUrl();
+/**
+ * 解析入口地址，区分最近一年及往年的信息
+ *
+ * @param {String} entryUrl - 民政部中《中华人民共和国行政区划代码》的入口地址
+ */
+(async (
+  entryUrl
+) => {
+  const html = await request(entryUrl);
+  const $ = cheerio.load(html);
+  // eslint-disable-next-line array-callback-return
+  $('table.article').find('a.artitlelist').each((i, m) => {
+    if (i === 0) {
+      parseNewestList($(m).attr('href'));
+    } else {
+      parseOldList($(m).attr('href'));
+    }
+  });
+})('http://www.mca.gov.cn/article/sj/tjbz/a/');

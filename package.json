@@ -18,9 +18,13 @@
     "node": ">=6"
   },
   "scripts": {
-    "lint:crawler": "eslint ./crawler",
-    "precrawler": "rimraf -g '{,!(node_modules)/**/}data/*.json'",
-    "crawler": "babel-node ./crawler/index.js",
+    "gb2260:clean": "rimraf -g '{,!(node_modules)/**/}data/GB2260/*.json'",
+    "gb2260:lint": "eslint ./crawler/gb2260.js",
+    "gb2260:crawler": "babel-node ./crawler/gb2260.js",
+    "clean": "npm-run-all *:clean",
+    "lint": "npm-run-all *:lint",
+    "precrawler": "npm run lint && npm run clean",
+    "crawler": "npm-run-all *:crawler",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "devDependencies": {
