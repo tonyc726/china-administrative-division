@@ -4,7 +4,7 @@ import request from 'request-promise';
 import cheerio from 'cheerio';
 // import urlencode from 'urlencode';
 // import Iconv from 'iconv-lite';
-import trim from '../utils/trim';
+import trim from './utils/trim';
 
 const requestOptions = (uri) => (
   // eslint-disable-next-line no-useless-escape

@@ -18,10 +18,9 @@
     "node": ">=6"
   },
   "scripts": {
-    "prebuild": "rimraf -g '{,!(node_modules)/**/}dist/'",
-    "build": "babel --copy-files --out-dir dist --ignore *.test.js src",
-    "lint": "eslint ./src",
-    "test": "cross-env NODE_ENV=test jest ./src",
+    "lint:crawler": "eslint ./crawler",
+    "precrawler": "rimraf -g '{,!(node_modules)/**/}data/*.json'",
+    "crawler": "babel-node ./crawler/index.js",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "devDependencies": {
