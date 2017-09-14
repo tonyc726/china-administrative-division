@@ -2,12 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import request from 'request-promise';
 import cheerio from 'cheerio';
+// import urlencode from 'urlencode';
+// import Iconv from 'iconv-lite';
 import trim from '../utils/trim';
 
-const requestOptions = (uri) => ({
-  uri,
-  baseUrl: 'http://www.mca.gov.cn/',
-});
+const requestOptions = (uri) => (
+  // eslint-disable-next-line no-useless-escape
+  (/^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$/).test(uri) ?
+    uri :
+    {
+      uri,
+      baseUrl: 'http://www.mca.gov.cn/',
+    }
+);
 
 /**
  * 解析入口地址，区分最近一年及往年的信息
@@ -23,8 +30,8 @@ const parseEntryUrl = async (
   $('table.article').find('a.artitlelist').each((i, m) => {
     if (i === 0) {
       parseNewestList($(m).attr('href'));
-    // } else {
-    //   parseOldList($(m).attr('href'));
+    } else {
+      parseOldList($(m).attr('href'));
     }
   });
 };
@@ -42,9 +49,43 @@ const parseNewestList = async (entryUrl) => {
     .filter((i, m) => ($(m).attr('title').indexOf('变更情况') < 0))
     .eq(0);
   // 解析最新的1条数据
-  parseCodeUrl(
-    $newest.attr('href')
-  );
+  parseCodeUrl($newest.attr('href'));
+};
+
+/**
+ * 解析历史数据
+ *
+ * @param {String} url - 列表的入口地址
+ * @param {Number} [page = 1] - 当前页码
+ * @param {Number} [total = 3] - 总页码，首次进入时初始化未0，后续读取页面中的内容决定下一次的总页数
+ */
+const parseOldList = async (
+  url,
+  page = 1,
+  total = 3
+) => {
+  const html = await request(requestOptions(page === 1 ? url : `${url}?${page}`));
+  const $ = cheerio.load(html);
+  const nextPage = page + 1;
+  // eslint-disable-next-line array-callback-return
+  $('table.article').find('tr a.artitlelist').each(async (i, e) => {
+    const fileYearMatch = trim($(e).attr('title')).match(/^(\d{4})/);
+    if (fileYearMatch !== null) {
+      const artitleUrl = $(e).attr('href');
+      const artitleHtml = await request(requestOptions(artitleUrl));
+      const $artitle = cheerio.load(artitleHtml);
+      const $artitleNestedLinks = $artitle('#zoom').find('a');
+      if ($artitleNestedLinks.length) {
+        parseCodeUrl($artitleNestedLinks.eq(0).attr('href'));
+      } else {
+        parseCodeUrl(artitleUrl);
+      }
+    }
+  });
+
+  if (total === 0 || nextPage <= total) {
+    parseOldList(url, nextPage, total);
+  }
 };
 
 /**
@@ -52,20 +93,17 @@ const parseNewestList = async (entryUrl) => {
  *
  * @param {String} url - 具体行政区域码的内容页地址
  */
-const parseCodeUrl = async (url, dom) => {
-  let $;
-  if (url && !dom) {
-    const html = await request(requestOptions(url));
-    $ = cheerio.load(html);
-  } else {
-    $ = dom;
-  }
-  console.log(`parseCodeUrl: ${url}`);
+const parseCodeUrl = async (url) => {
+  const html = await request(requestOptions(url));
+  const $ = cheerio.load(html);
+
   let redirectUrl = '';
+  // eslint-disable-next-line consistent-return
   $('script').each((i, s) => {
     const hrefMatch = trim($(s).html()).match(/window\.location\.href="(.*)"/);
     if (hrefMatch !== null && hrefMatch[1].length) {
       redirectUrl = hrefMatch[1];
+      return false;
     }
   });
 
@@ -82,7 +120,7 @@ const parseCodeUrl = async (url, dom) => {
       const text = trim($(m).text());
       const codeMatch = text.match(/(\d{6}).?(\D+)/);
       if (codeMatch === null) {
-        const yearMatch = text.match(/(\d{4})/);
+        const yearMatch = text.match(/^(\d{4})/);
         if (yearMatch !== null) {
           filename = yearMatch[1];
         }
@@ -104,6 +142,7 @@ const parseCodeUrl = async (url, dom) => {
 
     console.log('\n------------------');
     console.log(`total: ${fileContent.length}, province: ${provinces.length}, city: ${cities.length}, county: ${counties.length}`);
+    console.log(`url: ${url}`);
     makeCodeFile(filename, fileContent);
   }
 };
@@ -117,7 +156,7 @@ const parseCodeUrl = async (url, dom) => {
 const makeCodeFile = (filename, content) => {
   console.log(`makeCodeFile: ${filename}.json`);
   console.log('------------------\n');
-  fs.writeFile(
+  fs.writeFileSync(
     path.join(__dirname, `../data/${filename}.json`),
     JSON.stringify(content, null, 2),
     'utf8'
