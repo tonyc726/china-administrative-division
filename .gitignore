@@ -341,7 +341,6 @@ xcuserdata/
 /*.gcno
 
 # Project
-!internals/bin/
-README.en.md
+logs/*
 
 # End of https://www.gitignore.io/api/linux,macos,windows,git,tortoisegit,svn,node,less,sass,vim,code,eclipse,sublimetext,intellij+all,xcode
