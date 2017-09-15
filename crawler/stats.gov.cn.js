@@ -103,9 +103,30 @@ const makeCodeFile = (filename, content) => {
 (async (entryUrl) => {
   const html = await request(entryUrl);
   const $ = cheerio.load(html);
+  const queues = [];
 
   $('ul.center_list_contlist').find('li>a').each((i, m) => {
-    parseDetail(new URL($(m).attr('href'), entryUrl).toString());
+    const dateMatch = $(m).find('.cont_tit02').text().match(/(\d{2,4})-(\d{1,2})-(\d{1,2})/);
+    const detailUrl = (new URL($(m).attr('href'), entryUrl).toString());
+    if (dateMatch !== null && detailUrl.length) {
+      const date = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;
+      queues.push({
+        url: detailUrl,
+        date,
+        time: (new Date(date)).getTime(),
+        year: dateMatch[1],
+      });
+    }
+  });
+
+  queues.sort((m, n) => (
+    n.time - m.time
+  )).filter((m, i) => (
+    !((i > 1) &&
+    m.year === queues[i - 1].year &&
+    m.time < queues[i - 1].time)
+  )).forEach((m) => {
+    parseDetail(m.url);
   });
 })('http://www.stats.gov.cn/tjsj/tjbz/xzqhdm/');
 
