@@ -6,6 +6,10 @@ import cheerio from 'cheerio';
 // import urlencode from 'urlencode';
 // import Iconv from 'iconv-lite';
 import trim from './utils/trim';
+import makeLog from './utils/log';
+
+// 日志文件地址
+const logFile = makeLog(path.join(__dirname, `../crawler/logs/stats.gov.cn.${(new Date()).getTime()}.txt`));
 
 /**
  * 解析具体的内容并生成文件
@@ -73,7 +77,7 @@ file: ${filename}.json
   `;
   console.log(log);
 
-  writeLogFile(log);
+  logFile.add(log);
 };
 
 /**
@@ -90,21 +94,6 @@ const makeCodeFile = (filename, content) => {
   );
 };
 
-// 日志文件地址
-const logFilePath = path.join(__dirname, `../crawler/logs/stats.gov.cn.${(new Date()).getTime()}.txt`);
-/**
- * 写入日志文件
- *
- * @param {String} filename - 文件名字
- * @param {Object} content - 文件内容
- */
-const writeLogFile = (log) => {
-  fs.writeFileSync(
-    logFilePath,
-    fs.existsSync(logFilePath) ? fs.readFileSync(logFilePath, 'utf8') + log : log,
-    'utf8',
-  );
-};
 
 /**
  * 解析入口地址，区分最近一年及往年的信息
