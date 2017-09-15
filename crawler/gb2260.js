@@ -1,19 +1,21 @@
 import fs from 'fs';
+import { URL } from 'url';
 import path from 'path';
 import request from 'request-promise';
 import cheerio from 'cheerio';
 // import urlencode from 'urlencode';
 // import Iconv from 'iconv-lite';
 import trim from './utils/trim';
+import makeLog from './utils/log';
+
+// 日志文件
+const logFile = makeLog(path.join(__dirname, `../crawler/logs/gb2260.${(new Date()).getTime()}.txt`));
 
 const requestOptions = (uri) => (
   // eslint-disable-next-line no-useless-escape
   (/^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$/).test(uri) ?
     uri :
-    {
-      uri,
-      baseUrl: 'http://www.mca.gov.cn/',
-    }
+    (new URL(uri, 'http://www.mca.gov.cn/')).toString()
 );
 
 /**
@@ -22,7 +24,6 @@ const requestOptions = (uri) => (
  * @param {String} entryUrl - 最近一年数据的入口地址
  */
 const parseNewestList = async (entryUrl) => {
-  console.log(`parseNewestList: ${entryUrl}`);
   const html = await request(requestOptions(entryUrl));
   const $ = cheerio.load(html);
   const $newest = $('table.article').find('a.artitlelist')
@@ -120,10 +121,21 @@ const parseCodeUrl = async (url) => {
       }
     });
 
-    console.log('\n------------------');
-    console.log(`total: ${fileContent.length}, province: ${provinces.length}, city: ${cities.length}, county: ${counties.length}`);
-    console.log(`url: ${url}`);
-    makeCodeFile(filename, fileContent);
+    if (fileContent && fileContent.length) {
+      makeCodeFile(filename, fileContent);
+    }
+
+    const log = `
+  ------------------
+  total: ${fileContent.length}, province: ${provinces.length}, city: ${cities.length}, county: ${counties.length}
+  url: ${requestOptions(url)}
+  file: ${filename}.json
+  ------------------
+    `;
+    console.log(log);
+
+    // 记录日志
+    logFile.add(log);
   }
 };
 
@@ -134,8 +146,6 @@ const parseCodeUrl = async (url) => {
  * @param {Object} content - 文件内容
  */
 const makeCodeFile = (filename, content) => {
-  console.log(`makeCodeFile: ${filename}.json`);
-  console.log('------------------\n');
   fs.writeFileSync(
     path.join(__dirname, `../data/GB2260/${filename}.json`),
     JSON.stringify(content, null, 2),

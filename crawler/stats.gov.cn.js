@@ -8,7 +8,7 @@ import cheerio from 'cheerio';
 import trim from './utils/trim';
 import makeLog from './utils/log';
 
-// 日志文件地址
+// 日志文件
 const logFile = makeLog(path.join(__dirname, `../crawler/logs/stats.gov.cn.${(new Date()).getTime()}.txt`));
 
 /**
@@ -77,6 +77,7 @@ file: ${filename}.json
   `;
   console.log(log);
 
+  // 记录日志
   logFile.add(log);
 };
 
@@ -128,6 +129,8 @@ const makeCodeFile = (filename, content) => {
   )).forEach((m) => {
     parseDetail(m.url);
   });
+
+  return true;
 })('http://www.stats.gov.cn/tjsj/tjbz/xzqhdm/');
 
 // parseDetail('http://www.stats.gov.cn/tjsj/tjbz/xzqhdm/200410/t20041022_38305.html');
