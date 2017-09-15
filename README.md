@@ -5,6 +5,8 @@
 [![tested with jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)](https://github.com/tonyc726/china-administrative-division)
 
+> 本项目提供2个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
+
 ## 现状简介
 截至2017年6月底，中华人民共和国各级行政区划统计数量如下：
 
@@ -30,12 +32,94 @@
   - 第二段的第二位、第三位数字为该代码段中各行政区划的顺序号；
 - 第三段**3位数字**，标识居民委员会和村民委员会的代码
 
+## 使用说明
+
+### 系统依赖
+- Linux/MAC
+- Node.js > `v6.*`
+- npm > `v5.*` 或者 yarn
+
+### 爬取数据
+```bash
+# 推荐使用yarn
+yarn install
+
+yarn run crawler
+```
+
+## 数据说明
+> 由于`GB/T 2260`未包含**香港**、**澳门**、**台湾**的行政区划数据，所以分别借鉴`ISO3166-2:HK`、`ISO3166-2:MO`、`ISO3166-2:TW`进行数据补全，但是请注意：**这些数据中的行政区划代码并非官方标准**，请谨慎使用。
+
+数据以数据源作为分类，按照发布的年份作为单独文件，分别以一维数组的方式存储在`data`的二级目录下。
+```
+data
+├── GB2260
+│   ├── 1980.json
+│   ├── 1981.json
+│   ├── 1982.json
+│   ├── 1983.json
+│   ├── 1984.json
+│   ├── 1985.json
+│   ├── 1986.json
+│   ├── 1987.json
+│   ├── 1988.json
+│   ├── 1989.json
+│   ├── 1990.json
+│   ├── 1991.json
+│   ├── 1992.json
+│   ├── 1993.json
+│   ├── 1994.json
+│   ├── 1995.json
+│   ├── 1996.json
+│   ├── 1997.json
+│   ├── 1998.json
+│   ├── 1999.json
+│   ├── 2000.json
+│   ├── 2001.json
+│   ├── 2002.json
+│   ├── 2003.json
+│   ├── 2004.json
+│   ├── 2005.json
+│   ├── 2006.json
+│   ├── 2007.json
+│   ├── 2008.json
+│   ├── 2009.json
+│   ├── 2010.json
+│   ├── 2011.json
+│   ├── 2012.json
+│   ├── 2013.json
+│   ├── 2014.json
+│   ├── 2015.json
+│   ├── 2016.json
+│   └── 2017.json
+├── ISO3166-2
+│   ├── HK.json
+│   ├── MO.json
+│   └── TW.json
+└── stats.gov.cn
+    ├── 2003.json
+    ├── 2004.json
+    ├── 2005.json
+    ├── 2006.json
+    ├── 2007.json
+    ├── 2008.json
+    ├── 2009.json
+    ├── 2010.json
+    ├── 2011.json
+    ├── 2012.json
+    ├── 2013.json
+    ├── 2014.json
+    ├── 2015.json
+    └── 2016.json
+```
 
 ## 参考链接
+- [国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/xzqhdm/)
 - [民政部 - 中华人民共和国行政区划代码](http://www.mca.gov.cn/article/sj/tjbz/a/)
 - [维基百科 - 中华人民共和国行政区划](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92)
 - [维基百科 - 中华人民共和国行政区划代码](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81)
-- [民政统计代码编制规则](http://www.mca.gov.cn/article/sj/tjbz/a/201507/20150700854848.shtml)
+- [民政部统计代码编制规则](http://www.mca.gov.cn/article/sj/tjbz/a/201507/20150700854848.shtml)
+- [网友资源 - ISO3166-2](http://www.zxinc.org/gb2260-latest.htm)
 
 ## License
 
