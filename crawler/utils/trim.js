@@ -10,9 +10,10 @@ const whitespace = ' \n\r\t\f\x0b\xa0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\
  * @see http://www.cnblogs.com/rubylouvre/archive/2009/09/18/1568794.html
  *
  * @param {String} str - 待处理的字符串
+ * @param {Boolean} strict - 是否去除所有空白
  * @return {String}
  */
-export default (str = '') => {
+export default (str = '', strict = false) => {
   if (!str || str.length === 0) {
     return str;
   }
@@ -29,6 +30,16 @@ export default (str = '') => {
       result = result.substring(0, j + 1);
       break;
     }
+  }
+
+  if (strict) {
+    let strictResult = '';
+    for (let i = 0, len = result.length; i < len; i += 1) {
+      if (whitespace.indexOf(result.charAt(i)) === -1) {
+        strictResult += result.charAt(i);
+      }
+    }
+    result = strictResult;
   }
 
   return result;
