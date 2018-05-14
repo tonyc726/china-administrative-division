@@ -15,7 +15,7 @@
 - [县级行政区**2851**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
 
 各级层次架构，可以用以下图来概括：
-![中华人民共和国行政区划架构图](./images/System_of_China_administrative_division.png)
+![中华人民共和国行政区划架构图](./docs/images/System_of_China_administrative_division.png)
 
 ## 编码规则
 > 具体可以参考[《民政统计代码编制规则》](http://www.mca.gov.cn/article/sj/tjbz/a/201507/20150700854848.shtml)
