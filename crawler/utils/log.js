@@ -1,7 +1,7 @@
 /**
  * @author tongc726 <zhujf620@gmail.com>
  */
-import fs from 'fs';
+const fs = require('fs');
 
 /**
  * @class 生成日志
@@ -45,6 +45,6 @@ ${log}
  *
  *
  */
-export default (path = '', log = '') => (
+module.exports = (path = '', log = '') => (
   new MakeLog(path, log)
 );

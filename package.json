@@ -15,15 +15,15 @@
     "行政区划代码"
   ],
   "engines": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "scripts": {
     "gb2260:clean": "rimraf -g '{,!(node_modules)/**/}data/GB2260/*.json'",
     "gb2260:lint": "eslint ./crawler/gb2260.js",
-    "gb2260:crawler": "babel-node ./crawler/gb2260.js",
+    "gb2260:crawler": "node ./crawler/gb2260.js",
     "stats-gov:clean": "rimraf -g '{,!(node_modules)/**/}data/stats.gov.cn/*.json'",
     "stats-gov:lint": "eslint ./crawler/stats.gov.cn.js",
-    "stats-gov:crawler": "babel-node ./crawler/stats.gov.cn.js",
+    "stats-gov:crawler": "node ./crawler/stats.gov.cn.js",
     "clean": "npm-run-all *:clean",
     "lint": "npm-run-all *:lint",
     "precrawler": "npm run lint && npm run clean",
@@ -53,6 +53,8 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "iconv-lite": "^0.4.19",
+    "is-absolute-url": "^2.1.0",
+    "lodash": "^4.17.10",
     "request-promise": "^4.2.1",
     "urlencode": "^1.1.0"
   },
