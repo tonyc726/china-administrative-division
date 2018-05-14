@@ -10,7 +10,7 @@ const makeLog = require('./utils/log');
 
 // 日志文件
 const logFile = makeLog(
-  path.join(__dirname, `../logs/gb2260.${new Date().getTime()}.txt`)
+  path.join(__dirname, `./logs/gb2260.${new Date().getTime()}.txt`)
 );
 
 // make request options
