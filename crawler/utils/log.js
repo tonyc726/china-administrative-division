@@ -30,11 +30,7 @@ class MakeLog {
 ${log}
 
       `;
-      fs.writeFileSync(
-        this.path,
-        this.stream,
-        'utf8',
-      );
+      fs.writeFileSync(this.path, this.stream, 'utf8');
     }
   }
 }
@@ -45,6 +41,4 @@ ${log}
  *
  *
  */
-module.exports = (path = '', log = '') => (
-  new MakeLog(path, log)
-);
+module.exports = (path = '', log = '') => new MakeLog(path, log);

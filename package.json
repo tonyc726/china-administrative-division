@@ -24,6 +24,7 @@
     "stats-gov:clean": "rimraf -g '{,!(node_modules)/**/}data/stats.gov.cn/*.json'",
     "stats-gov:lint": "eslint ./crawler/stats.gov.cn.js",
     "stats-gov:crawler": "node ./crawler/stats.gov.cn.js",
+    "stats-gov-invalid-cache:clean": "node ./crawler/clean-invalid-cache.js",
     "clean": "npm-run-all *:clean",
     "lint": "npm-run-all *:lint",
     "precrawler": "npm run lint && npm run clean",
@@ -31,36 +32,53 @@
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^7.2.3",
-    "babel-jest": "^20.0.3",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.6.0",
-    "babel-preset-stage-0": "^6.24.1",
-    "babel-runtime": "^6.26.0",
-    "cross-env": "^5.0.5",
-    "cz-conventional-changelog": "^2.0.0",
-    "eslint": "^4.5.0",
-    "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-friendly-formatter": "^3.0.0",
-    "eslint-plugin-import": "^2.7.0",
-    "jest": "^20.0.4",
-    "npm-run-all": "^4.1.1",
-    "rimraf": "^2.6.1",
-    "semantic-release": "^7.0.2"
+    "commitizen": "^3.0.5",
+    "cross-env": "^5.2.0",
+    "cz-conventional-changelog": "^2.1.0",
+    "eslint": "^5.13.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^5.0.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-jest": "^22.7.1",
+    "eslint-plugin-prettier": "^3.0.1",
+    "husky": "^2.4.1",
+    "jest": "^24.8.0",
+    "lint-staged": "^8.2.1",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^1.16.4",
+    "rimraf": "^2.6.3",
+    "semantic-release": "^15.13.16"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "date-fns": "^1.30.1",
+    "delay": "^4.3.0",
     "iconv-lite": "^0.4.19",
-    "is-absolute-url": "^2.1.0",
+    "is-absolute-url": "^3.0.0",
+    "leveldown": "^5.1.0",
+    "levelup": "^4.0.2",
     "lodash": "^4.17.10",
+    "md5": "^2.2.1",
+    "ora": "^3.4.0",
     "request-promise": "^4.2.1",
-    "urlencode": "^1.1.0"
+    "urlencode": "^1.1.0",
+    "winston": "^3.2.1"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run lint"
+    }
   },
   "config": {
     "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
+      "path": "node_modules/cz-conventional-changelog"
     }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,less}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }

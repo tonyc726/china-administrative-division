@@ -5,13 +5,11 @@ cache:
     - node_modules
 node_js:
   - '8'
+  - '10'
 branches:
   only:
     - master
-before_install:
-  - curl -o- -L https://yarnpkg.com/install.sh | bash
-  - export PATH="$HOME/.yarn/bin:$PATH"
 script:
-  - yarn run lint
+  - npm run lint
 after_success:
-  - yarn run semantic-release
+  - npm run semantic-release
