@@ -1,7 +1,6 @@
 # 中华人民共和国行政区划代码
 
 [![Build Status](https://travis-ci.org/tonyc726/china-administrative-division.svg?style=flat-square&branch=master)](https://travis-ci.org/tonyc726/china-administrative-division)
-[![bitHound Code](https://www.bithound.io/github/tonyc726/china-administrative-division/badges/code.svg)](https://www.bithound.io/github/tonyc726/china-administrative-division)
 [![tested with jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)](https://github.com/tonyc726/china-administrative-division)
 
@@ -9,7 +8,7 @@
 
 ## 现状简介
 
-截至 2018 年 2 月底，中华人民共和国各级行政区划统计数量如下：
+截至 2019 年 6 月底，中华人民共和国各级行政区划统计数量如下：
 
 - [省级行政区**34**个](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E4%B8%80%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)，其中包括：[**4**个直辖市](https://zh.wikipedia.org/wiki/%E7%9B%B4%E8%BE%96%E5%B8%82)，[**23**个省](<https://zh.wikipedia.org/wiki/%E7%9C%81_(%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83)>)，[**5**个自治区](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%B2%BB%E5%8C%BA)，[**2**个特别行政区](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%88%AB%E8%A1%8C%E6%94%BF%E5%8C%BA)
 - [地级行政区**334**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
@@ -112,12 +111,6 @@ data
 │   ├── MO.json
 │   └── TW.json
 └── stats.gov.cn
-    ├── 2003.json
-    ├── 2004.json
-    ├── 2005.json
-    ├── 2006.json
-    ├── 2007.json
-    ├── 2008.json
     ├── 2009.json
     ├── 2010.json
     ├── 2011.json
@@ -125,7 +118,9 @@ data
     ├── 2013.json
     ├── 2014.json
     ├── 2015.json
-    └── 2016.json
+    ├── 2016.json
+    ├── 2017.json
+    └── 2018.json
 ```
 
 ## 参考链接
