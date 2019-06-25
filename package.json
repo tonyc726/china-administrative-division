@@ -29,7 +29,7 @@
     "lint": "npm-run-all *:lint",
     "precrawler": "npm run lint && npm run clean",
     "crawler": "npm-run-all *:crawler",
-    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
+    "semantic-release": "npx semantic-release"
   },
   "devDependencies": {
     "commitizen": "^3.0.5",
@@ -46,8 +46,7 @@
     "lint-staged": "^8.2.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^1.16.4",
-    "rimraf": "^2.6.3",
-    "semantic-release": "^15.13.16"
+    "rimraf": "^2.6.3"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
