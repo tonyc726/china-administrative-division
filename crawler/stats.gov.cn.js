@@ -902,18 +902,20 @@ const getProvince = async (url, enableCache = true) => {
 ================================================================
       `);
 
-      console.log(`\n\n\n
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    `);
+      if (queueIndex < queues.length - 1) {
+        console.log(`\n\n\n
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      `);
 
-      const delayOneMoment = ora('休息一会儿吧！').start();
-      // 延时 2s ~ 3s
-      await delay(getRandomInt(2000, 3000));
-      delayOneMoment.succeed('休息结束了，起来干活吧！');
+        const delayOneMoment = ora('休息一会儿吧！').start();
+        // 延时 2s ~ 3s
+        await delay(getRandomInt(2000, 3000));
+        delayOneMoment.succeed('休息结束了，起来干活吧！');
 
-      console.log(`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    \n\n\n`);
+        console.log(`
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      \n\n\n`);
+      }
     }
   } else {
     logger.error(`入口地址解析失败！`);

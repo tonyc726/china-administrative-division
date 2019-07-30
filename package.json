@@ -1,10 +1,11 @@
 {
   "name": "china-administrative-division",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "Administrative division codes and infos of the People's Republic of China",
   "repository": "https://github.com/tonyc726/china-administrative-division.git",
   "author": "tonyc726 <zhujf620@gmail.com>",
   "license": "MIT",
+  "private": true,
   "keywords": [
     "china",
     "Administrative division codes",
@@ -25,12 +26,11 @@
     "stats-gov:lint": "eslint ./crawler/stats.gov.cn.js",
     "stats-gov:crawler": "node ./crawler/stats.gov.cn.js",
     "stats-gov-invalid-cache:clean": "node ./crawler/clean-invalid-cache.js",
-    "stats-gov:export": "node ./crawler/make-cache-to-file.js",
     "clean": "npm-run-all *:clean",
     "lint": "npm-run-all *:lint",
     "precrawler": "npm run lint && npm run clean",
     "crawler": "npm-run-all *:crawler",
-    "semantic-release": "semantic-release"
+    "test": "npm run lint"
   },
   "devDependencies": {
     "commitizen": "^4.0.3",
@@ -42,18 +42,12 @@
     "eslint-plugin-import": "^2.9.0",
     "eslint-plugin-jest": "^22.10.0",
     "eslint-plugin-prettier": "^3.1.0",
-    "@semantic-release/commit-analyzer": "^6.1.0",
-    "@semantic-release/git": "^7.0.16",
-    "@semantic-release/github": "^5.4.2",
-    "@semantic-release/npm": "^5.1.13",
-    "@semantic-release/release-notes-generator": "^7.2.1",
     "husky": "^3.0.0",
     "jest": "^24.8.0",
     "lint-staged": "^9.2.0",
     "npm-run-all": "^4.1.1",
     "prettier": "^1.18.2",
-    "rimraf": "^2.6.3",
-    "semantic-release": "^15.13.18"
+    "rimraf": "^2.6.3"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
