@@ -12,14 +12,17 @@
 
 ## 现状简介
 
-截至 2019 年 6 月底，中华人民共和国各级行政区划统计数量如下：
+截至 2020 年 1 月底，中华人民共和国各级行政区划统计数量如下：
 
 - [省级行政区**34**个](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E4%B8%80%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)，其中包括：[**4**个直辖市](https://zh.wikipedia.org/wiki/%E7%9B%B4%E8%BE%96%E5%B8%82)，[**23**个省](<https://zh.wikipedia.org/wiki/%E7%9C%81_(%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83)>)，[**5**个自治区](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%B2%BB%E5%8C%BA)，[**2**个特别行政区](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%88%AB%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [地级行政区**334**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [县级行政区**2851**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
+- [地级行政区**333**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
+- [县级行政区**2855**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
 
 各级层次架构，可以用以下图来概括：
 ![中华人民共和国行政区划架构图](./docs/images/System_of_China_administrative_division.png)
+
+地级行政区划（不含不在管辖范围内的台湾）图例依次表示：地级市、地区、自治州、副地级行政区、盟、直辖市/特别行政区、副省级行政区：
+![地级行政区划](<./docs/images/China_Prefectural-level_divisions_(PRC_claim)_min.png>)
 
 ## 编码规则
 
