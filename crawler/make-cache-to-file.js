@@ -37,7 +37,7 @@ const pageCacheDB = levelup(
       if (isArray(recordQueues) && recordQueues.length) {
         const recordRunDateFormat = format(
           new Date(recordRunDate * 1000),
-          'YYYY-MM-DD HH:mm:ss'
+          'yyyy-MM-dd HH:mm:ss'
         );
         const makeLogFileSpinner = ora().start(
           `正在写入 ${recordRunDateFormat} 的数据至日志文件`

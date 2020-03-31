@@ -17,8 +17,8 @@ const {
   cloneDeep,
   includes,
 } = require('lodash');
-const { format, distanceInWordsToNow } = require('date-fns');
-const zhLocale = require('date-fns/locale/zh_cn');
+const { format, formatDistanceToNow } = require('date-fns');
+const zhLocale = require('date-fns/locale/zh-CN');
 const request = require('request-promise');
 const iconv = require('iconv-lite');
 const cheerio = require('cheerio');
@@ -48,7 +48,7 @@ let spinnerCounty = '';
 let spinnerTown = '';
 
 // @doc https://github.com/winstonjs/winston#usage
-const loggerDate = format(new Date(), 'YYYY.MM.DD.HH.mm.ss');
+const loggerDate = format(new Date(), 'yyyy.MM.dd.HH.mm.ss');
 let logger = null;
 
 /**
@@ -82,7 +82,7 @@ let requestPageFailedList = [];
  * @param {string} url - 页面地址
  * @returns {object} cheerio object
  */
-const getPageWithCheerio = async url => {
+const getPageWithCheerio = async (url) => {
   let page = null;
 
   // 延时 10 ~ 200 ms
@@ -116,7 +116,7 @@ const getPageWithCheerio = async url => {
  * @param {string} url - 页面地址
  * @returns {object|null}
  */
-const getPageCache = async url => {
+const getPageCache = async (url) => {
   // 页面缓存以`url`的`md5`值为`key`
   const urlCacheKey = md5(url);
   let pageCache = null;
@@ -290,10 +290,7 @@ const getTown = async (url, countyItem = {}, enableCache = true) => {
         const $tds = $(tr).find('td');
         const code = trim($tds.eq(0).text());
         const name = trim($tds.eq(1).text());
-        const href = $tds
-          .eq(0)
-          .children('a')
-          .attr('href');
+        const href = $tds.eq(0).children('a').attr('href');
         if (code.length !== 0 && name.length !== 0) {
           towns = compact(
             concat(
@@ -421,10 +418,7 @@ const getCounty = async (url, cityItem = {}, enableCache = true) => {
         const $tds = $(tr).find('td');
         const code = trim($tds.eq(0).text());
         const name = trim($tds.eq(1).text());
-        const href = $tds
-          .eq(0)
-          .children('a')
-          .attr('href');
+        const href = $tds.eq(0).children('a').attr('href');
         if (code.length !== 0 && name.length !== 0) {
           counties = compact(
             concat(
@@ -549,10 +543,7 @@ const getCity = async (url, proviceItem = {}, enableCache = true) => {
         const $tds = $(tr).find('td');
         const code = trim($tds.eq(0).text());
         const name = trim($tds.eq(1).text());
-        const href = $tds
-          .eq(0)
-          .children('a')
-          .attr('href');
+        const href = $tds.eq(0).children('a').attr('href');
         if (code.length !== 0 && name.length !== 0) {
           cities = compact(
             concat(
@@ -739,14 +730,10 @@ const getProvince = async (url, enableCache = true) => {
  *
  * @param {String} entryUrl - 民政部中《中华人民共和国行政区划代码》的入口地址
  */
-(async entryUrl => {
+(async (entryUrl) => {
   let entryPageContent = null;
-  try {
-    // 读取页面
-    entryPageContent = await request(entryUrl);
-  } catch (error) {
-    throw error;
-  }
+  // 读取页面
+  entryPageContent = await request(entryUrl);
 
   const $ = cheerio.load(entryPageContent);
   const queues = [];
@@ -807,7 +794,7 @@ const getProvince = async (url, enableCache = true) => {
       // 根据`url`,`fileName`,`year`定位最后一次运行记录对应的数据信息对象
       const runHistoryQueue = find(
         latestRunQueues,
-        queue =>
+        (queue) =>
           queue.url === url &&
           queue.fileName === fileName &&
           queue.year === year
@@ -859,7 +846,7 @@ const getProvince = async (url, enableCache = true) => {
       console.log(`
 ================================================================
 > 开始爬取 ${year} 年统计用区划代码数据
-> 开始时间：${format(startTime, 'YYYY-MM-DD HH:mm:ss')}
+> 开始时间：${format(startTime, 'yyyy-MM-dd HH:mm:ss')}
 ----------------------------------------------------------------
       `);
 
@@ -896,8 +883,8 @@ const getProvince = async (url, enableCache = true) => {
 
       console.log(`
 ----------------------------------------------------------------
-> 爬取结束：${format(new Date(), 'YYYY-MM-DD HH:mm:ss')}
-> 共耗时：${distanceInWordsToNow(startTime, { locale: zhLocale })}
+> 爬取结束：${format(new Date(), 'yyyy-MM-dd HH:mm:ss')}
+> 共耗时：${formatDistanceToNow(startTime, { locale: zhLocale })}
 > 累计请求 ${requestPageList.length} 次，失败 ${requestPageFailedList.length} 次
 ================================================================
       `);

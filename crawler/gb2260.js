@@ -22,7 +22,7 @@ const getRandomInt = (min = 0, max = 200) => {
 };
 
 // make request options
-const requestOptions = uri =>
+const requestOptions = (uri) =>
   isAbsoluteUrl(uri)
     ? uri
     : {
@@ -54,7 +54,7 @@ const makeCodeFile = (filename, content) => {
  *
  * @param {String} url - 具体行政区域码的内容页地址
  */
-const parseCodeUrl = async url => {
+const parseCodeUrl = async (url) => {
   let html = null;
   try {
     html = await request(requestOptions(url));
@@ -145,17 +145,12 @@ ${JSON.stringify(error, null, 2)}
  *
  * @param {String} entryUrl - 最近一年数据的入口地址
  */
-const parseNewestList = async entryUrl => {
+const parseNewestList = async (entryUrl) => {
   const html = await request(requestOptions(entryUrl));
   const $ = cheerio.load(html);
   const $newest = $('table.article')
     .find('a.artitlelist')
-    .filter(
-      (i, m) =>
-        $(m)
-          .attr('title')
-          .indexOf('变更情况') < 0
-    )
+    .filter((i, m) => $(m).attr('title').indexOf('变更情况') < 0)
     .eq(0);
   // 解析最新的1条数据
   parseCodeUrl($newest.attr('href'));
@@ -215,7 +210,7 @@ const parseOldList = async (url, page = 1, total = 3) => {
  *
  * @param {String} entryUrl - 民政部中《中华人民共和国行政区划代码》的入口地址
  */
-(async entryUrl => {
+(async (entryUrl) => {
   const html = await request(entryUrl);
   const $ = cheerio.load(html);
   $('ul.cxfw_ul')
