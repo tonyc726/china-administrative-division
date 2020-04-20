@@ -20,10 +20,10 @@
   },
   "scripts": {
     "gb2260:clean": "rimraf -g '{,!(node_modules)/**/}data/GB2260/*.json'",
-    "gb2260:lint": "eslint ./crawler/gb2260.js",
+    "gb2260:lint": "eslint --quiet --fix ./crawler/gb2260.js",
     "gb2260:crawler": "node ./crawler/gb2260.js",
     "stats-gov:clean": "rimraf -g '{,!(node_modules)/**/}data/stats.gov.cn/*.json'",
-    "stats-gov:lint": "eslint ./crawler/stats.gov.cn.js",
+    "stats-gov:lint": "eslint --quiet --fix ./crawler/stats.gov.cn.js",
     "stats-gov:crawler": "node ./crawler/stats.gov.cn.js",
     "stats-gov-invalid-cache:clean": "node ./crawler/clean-invalid-cache.js",
     "clean": "npm-run-all *:clean",
