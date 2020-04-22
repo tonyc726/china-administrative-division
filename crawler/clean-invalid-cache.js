@@ -39,7 +39,7 @@ const makeLogFile = (filename, content) => {
   const readSpinner = ora().start(`正在读取 pageCacheDB`);
   pageCacheDB
     .createReadStream()
-    .on('data', data => {
+    .on('data', (data) => {
       const key = Buffer.from(data.key).toString();
       cacheList.push(key);
       readSpinner.text = `正在读取 pageCacheDB[${cacheList.length}]: ${key}`;
@@ -53,7 +53,7 @@ const makeLogFile = (filename, content) => {
         throw error;
       }
     })
-    .on('error', err => {
+    .on('error', (err) => {
       readSpinner.error(`读取数据失败！`);
       console.error(err);
     })
@@ -72,7 +72,7 @@ const makeLogFile = (filename, content) => {
       const cleanSpinner = ora().start(`正在清理 pageCacheDB`);
       try {
         await pageCacheDB.batch(
-          cacheErrorList.map(key => ({
+          cacheErrorList.map((key) => ({
             type: 'del',
             key,
           }))
