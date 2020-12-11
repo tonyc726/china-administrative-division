@@ -31,6 +31,7 @@
     "stats-gov-invalid-cache:clean": "node ./crawler/clean-invalid-cache.js",
     "clean": "npm-run-all *:clean",
     "lint": "npm-run-all *:lint",
+    "format": "prettier --write ./crawler/**/*.{js,ts,json}",
     "precrawler": "npm run lint && npm run clean",
     "crawler": "npm-run-all *:crawler",
     "test": "npm run lint"
@@ -63,7 +64,10 @@
     "lodash": "^4.17.20",
     "md5": "^2.3.0",
     "ora": "^5.1.0",
+    "reflect-metadata": "^0.1.13",
     "request-promise": "^4.2.6",
+    "sqlite3": "^5.0.0",
+    "typeorm": "^0.2.29",
     "urlencode": "^1.1.0",
     "winston": "^3.3.3"
   },
@@ -79,9 +83,8 @@
     }
   },
   "lint-staged": {
-    "src/**/*.{js,jsx,less}": [
-      "prettier --write",
-      "git add"
+    "crawler/**/*.{js,ts,json}": [
+      "prettier --write"
     ]
   }
 }

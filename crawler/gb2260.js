@@ -17,9 +17,8 @@ const logFile = makeLog(
 /**
  * 生成一个介于 min ~ max 的随机整数
  */
-const getRandomInt = (min = 0, max = 200) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
+const getRandomInt = (min = 0, max = 200) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
 
 // make request options
 const requestOptions = (uri) =>
