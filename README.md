@@ -8,15 +8,15 @@
 
 ## 特殊说明
 
-由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2018`的数据全部存在`pageCacheDB/stats.gov.cn`中，如需文件请运行`npm run stats-gov:crawler`自行导出或者提交 issue。
+由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2020`的数据全部存在`pageCacheDB/stats.gov.cn`中，如需文件请运行`npm run stats-gov:crawler`自行导出或者提交 issue。
 
 ## 现状简介
 
-截至 2020 年 3 月底，中华人民共和国各级行政区划统计数量如下：
+截至 2020 年底，中华人民共和国各级行政区划统计数量如下：
 
 - [省级行政区**34**个](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E4%B8%80%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)，其中包括：[**4**个直辖市](https://zh.wikipedia.org/wiki/%E7%9B%B4%E8%BE%96%E5%B8%82)，[**23**个省](<https://zh.wikipedia.org/wiki/%E7%9C%81_(%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83)>)，[**5**个自治区](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%B2%BB%E5%8C%BA)，[**2**个特别行政区](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%88%AB%E8%A1%8C%E6%94%BF%E5%8C%BA)
 - [地级行政区**333**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [县级行政区**2855**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
+- [县级行政区**2846**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
 
 各级层次架构，可以用以下图来概括：
 ![中华人民共和国行政区划架构图](./docs/images/System_of_China_administrative_division.png)
@@ -53,13 +53,13 @@
 ### 系统依赖
 
 - Linux/MAC
-- Node.js > `v8.*`
-- npm > `v5.*` 或者 yarn
+- Node.js > `v12.*`
+- npm > `v6.*` 或者 yarn
 
 ### 爬取数据
 
 ```bash
-npm install
+npm ci
 
 npm run crawler
 ```
@@ -129,7 +129,8 @@ data
     ├── 2016.json
     ├── 2017.json
     ├── 2018.json
-    └── 2019.json
+    ├── 2019.json
+    └── 2020.json
 ```
 
 ## 参考链接
