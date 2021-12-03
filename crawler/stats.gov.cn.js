@@ -118,6 +118,7 @@ const getPageWithCheerio = async (url) => {
 const getPageCache = async (url) => {
   // 页面缓存以`url`的`md5`值为`key`
   const urlCacheKey = md5(url);
+  console.log(`> getPageCache('${url}') > ${urlCacheKey}`);
   let pageCache = null;
   try {
     const pageCacheData = await pageCacheDB.get(urlCacheKey);
@@ -141,6 +142,7 @@ const getPageCache = async (url) => {
 const setPageCache = async (url, data) => {
   // 页面缓存以`url`的`md5`值为`key`
   const urlCacheKey = md5(url);
+  console.log(`> setPageCache('${url}') > ${urlCacheKey}`);
   try {
     await pageCacheDB.put(urlCacheKey, JSON.stringify(data));
   } catch (error) {
@@ -849,36 +851,36 @@ const getProvince = async (url, enableCache = true) => {
 ----------------------------------------------------------------
       `);
 
-      try {
-        // 从省开始爬取数据
-        const data = await getProvince(
-          url,
-          lastModified === runHistoryQueueLastModified
-        );
+      // try {
+      //   // 从省开始爬取数据
+      //   const data = await getProvince(
+      //     url,
+      //     lastModified === runHistoryQueueLastModified
+      //   );
 
-        // 更新运行记录的数据
-        currentRunRecord.queues[queueIndex] = assign({}, queues[queueIndex], {
-          // 开始时间
-          startTime: format(startTime, 'x'),
-          // 结束时间
-          endTime: format(new Date(), 'x'),
-          // 页面请求清单
-          requestPageList,
-          // 页面请求失败的清单
-          requestPageFailedList,
-        });
+      //   // 更新运行记录的数据
+      //   currentRunRecord.queues[queueIndex] = assign({}, queues[queueIndex], {
+      //     // 开始时间
+      //     startTime: format(startTime, 'x'),
+      //     // 结束时间
+      //     endTime: format(new Date(), 'x'),
+      //     // 页面请求清单
+      //     requestPageList,
+      //     // 页面请求失败的清单
+      //     requestPageFailedList,
+      //   });
 
-        // 将最新的运行记录写入数据库
-        await pageCacheDB.put(
-          'runHistory',
-          JSON.stringify(concat(runHistory, currentRunRecord))
-        );
+      //   // 将最新的运行记录写入数据库
+      //   await pageCacheDB.put(
+      //     'runHistory',
+      //     JSON.stringify(concat(runHistory, currentRunRecord))
+      //   );
 
-        // 生产数据文件
-        makeCodeFile(fileName, data);
-      } catch (error) {
-        logger.error(error);
-      }
+      //   // 生产数据文件
+      //   makeCodeFile(fileName, data);
+      // } catch (error) {
+      //   logger.error(error);
+      // }
 
       console.log(`
 ----------------------------------------------------------------
