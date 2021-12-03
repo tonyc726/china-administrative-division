@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 省
+model Province {
+  id   Int    @id @default(autoincrement())
+  code Int
+  name String
+
+  cities   City[]
+  counties County[]
+  townes   Town[]
+  villages Village[]
+}
+
+// 市
+model City {
+  id   Int    @id @default(autoincrement())
+  code Int
+  name String
+
+  counties County[]
+  townes   Town[]
+  villages Village[]
+
+  provinceId Int?
+  province   Province? @relation(fields: [provinceId], references: [id])
+}
+
+// 区
+model County {
+  id   Int    @id @default(autoincrement())
+  code Int
+  name String
+
+  townes   Town[]
+  villages Village[]
+
+  provinceId Int?
+  province   Province? @relation(fields: [provinceId], references: [id])
+  cityId     Int?
+  city       City?     @relation(fields: [cityId], references: [id])
+}
+
+// 镇
+model Town {
+  id   Int    @id @default(autoincrement())
+  code Int
+  name String
+
+  villages Village[]
+
+  provinceId Int?
+  province   Province? @relation(fields: [provinceId], references: [id])
+  cityId     Int?
+  city       City?     @relation(fields: [cityId], references: [id])
+  countyId   Int?
+  county     County?   @relation(fields: [countyId], references: [id])
+}
+
+// 街道
+model Village {
+  id   Int    @id @default(autoincrement())
+  code Int
+  name String
+
+  provinceId Int?
+  province   Province? @relation(fields: [provinceId], references: [id])
+  cityId     Int?
+  city       City?     @relation(fields: [cityId], references: [id])
+  countyId   Int?
+  county     County?   @relation(fields: [countyId], references: [id])
+  townId     Int?
+  town       Town?     @relation(fields: [townId], references: [id])
+}
