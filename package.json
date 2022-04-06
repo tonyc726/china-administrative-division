@@ -37,9 +37,9 @@
     "test": "npm run lint"
   },
   "devDependencies": {
-    "commitizen": "^4.2.4",
+    "commitizen": "^1.0.4",
     "cross-env": "^7.0.3",
-    "cz-conventional-changelog": "^3.3.0",
+    "cz-conventional-changelog": "^3.0.1",
     "eslint": "^7.30.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^7.2.0",
@@ -66,8 +66,8 @@
     "ora": "^5.4.1",
     "reflect-metadata": "^0.1.13",
     "request-promise": "^4.2.6",
-    "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.45",
+    "sqlite3": "^4.2.0",
+    "typeorm": "^0.2.41",
     "urlencode": "^1.1.0",
     "winston": "^3.6.0"
   },
