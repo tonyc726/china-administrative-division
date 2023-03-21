@@ -20,42 +20,46 @@
   },
   "scripts": {
     "gb2260:clean": "rimraf -g '{,!(node_modules)/**/}data/GB2260/*.json'",
-    "gb2260:lint": "eslint --quiet --fix ./crawler/gb2260.js",
-    "gb2260:crawler": "node ./crawler/gb2260.js",
+    "gb2260:lint": "eslint --quiet --fix ./scripts/gb2260.js",
+    "gb2260:crawler": "node ./scripts/gb2260.js",
     "ip138-post:clean": "rimraf -g '{,!(node_modules)/**/}data/ip138-post/*.json'",
-    "ip138-post:lint": "eslint --quiet --fix ./crawler/ip138-post.js",
-    "ip138-post:crawler": "node ./crawler/ip138-post.js",
+    "ip138-post:lint": "eslint --quiet --fix ./scripts/ip138-post.js",
+    "ip138-post:crawler": "node ./scripts/ip138-post.js",
     "stats-gov:clean": "rimraf -g '{,!(node_modules)/**/}data/stats.gov.cn/*.json'",
-    "stats-gov:lint": "eslint --quiet --fix ./crawler/stats.gov.cn.js",
-    "stats-gov:crawler": "node ./crawler/stats.gov.cn.js",
-    "stats-gov-invalid-cache:clean": "node ./crawler/clean-invalid-cache.js",
+    "stats-gov:lint": "eslint --quiet --fix ./scripts/stats.gov.cn.js",
+    "stats-gov:crawler": "node ./scripts/stats.gov.cn.js",
+    "stats-gov-invalid-cache:clean": "node ./scripts/clean-invalid-cache.js",
     "clean": "npm-run-all *:clean",
+    "data:gzip": "node ./scripts/gzip-data.js",
+    "data:ungzip": "node ./scripts/ungzip-data.js",
     "lint": "npm-run-all *:lint",
-    "format": "prettier --write ./crawler/**/*.{js,ts,json}",
-    "precrawler": "npm run lint && npm run clean",
-    "crawler": "npm-run-all *:crawler",
+    "format": "prettier --write ./scripts/**/*.{js,ts,json}",
+    "prestart": "npm run lint && npm run clean",
+    "start": "npm-run-all *:crawler",
+    "afterstart": "npm run data:gzip",
     "test": "npm run lint"
   },
   "devDependencies": {
-    "commitizen": "^4.2.4",
+    "commitizen": "^4.3.0",
     "cross-env": "^7.0.3",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^7.30.0",
+    "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^7.2.0",
-    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jest": "^24.7.0",
     "eslint-plugin-prettier": "^3.4.1",
     "husky": "^4.3.8",
     "jest": "^26.6.3",
     "lint-staged": "^10.5.4",
-    "npm-run-all": "^4.1.1",
-    "prettier": "^2.5.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.8.0",
     "rimraf": "^3.0.2"
   },
   "dependencies": {
-    "cheerio": "^1.0.0-rc.10",
-    "date-fns": "^2.27.0",
+    "adm-zip": "^0.5.9",
+    "cheerio": "^1.0.0-rc.12",
+    "date-fns": "^2.29.3",
     "delay": "^4.4.1",
     "iconv-lite": "^0.6.3",
     "is-absolute-url": "^3.0.3",
@@ -65,21 +69,15 @@
     "md5": "^2.3.0",
     "ora": "^5.4.1",
     "reflect-metadata": "^0.1.13",
+    "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.41",
     "urlencode": "^1.1.0",
-    "winston": "^3.3.3"
+    "winston": "^3.8.2"
   },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
       "pre-push": "npm run lint"
-    }
-  },
-  "config": {
-    "commitizen": {
-      "path": "node_modules/cz-conventional-changelog"
     }
   },
   "lint-staged": {
