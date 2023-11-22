@@ -25,14 +25,14 @@ const requestOptions = (uri) =>
   isAbsoluteUrl(uri)
     ? uri
     : {
-        headers: {
-          // 设置随机`User-Agent`
-          'User-Agent': userAgents[getRandomInt(0, userAgents.length - 1)],
-        },
-        gzip: true,
-        uri,
-        baseUrl: 'http://www.mca.gov.cn',
-      };
+      headers: {
+        // 设置随机`User-Agent`
+        'User-Agent': userAgents[getRandomInt(0, userAgents.length - 1)],
+      },
+      gzip: true,
+      uri,
+      baseUrl: 'http://www.mca.gov.cn',
+    };
 
 /**
  * 生成数据文件
@@ -124,9 +124,8 @@ ${JSON.stringify(error, null, 2)}
 
       const log = `
   ------------------
-  total: ${fileContent.length}, province: ${provinces.length}, city: ${
-        cities.length
-      }, county: ${counties.length}
+  total: ${fileContent.length}, province: ${provinces.length}, city: ${cities.length
+        }, county: ${counties.length}
   url: ${JSON.stringify(url)}
   file: ${filename}.json
   ------------------
@@ -147,12 +146,19 @@ ${JSON.stringify(error, null, 2)}
 const parseNewestList = async (entryUrl) => {
   const html = await request(requestOptions(entryUrl));
   const $ = cheerio.load(html);
-  const $newest = $('table.article')
-    .find('a.artitlelist')
-    .filter((i, m) => $(m).attr('title').indexOf('变更情况') < 0)
+  const $newest = $('div.content')
+    .find('a')
+    .filter((i, m) => {
+      return $(m).text().indexOf('变更情况') < 0
+    })
     .eq(0);
-  // 解析最新的1条数据
-  parseCodeUrl($newest.attr('href'));
+  if ($newest.length) {
+    console.log($newest.attr('href'))
+    // 解析最新的1条数据
+    parseCodeUrl($newest.attr('href'));
+  } else {
+    console.log('Error > ', entryUrl)
+  }
 };
 
 /**
@@ -212,15 +218,33 @@ const parseOldList = async (url, page = 1, total = 3) => {
 (async (entryUrl) => {
   const html = await request(entryUrl);
   const $ = cheerio.load(html);
-  $('ul.cxfw_ul')
-    .find('a')
-    .each(async (i, m) => {
-      const articleEntryName = trim($(m).text());
 
-      if (articleEntryName.match(/^(\d{4})-(\d{4})/) !== null) {
-        parseOldList($(m).attr('href'));
-      } else if (articleEntryName.match(/^(\d{4})/) !== null) {
-        parseNewestList($(m).attr('href'));
+  const pageList = [];
+
+  $('#comp_1284 table.article').find('a.artitlelist').each((i, m) => {
+    if ((/(\d{4})年中华人民共和国行政区划代码/gi).test($(m).text())) {
+      const url = new URL($(m).attr('href'), entryUrl).href;
+      pageList.push({ url: url, title: $(m).attr('title') })
+    }
+  });
+
+  for await (const pageNum of [1, 2]) {
+    const pageContentHtml = await request(`https://www.mca.gov.cn/n156/n186/index_1284_${pageNum}.html`);
+    const pageContent = cheerio.load(pageContentHtml);
+
+    pageContent('table.article').find('a.artitlelist').each((i, m) => {
+      if ((/(\d{4})年中华人民共和国行政区划代码/gi).test($(m).text())) {
+        pageList.push({ url: $(m).attr('href'), title: $(m).attr('title') })
       }
     });
-})('http://www.mca.gov.cn/article/sj/xzqh');
+  }
+
+  for await (const pageInfo of pageList) {
+    if ((/mzsj\/(tjbz|xzqh)/gi).test(pageInfo.url)) {
+      // await parseOldList(pageInfo.url);
+      await parseCodeUrl(pageInfo.url);
+    } else {
+      await parseNewestList(pageInfo.url);
+    }
+  }
+})('https://www.mca.gov.cn/n156/n186/index.html');

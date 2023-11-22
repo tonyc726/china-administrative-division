@@ -223,8 +223,7 @@ const getVillage = async (url, townItem = {}, enableCache = true) => {
   }
 
   logger.info(
-    `>>>>> ${townItem.name} 附属居民委员会共 ${
-      isArray(villages) ? villages.length : 0
+    `>>>>> ${townItem.name} 附属居民委员会共 ${isArray(villages) ? villages.length : 0
     } 条数据：`
   );
 
@@ -302,8 +301,8 @@ const getTown = async (url, countyItem = {}, enableCache = true) => {
                 isNil(href) || href.length === 0
                   ? null
                   : {
-                      link: new URL(href, url).toString(),
-                    }
+                    link: new URL(href, url).toString(),
+                  }
               )
             )
           );
@@ -326,14 +325,12 @@ const getTown = async (url, countyItem = {}, enableCache = true) => {
       const { name, code, link } = towns[townIndex];
 
       logger.info(
-        `>>>> --- 正在获取 [${townIndex + 1} / ${
-          towns.length
+        `>>>> --- 正在获取 [${townIndex + 1} / ${towns.length
         }] - 【${name}】 --- `
       );
 
-      spinnerTown = `${name}(${townIndex + 1} / ${
-        isArray(towns) ? towns.length : 0
-      })`;
+      spinnerTown = `${name}(${townIndex + 1} / ${isArray(towns) ? towns.length : 0
+        })`;
       spinner.text = `正在获取 ${spinnerProvince} - ${spinnerCity} - ${spinnerCounty} - ${spinnerTown}`;
 
       if (isNil(link)) {
@@ -430,8 +427,8 @@ const getCounty = async (url, cityItem = {}, enableCache = true) => {
                 isNil(href) || href.length === 0
                   ? null
                   : {
-                      link: new URL(href, url).toString(),
-                    }
+                    link: new URL(href, url).toString(),
+                  }
               )
             )
           );
@@ -455,14 +452,12 @@ const getCounty = async (url, cityItem = {}, enableCache = true) => {
       const { name, code, link } = counties[countyIndex];
 
       logger.info(
-        `>>> --- 正在获取 [${countyIndex + 1} / ${
-          counties.length
+        `>>> --- 正在获取 [${countyIndex + 1} / ${counties.length
         }] - 【${name}】 --- `
       );
 
-      spinnerCounty = `${name}(${countyIndex + 1} / ${
-        isArray(counties) ? counties.length : 0
-      })`;
+      spinnerCounty = `${name}(${countyIndex + 1} / ${isArray(counties) ? counties.length : 0
+        })`;
       spinner.text = `正在获取 ${spinnerProvince} - ${spinnerCity} - ${spinnerCounty}`;
 
       if (isNil(link)) {
@@ -555,8 +550,8 @@ const getCity = async (url, proviceItem = {}, enableCache = true) => {
                 isNil(href) || href.length === 0
                   ? null
                   : {
-                      link: new URL(href, url).toString(),
-                    }
+                    link: new URL(href, url).toString(),
+                  }
               )
             )
           );
@@ -577,14 +572,12 @@ const getCity = async (url, proviceItem = {}, enableCache = true) => {
     for (let cityIndex = 0; cityIndex < cities.length; cityIndex += 1) {
       const { name, code, link } = cities[cityIndex];
       logger.info(
-        `>> --- 正在获取 [${cityIndex + 1} / ${
-          isArray(cities) ? cities.length : 0
+        `>> --- 正在获取 [${cityIndex + 1} / ${isArray(cities) ? cities.length : 0
         }] - 【${name}】 --- `
       );
 
-      spinnerCity = `${name}(${cityIndex + 1} / ${
-        isArray(cities) ? cities.length : 0
-      })`;
+      spinnerCity = `${name}(${cityIndex + 1} / ${isArray(cities) ? cities.length : 0
+        })`;
       spinner.text = `正在获取 ${spinnerProvince} - ${spinnerCity}`;
 
       if (isNil(link)) {
@@ -604,9 +597,9 @@ const getCity = async (url, proviceItem = {}, enableCache = true) => {
             ],
             code
           ) &&
-          (link.indexOf('2018') !== -1 ||
-            link.indexOf('2017') !== -1 ||
-            link.indexOf('2016') !== -1)
+            (link.indexOf('2018') !== -1 ||
+              link.indexOf('2017') !== -1 ||
+              link.indexOf('2016') !== -1)
             ? await getTown(link, { name, code }, enableCache)
             : await getCounty(link, { name, code }, enableCache);
         if (nextCityItem !== null) {
@@ -670,9 +663,9 @@ const getProvince = async (url, enableCache = true) => {
                   isNil(href) || href.length === 0
                     ? null
                     : {
-                        link: new URL(href, url).toString(),
-                        code: `${href.substring(0, 2)}0000000000`,
-                      }
+                      link: new URL(href, url).toString(),
+                      code: `${href.substring(0, 2)}0000000000`,
+                    }
                 )
               )
             );
@@ -697,8 +690,7 @@ const getProvince = async (url, enableCache = true) => {
     const { name, code, link } = provices[proviceIndex];
 
     logger.info(
-      `> --- 正在获取 [${proviceIndex + 1} / ${
-        provices.length
+      `> --- 正在获取 [${proviceIndex + 1} / ${provices.length
       }] - 【${name}】 --- `
     );
 
@@ -737,18 +729,21 @@ const getProvince = async (url, enableCache = true) => {
   const $ = cheerio.load(entryPageContent);
   const queues = [];
 
-  $('ul.center_list_contlist')
-    .find('li>a')
+  $('div.list-content ul')
+    .find('li')
     .each((i, m) => {
       const dateMatch = $(m)
-        .find('.cont_tit02')
+        .find('span')
         .text()
         .match(/(\d{2,4})-(\d{1,2})-(\d{1,2})/);
       const fileMatch = $(m)
-        .find('.cont_tit03')
+        .find('a.pc_1600')
         .text()
         .match(/(\d{2,4})/);
-      const detailUrl = new URL($(m).attr('href'), entryUrl).toString();
+      const detailUrl = new URL(
+        $(m).find('a.pc_1600').attr('href'),
+        entryUrl
+      ).toString();
       if (dateMatch !== null && fileMatch !== null && detailUrl.length) {
         const date = `${dateMatch[1]}/${dateMatch[2]}/${dateMatch[3]}`;
         queues.push({
@@ -906,4 +901,4 @@ const getProvince = async (url, enableCache = true) => {
   } else {
     logger.error(`入口地址解析失败！`);
   }
-})('http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/');
+})('http://www.stats.gov.cn/sj/tjbz/qhdm/');
