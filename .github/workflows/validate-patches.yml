@@ -1,0 +1,71 @@
+name: Validate Patches
+
+on:
+  pull_request:
+    paths:
+      - 'patches/**/*.json'
+
+jobs:
+  validate-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: |
+          pnpm --filter @cn-division/core build
+          pnpm --filter @cn-division/data-protocol build
+
+      - name: Validate patch files
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const { validatePatch } = require('./packages/data-protocol/dist/schemas/patch.js');
+
+          const patchesDir = 'patches';
+          let hasErrors = false;
+
+          function findJsonFiles(dir) {
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+              const fullPath = path.join(dir, file);
+              const stat = fs.statSync(fullPath);
+              if (stat.isDirectory()) {
+                findJsonFiles(fullPath);
+              } else if (file.endsWith('.json')) {
+                const content = fs.readFileSync(fullPath, 'utf-8');
+                try {
+                  const data = JSON.parse(content);
+                  const result = validatePatch(data);
+                  if (!result.success) {
+                    console.error('Validation failed for:', fullPath);
+                    console.error(result.error);
+                    hasErrors = true;
+                  } else {
+                    console.log('Valid:', fullPath);
+                  }
+                } catch (e) {
+                  console.error('Invalid JSON:', fullPath);
+                  hasErrors = true;
+                }
+              }
+            }
+          }
+
+          findJsonFiles(patchesDir);
+
+          if (hasErrors) {
+            process.exit(1);
+          }
+          console.log('All patches validated successfully');
+          "

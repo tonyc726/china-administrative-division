@@ -1,0 +1,35 @@
+{
+  "name": "@cn-division/crawler",
+  "version": "1.0.0",
+  "description": "Intelligence gathering module for MCA decrees and map APIs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*"
+  },
+  "dependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*",
+    "cheerio": "^1.0.0-rc.12",
+    "got": "^14.0.0"
+  },
+  "devDependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*",
+    "@types/cheerio": "^0.22.35"
+  },
+  "keywords": ["china", "administrative", "division", "crawler", "mca"],
+  "license": "MIT"
+}

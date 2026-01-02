@@ -1,0 +1,44 @@
+{
+  "name": "@cn-division/cli",
+  "version": "1.0.0",
+  "description": "CLI tool for data hydration, migration and export",
+  "type": "module",
+  "bin": {
+    "cn-div": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "hydrate": "tsx src/cli.ts hydrate",
+    "migrate": "tsx src/scripts/migrate-legacy.ts"
+  },
+  "peerDependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*"
+  },
+  "dependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*",
+    "better-sqlite3": "^9.4.0",
+    "cacache": "^18.0.0",
+    "got": "^14.0.0",
+    "tar-stream": "^3.1.0"
+  },
+  "devDependencies": {
+    "@cn-division/core": "workspace:*",
+    "@cn-division/data-protocol": "workspace:*",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.0.0",
+    "@types/tar-stream": "^3.1.0"
+  },
+  "keywords": ["china", "administrative", "division", "cli"],
+  "license": "MIT"
+}

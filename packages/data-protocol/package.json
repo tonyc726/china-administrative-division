@@ -1,0 +1,29 @@
+{
+  "name": "@cn-division/data-protocol",
+  "version": "1.0.0",
+  "description": "Protocol definitions for patches, schemas and data validation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "@cn-division/core": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@cn-division/core": "workspace:*"
+  },
+  "keywords": ["china", "administrative", "division", "protocol", "schema"],
+  "license": "MIT"
+}

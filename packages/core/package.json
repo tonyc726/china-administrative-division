@@ -1,0 +1,20 @@
+{
+  "name": "@cn-division/core",
+  "version": "1.0.0",
+  "description": "Core types and validation algorithms for Chinese administrative divisions",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["china", "administrative", "division", "gb2260"],
+  "license": "MIT"
+}

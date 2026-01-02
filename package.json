@@ -1,88 +1,19 @@
 {
-  "name": "china-administrative-division",
-  "version": "1.0.0",
-  "description": "Administrative division codes and infos of the People's Republic of China",
-  "repository": "https://github.com/tonyc726/china-administrative-division.git",
-  "author": "tonyc726 <zhujf620@gmail.com>",
-  "license": "MIT",
+  "name": "@cn-division/monorepo",
+  "version": "2.0.0",
   "private": true,
-  "keywords": [
-    "china",
-    "Administrative division codes",
-    "GB2260",
-    "GB2260—1999",
-    "中国",
-    "行政区划",
-    "行政区划代码"
-  ],
-  "engines": {
-    "node": ">=8"
-  },
-  "scripts": {
-    "gb2260:clean": "rimraf -g '{,!(node_modules)/**/}data/GB2260/*.json'",
-    "gb2260:lint": "eslint --quiet --fix ./scripts/gb2260.js",
-    "gb2260:crawler": "node ./scripts/gb2260.js",
-    "ip138-post:clean": "rimraf -g '{,!(node_modules)/**/}data/ip138-post/*.json'",
-    "ip138-post:lint": "eslint --quiet --fix ./scripts/ip138-post.js",
-    "ip138-post:crawler": "node ./scripts/ip138-post.js",
-    "stats-gov:clean": "rimraf -g '{,!(node_modules)/**/}data/stats.gov.cn/*.json'",
-    "stats-gov:lint": "eslint --quiet --fix ./scripts/stats.gov.cn.js",
-    "stats-gov:crawler": "node ./scripts/stats.gov.cn.js",
-    "stats-gov-invalid-cache:clean": "node ./scripts/clean-invalid-cache.js",
-    "clean": "npm-run-all *:clean",
-    "data:gzip": "node ./scripts/gzip-data.js",
-    "data:ungzip": "node ./scripts/ungzip-data.js",
-    "lint": "npm-run-all *:lint",
-    "format": "prettier --write ./scripts/**/*.{js,ts,json}",
-    "prestart": "npm run lint && npm run clean",
-    "start": "npm-run-all *:crawler",
-    "afterstart": "npm run data:gzip",
-    "test": "npm run lint"
-  },
+  "type": "module",
+  "packageManager": "pnpm@9.0.0",
   "devDependencies": {
-    "commitizen": "^4.3.0",
-    "cross-env": "^7.0.3",
-    "cz-conventional-changelog": "^3.3.0",
+    "@types/node": "^25.0.3",
     "eslint": "^7.32.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-prettier": "^7.2.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^24.7.0",
-    "eslint-plugin-prettier": "^3.4.1",
-    "husky": "^8.0.3",
-    "jest": "^26.6.3",
-    "lint-staged": "^13.2.1",
-    "npm-run-all": "^4.1.5",
     "prettier": "^2.8.0",
-    "rimraf": "^3.0.2"
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "adm-zip": "^0.5.9",
-    "cheerio": "^1.0.0-rc.12",
-    "date-fns": "^2.29.3",
-    "delay": "^4.4.1",
-    "iconv-lite": "^0.6.3",
-    "is-absolute-url": "^3.0.3",
-    "leveldown": "^5.6.0",
-    "levelup": "^4.4.0",
-    "lodash": "^4.17.21",
-    "md5": "^2.3.0",
-    "ora": "^5.4.1",
-    "reflect-metadata": "^0.1.13",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
-    "urlencode": "^1.1.0",
-    "winston": "^3.8.2"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run lint"
-    }
-  },
-  "lint-staged": {
-    "crawler/**/*.{js,ts,json}": [
-      "prettier --write"
-    ]
+    "csv-parse": "^6.1.0",
+    "glob": "^13.0.0"
   }
 }
