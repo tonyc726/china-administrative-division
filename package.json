@@ -61,18 +61,22 @@
     "cheerio": "^1.0.0-rc.12",
     "date-fns": "^2.29.3",
     "delay": "^4.4.1",
+    "form-data": "^2.5.5",
     "iconv-lite": "^0.6.3",
     "is-absolute-url": "^3.0.3",
     "leveldown": "^5.6.0",
     "levelup": "^4.4.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "md5": "^2.3.0",
+    "micromatch": "^4.0.8",
     "ora": "^5.4.1",
+    "qs": "^6.14.1",
     "reflect-metadata": "^0.1.13",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
+    "tmp": "^0.2.4",
+    "tough-cookie": "^4.1.3",
     "urlencode": "^1.1.0",
-    "winston": "^3.8.2"
+    "winston": "^3.8.2",
+    "yaml": "^2.8.3"
   },
   "husky": {
     "hooks": {
