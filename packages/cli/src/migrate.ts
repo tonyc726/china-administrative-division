@@ -13,7 +13,8 @@
 import Database from 'better-sqlite3';
 import { createGunzip } from 'zlib';
 import { createReadStream } from 'fs';
-import { mkdir } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
+import crypto from 'crypto';
 import { glob } from 'glob';
 import path from 'path';
 import {
@@ -29,6 +30,8 @@ export interface MigrateOptions {
   input: string;
   /** 输出 SQLite 路径，默认 ./dist/source-history.db */
   output: string;
+  /** 可选：同时把多年份结果固化为数据包 CSV（含逐行 year）+ 同目录 manifest.json */
+  csv?: string;
 }
 
 export interface MigrateResult {
@@ -36,6 +39,78 @@ export interface MigrateResult {
   records: number;
   skipped: number;
   years: number[];
+  /** 若 --csv，固化出的 CSV 路径 + 行数 + SHA-512 */
+  csvPath?: string;
+  csvRows?: number;
+  csvSha512?: string;
+}
+
+const csvCell = (value: string): string => `"${value.replace(/"/g, '""')}"`;
+
+/**
+ * 把 migrate 产出的多年份 SQLite 固化为确定性数据包 CSV（按 code,year 稳定排序）+ manifest。
+ * 与 build-source 同格式（逐行带 year），但跨 1980–2021 全部分区，供 @cndiv/source-history 分发。
+ */
+async function exportDbToDataPackage(
+  db: Database.Database,
+  csvPath: string,
+): Promise<{ rows: number; sha512: string; years: number[] }> {
+  const rows = db
+    .prepare(
+      `SELECT code, name, level, parent_code, year, status, source_type, confidence_score
+       FROM divisions ORDER BY code ASC, year ASC`,
+    )
+    .all() as Array<{
+    code: string;
+    name: string;
+    level: number;
+    parent_code: string | null;
+    year: number;
+    status: string;
+    source_type: string | null;
+    confidence_score: number | null;
+  }>;
+
+  const hash = crypto.createHash('sha512');
+  let bytes = 0;
+  const yearSet = new Set<number>();
+  const write = (s: string): void => {
+    hash.update(s);
+    bytes += Buffer.byteLength(s);
+  };
+
+  let csv = '';
+  write((csv = 'code,name,level,parent_code,year,status,source_type,confidence_score\n'));
+  const parts: string[] = [csv];
+  for (const r of rows) {
+    yearSet.add(r.year);
+    const line = `${r.code},${csvCell(r.name)},${r.level},${r.parent_code ?? ''},${r.year},${r.status},${r.source_type ?? ''},${r.confidence_score ?? 100}\n`;
+    write(line);
+    parts.push(line);
+  }
+
+  const years = [...yearSet].sort((a, b) => a - b);
+  const sha512 = hash.digest('hex');
+
+  await mkdir(path.dirname(csvPath), { recursive: true });
+  await writeFile(csvPath, parts.join(''));
+
+  const manifest = {
+    source: 'GB2260',
+    format: 'csv',
+    file: path.basename(csvPath),
+    rows: rows.length,
+    levels: rows.reduce((m, r) => Math.max(m, r.level), 0),
+    years: years.length,
+    year_min: years[0],
+    year_max: years[years.length - 1],
+    bytes,
+    sha512,
+    generator: '@cndiv/cli migrate --csv',
+  };
+  await writeFile(path.join(path.dirname(csvPath), 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  return { rows: rows.length, sha512, years };
 }
 
 /** 从扁平数组 [{code,name}] 构造 Division 行；复用 core 推导 level/parent，无效码计入 skipped */
@@ -62,7 +137,9 @@ function rowsFromFlatArray(
     }
     rows.push({
       code,
-      name: typeof item.name === 'string' ? item.name.trim() : '',
+      // 单行化：折叠内嵌换行/连续空白为单空格（GB2260 个别年份如 2021 的 name 含变更流水换行，
+      // 不清洗会让 CSV 字段内嵌 \n、物理行虚高并成为下游解析陷阱）
+      name: typeof item.name === 'string' ? item.name.replace(/\s+/g, ' ').trim() : '',
       level,
       parent_code: getParentCode(code, level),
       year,
@@ -151,6 +228,18 @@ export async function migrate(options: MigrateOptions): Promise<MigrateResult> {
     console.log(`  ${path.basename(file)} → ${rows.length} 条 (year=${year})`);
   }
 
+  // 可选：把多年份结果固化为数据包 CSV + manifest（@cndiv/source-history）
+  let csvPath: string | undefined;
+  let csvRows: number | undefined;
+  let csvSha512: string | undefined;
+  if (options.csv) {
+    const out = await exportDbToDataPackage(db, options.csv);
+    csvPath = options.csv;
+    csvRows = out.rows;
+    csvSha512 = out.sha512;
+    console.log(`  固化数据包: ${out.rows} 条 / ${out.years.length} 年 → ${options.csv} (+manifest, sha512 ${out.sha512.slice(0, 16)}…)`);
+  }
+
   db.close();
-  return { files: files.length, records, skipped, years: years.sort() };
+  return { files: files.length, records, skipped, years: years.sort(), csvPath, csvRows, csvSha512 };
 }

@@ -104,6 +104,8 @@ importers:
 
   packages/source-2023: {}
 
+  packages/source-history: {}
+
   packages/source-postal: {}
 
 packages:

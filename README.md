@@ -31,9 +31,10 @@
 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` / `backfill`（库 API 与 bin 入口分离，import 零副作用） |
 | [`@cndiv/crawler`](./packages/crawler) | 增量采集：① dmfw 逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（`validatePatch` 守门、空名过滤；覆盖 level 1–4，无村级）；② `cndiv-postal` 抓 ip138 邮编/区号 |
 | [`@cndiv/extractor`](./packages/extractor) | NLP 变更提取器：行政区划变更公告 → 结构化 Patch 操作（规则法兜底 + 可插拔 LLM，Tool Use 失败兜底；产物经 `validatePatch` 守门） |
-| [`@cndiv/source-<year>`](./packages/source-2023) | 区划数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512），由 `cndiv hydrate` 注水 |
+| [`@cndiv/source-<year>`](./packages/source-2023) | 区划数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512），由 `cndiv hydrate --year=<YYYY>` 注水 |
+| [`@cndiv/source-history`](./packages/source-history) | GB2260 历史数据包（1980–2021，逐行 `year` 版本化，131356 条 / 42 年），由 `cndiv hydrate --year=history` 注水 |
 | [`@cndiv/source-postal`](./packages/source-postal) | 邮编/区号数据包：`postal.csv`（县级，源自 ip138）+ `manifest.json` |
-| [`legacy/`](./legacy) | v1 旧版爬虫历史存档（**已移出 pnpm workspace**，只读参考；数据源已失效，GB2260 1980–2021 历史经 `cndiv migrate --input=legacy/data/GB2260` 入库） |
+| [`legacy/`](./legacy) | v1 旧版爬虫 **已退役墓碑** 🪦（移出 workspace；价值已全部迁入 v2——见 [`legacy/README`](./legacy/README.md)：历史→`source-history`、ip138→`crawler`、仅留 JSON→SQLite 生产链备查） |
 
 ## 数据获取
 

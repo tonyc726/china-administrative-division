@@ -116,12 +116,14 @@ function importCsvToSqlite(db: Database.Database, csvContent: string, year: numb
 
   const insertMany = db.transaction((records) => {
     for (const record of records) {
+      // 尊重 CSV 逐行 year（多年份数据包如 source-history），缺失时回退到入参 year
+      const rowYear = record.year ? parseInt(record.year, 10) : year;
       insert.run(
         record.code,
         record.name,
         parseInt(record.level, 10),
         record.parent_code || null,
-        year,
+        Number.isNaN(rowYear) ? year : rowYear,
         record.status || 'active',
         record.source_type || 'official_nbs',
         record.confidence_score ? parseInt(record.confidence_score, 10) : 100
@@ -143,8 +145,9 @@ interface SourceManifest {
  * 从 gzip tarball buffer 中解包并把所有 .csv 导入 SQLite，返回导入行数。
  * 供 NPM 注水与离线 --tarball 注水共用。
  *
- * 若包内含 manifest.json，则按其 SHA-512 校验对应 CSV（FMEA：离线注水无 registry shasum，
- * manifest 是其唯一完整性凭据）；不符即抛错，杜绝把损坏/被篡改的数据静默灌入缓存。
+ * **fail-closed 完整性门**（FMEA）：先把 CSV 全部缓冲、对 manifest.json 做 SHA-512 校验，
+ * **校验通过后才导入**。离线注水无 registry shasum，manifest 是唯一凭据；校验失败时**一行都不入库**，
+ * 杜绝"先写后校验"导致的缓存被污染（对抗验证实测：旧实现会先 COMMIT 篡改数据再抛错）。
  */
 async function extractAndImport(
   db: Database.Database,
@@ -152,26 +155,18 @@ async function extractAndImport(
   year: number
 ): Promise<{ recordCount: number; verified: boolean | null }> {
   const extract = tar.extract();
-  let recordCount = 0;
   let manifestRaw: string | null = null;
-  const csvSha = new Map<string, string>();
+  const csvBuffers = new Map<string, Buffer>();
 
+  // 阶段一：仅缓冲，不导入
   extract.on('entry', (header, stream, next) => {
     const base = path.basename(header.name);
-    if (base === 'manifest.json') {
+    if (base === 'manifest.json' || header.name.endsWith('.csv')) {
       const chunks: Buffer[] = [];
       stream.on('data', (chunk) => chunks.push(chunk));
       stream.on('end', () => {
-        manifestRaw = Buffer.concat(chunks).toString('utf-8');
-        next();
-      });
-    } else if (header.name.endsWith('.csv')) {
-      const chunks: Buffer[] = [];
-      stream.on('data', (chunk) => chunks.push(chunk));
-      stream.on('end', () => {
-        const buf = Buffer.concat(chunks);
-        csvSha.set(base, crypto.createHash('sha512').update(buf).digest('hex'));
-        recordCount += importCsvToSqlite(db, buf.toString('utf-8'), year);
+        if (base === 'manifest.json') manifestRaw = Buffer.concat(chunks).toString('utf-8');
+        else csvBuffers.set(base, Buffer.concat(chunks));
         next();
       });
     } else {
@@ -182,16 +177,24 @@ async function extractAndImport(
 
   await pipeline(Readable.from(gzBuffer), createGunzip(), extract);
 
+  // 阶段二：导入前校验（fail-closed）——不符即抛错，此刻尚未写入任何一行
   let verified: boolean | null = null;
   if (manifestRaw) {
     const manifest = JSON.parse(manifestRaw) as SourceManifest;
-    const actual = csvSha.get(path.basename(manifest.file));
+    const buf = csvBuffers.get(path.basename(manifest.file));
+    const actual = buf ? crypto.createHash('sha512').update(buf).digest('hex') : undefined;
     verified = actual === manifest.sha512;
     if (!verified) {
       throw new Error(
-        `manifest 完整性校验失败：${manifest.file} 的 SHA-512 与 manifest 不符（数据可能损坏或被篡改），已中止注水`
+        `manifest 完整性校验失败：${manifest.file} 的 SHA-512 与 manifest 不符（数据可能损坏或被篡改），已中止注水（未写入任何数据）`
       );
     }
+  }
+
+  // 阶段三：校验通过后才导入
+  let recordCount = 0;
+  for (const buf of csvBuffers.values()) {
+    recordCount += importCsvToSqlite(db, buf.toString('utf-8'), year);
   }
 
   return { recordCount, verified };

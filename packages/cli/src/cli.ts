@@ -44,19 +44,23 @@ async function main() {
       const output =
         args.find((a) => a.startsWith('--output='))?.split('=')[1] ||
         './dist/source-history.db';
+      const csv = args.find((a) => a.startsWith('--csv='))?.split('=')[1];
 
       if (!input) {
         console.error('Error: --input is required');
-        console.error('Usage: cndiv migrate --input=<directory> [--output=<db>]');
+        console.error('Usage: cndiv migrate --input=<directory> [--output=<db>] [--csv=<datapackage.csv>]');
         process.exit(1);
       }
 
       // 动态导入：仅在用到 migrate 时才加载 better-sqlite3 原生模块
       const { migrate } = await import('./migrate.js');
-      const result = await migrate({ input, output });
+      const result = await migrate({ input, output, csv });
       console.log(
         `\nMigration complete: ${result.records} 条 / ${result.years.length} 年 (${result.skipped} 跳过) → ${output}`,
       );
+      if (result.csvPath) {
+        console.log(`数据包固化: ${result.csvRows} 条 → ${result.csvPath} (+manifest.json)`);
+      }
       break;
     }
 
@@ -169,5 +173,8 @@ function isDirectRun(): boolean {
 }
 
 if (isDirectRun()) {
-  main().catch(console.error);
+  main().catch((err: unknown) => {
+    console.error(err);
+    process.exitCode = 1; // 失败必须非零退出，避免自动化把出错当成功
+  });
 }

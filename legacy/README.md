@@ -1,15 +1,27 @@
-# 中华人民共和国行政区划代码（v1 历史存档）
+# 中华人民共和国行政区划代码（v1 · 已退役存档 🪦）
 
-> ⚠️ **本目录为 v1 旧版爬虫的历史存档，只读参考，不参与构建。**
-> 自 v2 起 `legacy/` 已**移出 pnpm workspace**（不再是 monorepo 成员，其 `package.json`/依赖/脚本与 v2 工具链无关），文件保留在 git 中（非 filter-repo）仅供考古。
-> 数据源 `stats.gov.cn`（统计用区划代码）已于 2024 年起停止公开发布、2026 年起统一转向「国家地名信息库」（dmfw.mca.gov.cn），旧爬虫的固定 URL 解析已失效。
-> 当前架构与用法见仓库根 [`README.md`](../README.md)；历史全量数据见 GitHub Release [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)。
->
-> **GB2260 历史（1980–2021）入库**：`legacy/data/GB2260/<year>.json.gz` 由 v2 直接消费，无需 v1 工具链——
-> `pnpm --filter @cndiv/cli build && cndiv migrate --input=legacy/data/GB2260 --output=dist/source-history.db`
-> 产出按 `(code, year)` 复合主键版本化的真相源（实测 131356 条 / 42 年 / 0 丢弃）。
+> 🪦 **功成身退（Mission complete）**：v1 旧版爬虫的历史使命已由 v2 接管，本目录退役为只读墓碑。
+> 自 v2 起 `legacy/` 已**移出 pnpm workspace**，不参与构建/门禁；数据源 `stats.gov.cn` 亦已于 2024 起停更（转「国家地名信息库」dmfw.mca.gov.cn），旧爬虫 URL 解析失效。
+> 当前架构与用法见仓库根 [`README.md`](../README.md)。
 
-> 本项目提供 2 个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
+## 价值去向（删 legacy 不丢任何东西）
+
+| v1 资产 | 去向 |
+|---|---|
+| **GB2260 1980–2021 历史** | 已固化为 [`@cndiv/source-history`](../packages/source-history)（`migrate` 从 `legacy/data/GB2260/*.json.gz` 产出，131356 条 / 42 年 / 0 丢弃；逐行 `year` 版本化，`cndiv hydrate --year=history` 注水） |
+| **ip138 邮编/区号爬虫** | 已按现网 UTF-8 重写为 [`@cndiv/crawler`](../packages/crawler) 的 `ip138.ts`（旧 GB2312 版失效，故未保留） |
+| **stats.gov.cn 五级数据** | 产物 `NBS.<year>.sqlite` 见冷母本与 GitHub Release [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023) |
+| **死爬虫脚本** | 已删除（数据源失效或已被 v2 取代，无运行价值） |
+
+## 仅保留的"生产链备查"代码
+
+`scripts/utils/` 下仅留 JSON→SQLite 生产链供将来 TS 化参考（依赖 v1 npm 包，**在 v2 内不可直接运行**，纯参考）：
+- `exportSqlite.js`（JSON→SQLite 主流程）· `sqlite.js`（连接）· `sqlite-gb2260.js`（GB2260 专用）
+
+## 本地数据（不在 git）
+
+`legacy/data/`（GB2260 `*.json.gz` 等）与 `pageCacheDB/`（stats 原始页面缓存 447M）均被 `.gitignore` 排除，仅在本地工作区。
+**建议**：`data/GB2260` 是 `source-history` 的重建源，请纳入冷母本备份（`scripts/backup-cold-master.sh`）；`pageCacheDB` 产物已固化，可删。
 
 ## 特殊说明
 
