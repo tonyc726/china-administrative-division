@@ -1,8 +1,8 @@
-# 中华人民共和国行政区划代码
+# 中华人民共和国行政区划代码（v1 历史存档）
 
-[![Build Status](https://travis-ci.org/tonyc726/china-administrative-division.svg?style=flat-square&branch=master)](https://travis-ci.org/tonyc726/china-administrative-division)
-[![tested with jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)](https://github.com/tonyc726/china-administrative-division)
+> ⚠️ **本目录为 v1 旧版爬虫的历史存档，仅作参考。**
+> 数据源 `stats.gov.cn`（统计用区划代码）已于 2024 年起停止公开发布、2026 年起统一转向「国家地名信息库」（dmfw.mca.gov.cn），旧爬虫的固定 URL 解析已失效。
+> 当前架构与用法见仓库根 [`README.md`](../README.md)；历史全量数据见 GitHub Release [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)。
 
 > 本项目提供 2 个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
 
