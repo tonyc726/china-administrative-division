@@ -56,12 +56,12 @@ export interface MigrateResult {
  */
 async function exportDbToDataPackage(
   db: Database.Database,
-  csvPath: string,
+  csvPath: string
 ): Promise<{ rows: number; sha512: string; years: number[] }> {
   const rows = db
     .prepare(
       `SELECT code, name, level, parent_code, year, status, source_type, confidence_score
-       FROM divisions ORDER BY code ASC, year ASC`,
+       FROM divisions ORDER BY code ASC, year ASC`
     )
     .all() as Array<{
     code: string;
@@ -82,9 +82,9 @@ async function exportDbToDataPackage(
     bytes += Buffer.byteLength(s);
   };
 
-  let csv = '';
-  write((csv = `${DIVISIONS_CSV_HEADER}\n`));
-  const parts: string[] = [csv];
+  const header = `${DIVISIONS_CSV_HEADER}\n`;
+  write(header);
+  const parts: string[] = [header];
   for (const r of rows) {
     yearSet.add(r.year);
     const line = `${r.code},${csvCell(r.name)},${r.level},${r.parent_code ?? ''},${r.year},${r.status},${r.source_type ?? ''},${r.confidence_score ?? 100}\n`;
@@ -111,7 +111,10 @@ async function exportDbToDataPackage(
     sha512,
     generator: '@cndiv/cli migrate --csv',
   };
-  await writeFile(path.join(path.dirname(csvPath), 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(
+    path.join(path.dirname(csvPath), 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`
+  );
 
   return { rows: rows.length, sha512, years };
 }
@@ -120,7 +123,7 @@ async function exportDbToDataPackage(
 function rowsFromFlatArray(
   items: Array<{ code?: unknown; name?: unknown }>,
   year: number,
-  onSkip: () => void,
+  onSkip: () => void
 ): Division[] {
   const rows: Division[] = [];
   for (const item of items) {
@@ -142,7 +145,10 @@ function rowsFromFlatArray(
       code,
       // 单行化：折叠内嵌换行/连续空白为单空格（GB2260 个别年份如 2021 的 name 含变更流水换行，
       // 不清洗会让 CSV 字段内嵌 \n、物理行虚高并成为下游解析陷阱）
-      name: typeof item.name === 'string' ? item.name.replace(/\s+/g, ' ').trim() : '',
+      name:
+        typeof item.name === 'string'
+          ? item.name.replace(/\s+/g, ' ').trim()
+          : '',
       level,
       parent_code: getParentCode(code, level),
       year,
@@ -159,7 +165,9 @@ async function readJsonMaybeGzip(filePath: string): Promise<unknown> {
   const chunks: Buffer[] = [];
   await new Promise<void>((resolve, reject) => {
     const stream = createReadStream(filePath);
-    const sink = filePath.endsWith('.gz') ? stream.pipe(createGunzip()) : stream;
+    const sink = filePath.endsWith('.gz')
+      ? stream.pipe(createGunzip())
+      : stream;
     sink.on('data', (c: Buffer) => chunks.push(c));
     sink.on('end', () => resolve());
     sink.on('error', reject);
@@ -199,7 +207,7 @@ export async function migrate(options: MigrateOptions): Promise<MigrateResult> {
         r.status ?? 'active',
         r.source_type ?? null,
         r.confidence_score ?? null,
-        r.urban_rural_code ?? null,
+        r.urban_rural_code ?? null
       );
     }
   });
@@ -218,7 +226,7 @@ export async function migrate(options: MigrateOptions): Promise<MigrateResult> {
     if (!Array.isArray(data)) {
       // 树形/嵌套 NBS 数据请走 build-source（NBS.sqlite→CSV），migrate 仅处理 GB2260 扁平历史。
       console.warn(
-        `跳过非扁平数组格式: ${path.basename(file)}（树形 NBS 数据请用 build-source 处理）`,
+        `跳过非扁平数组格式: ${path.basename(file)}（树形 NBS 数据请用 build-source 处理）`
       );
       continue;
     }
@@ -240,9 +248,19 @@ export async function migrate(options: MigrateOptions): Promise<MigrateResult> {
     csvPath = options.csv;
     csvRows = out.rows;
     csvSha512 = out.sha512;
-    console.log(`  固化数据包: ${out.rows} 条 / ${out.years.length} 年 → ${options.csv} (+manifest, sha512 ${out.sha512.slice(0, 16)}…)`);
+    console.log(
+      `  固化数据包: ${out.rows} 条 / ${out.years.length} 年 → ${options.csv} (+manifest, sha512 ${out.sha512.slice(0, 16)}…)`
+    );
   }
 
   db.close();
-  return { files: files.length, records, skipped, years: years.sort(), csvPath, csvRows, csvSha512 };
+  return {
+    files: files.length,
+    records,
+    skipped,
+    years: years.sort(),
+    csvPath,
+    csvRows,
+    csvSha512,
+  };
 }
