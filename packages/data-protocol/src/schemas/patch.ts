@@ -6,7 +6,8 @@
  */
 
 import { z } from 'zod';
-// NOTE: M2 将以 z.nativeEnum(SOURCE_TYPE/DIVISION_STATUS) 复用 @cndiv/core 的常量替换裸字面量。
+// 复用 @cndiv/core 的领域枚举作为唯一真相源（不再硬编码字面量）
+import { DIVISION_LEVEL, DIVISION_STATUS, SOURCE_TYPE } from '@cndiv/core';
 
 /** Evidence confidence levels */
 export const CONFIDENCE_LEVELS = {
@@ -50,16 +51,10 @@ export const AddOperationSchema = z.object({
   op: z.literal(PATCH_OPERATION.ADD),
   code: z.string().length(12),
   name: z.string().min(1).max(100),
-  level: z.union([
-    z.literal(1),
-    z.literal(2),
-    z.literal(3),
-    z.literal(4),
-    z.literal(5),
-  ]),
+  level: z.nativeEnum(DIVISION_LEVEL),
   parent_code: z.string().length(12).nullable(),
   /** Override default source_type */
-  source_type: z.string().optional(),
+  source_type: z.nativeEnum(SOURCE_TYPE).optional(),
   /** Override default confidence_score */
   confidence_score: z.number().min(0).max(100).optional(),
 });
@@ -79,7 +74,7 @@ export const UpdateOperationSchema = z.object({
   /** New name (if renaming) */
   name: z.string().min(1).max(100).optional(),
   /** New status */
-  status: z.enum(['active', 'deprecated', 'suspended']).optional(),
+  status: z.nativeEnum(DIVISION_STATUS).optional(),
   /** New parent code (for boundary changes) */
   new_parent: z.string().length(12).optional(),
   /** Update notes */

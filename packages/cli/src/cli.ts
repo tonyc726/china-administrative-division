@@ -5,14 +5,13 @@
  * Command-line interface for Chinese administrative division data management.
  *
  * Usage:
- *   cndiv hydrate --year 2023    Download and import data from NPM
- *   cndiv migrate --input <dir>  Migrate legacy JSON data to SQLite
- *   cndiv export --year 2023     Export data to CSV
+ *   cndiv hydrate --year=2023    Download and import data from NPM
+ *   cndiv migrate --input=<dir>  Migrate legacy JSON data to SQLite
+ *   cndiv export --year=2023     Export data to CSV
  */
 
 import { hydrate, exportFromCache } from './hydrate.js';
 import { applyPatch } from './apply-patch.js';
-import path from 'path';
 
 // CLI argument parsing
 const args = process.argv.slice(2);
@@ -38,113 +37,24 @@ async function main() {
     }
 
     case 'migrate': {
-      // Parse migrate arguments
-      const inputDir = args.find((a) => a.startsWith('--input='))?.split('=')[1];
-      const outputPath = args.find((a) => a.startsWith('--output='))?.split('=')[1];
+      // 统一迁移：复用 ./migrate.ts（复用 core 码工具 + data-protocol DATABASE_SCHEMA）
+      const input = args.find((a) => a.startsWith('--input='))?.split('=')[1];
+      const output =
+        args.find((a) => a.startsWith('--output='))?.split('=')[1] ||
+        './dist/source-history.db';
 
-      if (!inputDir) {
+      if (!input) {
         console.error('Error: --input is required');
-        console.error('Usage: cndiv migrate --input <directory>');
+        console.error('Usage: cndiv migrate --input=<directory> [--output=<db>]');
         process.exit(1);
       }
 
-      // Dynamic import to avoid circular dependencies
-      const { default: Database } = await import('better-sqlite3');
-      const { createGunzip } = await import('zlib');
-      const { createReadStream } = await import('fs');
-      const { glob } = await import('glob');
-
-      const output = outputPath || './dist/source-history.db';
-      const db = new Database(output);
-      db.pragma('journal_mode = WAL');
-
-      // Create table
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS divisions (
-          code TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          level INTEGER NOT NULL,
-          parent_code TEXT,
-          year INTEGER NOT NULL,
-          status TEXT DEFAULT 'active',
-          source_type TEXT DEFAULT 'official_nbs',
-          confidence_score INTEGER DEFAULT 100,
-          UNIQUE(code, year)
-        );
-        CREATE INDEX IF NOT EXISTS idx_parent ON divisions(parent_code);
-        CREATE INDEX IF NOT EXISTS idx_year ON divisions(year);
-      `);
-
-      // Find and process files
-      const gzFiles = await glob(`${inputDir}/*.json.gz`);
-      let totalRecords = 0;
-
-      for (const file of gzFiles) {
-        const filename = path.basename(file);
-        const yearMatch = filename.match(/(\d{4})\.json\.gz$/);
-        const year = yearMatch ? parseInt(yearMatch[1], 10) : 0;
-
-        if (!year) continue;
-
-        console.log(`Processing ${filename}...`);
-
-        const chunks: Buffer[] = [];
-        const readStream = createReadStream(file);
-        const gunzip = createGunzip();
-
-        await new Promise<void>((resolve, reject) => {
-          readStream.pipe(gunzip);
-          gunzip.on('data', (chunk) => chunks.push(chunk));
-          gunzip.on('end', resolve);
-          gunzip.on('error', reject);
-        });
-
-        const jsonContent = Buffer.concat(chunks).toString('utf-8');
-        const data = JSON.parse(jsonContent);
-
-        // Flatten tree
-        function flattenTree(
-          obj: Record<string, unknown>,
-          parentCode: string | null = null
-        ): Array<[string, string, number, string | null, number]> {
-          const results: Array<[string, string, number, string | null, number]> = [];
-
-          for (const [key, value] of Object.entries(obj)) {
-            if (!/^\d{12}$/.test(key)) continue;
-
-            const item = value as { name?: string; children?: Record<string, unknown> };
-            const last6 = key.substring(6);
-            const level = last6 === '000000' ? 2 : key.substring(8, 10) === '00' ? 3 : key.substring(10, 12) === '00' ? 4 : 5;
-
-            results.push([key, item.name || '', level, parentCode, year]);
-
-            if (item.children) {
-              results.push(...flattenTree(item.children as Record<string, unknown>, key));
-            }
-          }
-
-          return results;
-        }
-
-        const records = flattenTree(data);
-
-        const insert = db.prepare(`
-          INSERT OR REPLACE INTO divisions VALUES (?, ?, ?, ?, ?, 'active', 'official_nbs', 100)
-        `);
-
-        const insertMany = db.transaction((records) => {
-          for (const record of records) {
-            insert.run(...record);
-          }
-        });
-
-        insertMany(records);
-        console.log(`  -> ${records.length} records`);
-        totalRecords += records.length;
-      }
-
-      console.log(`\nMigration complete: ${totalRecords} records`);
-      db.close();
+      // 动态导入：仅在用到 migrate 时才加载 better-sqlite3 原生模块
+      const { migrate } = await import('./migrate.js');
+      const result = await migrate({ input, output });
+      console.log(
+        `\nMigration complete: ${result.records} 条 / ${result.years.length} 年 (${result.skipped} 跳过) → ${output}`,
+      );
       break;
     }
 
@@ -155,7 +65,7 @@ async function main() {
 
       if (!year) {
         console.error('Error: --year is required');
-        console.error('Usage: cndiv export --year <YYYY> [--output <file>]');
+        console.error('Usage: cndiv export --year=<YYYY> [--output=<file>]');
         process.exit(1);
       }
 
@@ -171,7 +81,7 @@ async function main() {
 
       if (!patchPath) {
         console.error('Error: --patch is required');
-        console.error('Usage: cndiv apply-patch --patch <file.json> [--dry-run]');
+        console.error('Usage: cndiv apply-patch --patch=<file.json> [--dry-run]');
         process.exit(1);
       }
 
@@ -200,7 +110,7 @@ Usage:
 
 Commands:
   hydrate --year=<YYYY>       Download and import data from NPM (或 --tarball=<file.tgz> 离线注水)
-  migrate --input=<dir>       Migrate legacy JSON data to SQLite
+  migrate --input=<dir>       Migrate legacy GB2260 JSON data to SQLite (复合主键 code,year)
   export --year=<YYYY>        Export data to CSV format
   apply-patch --patch=<file>  Apply a community patch to the database
   version                     Show version information
@@ -210,7 +120,7 @@ Examples:
   cndiv hydrate --year=2023
   cndiv hydrate --year=2023 --tarball=./cndiv-source-2023-2023.0.0.tgz
   cndiv hydrate --year=2023 --cache=~/.cndiv
-  cndiv migrate --input=./legacy/data/GB2260 --output=./dist/data.db
+  cndiv migrate --input=./legacy/data/GB2260 --output=./dist/source-history.db
   cndiv export --year=2023 --output=./2023.csv
   cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
 

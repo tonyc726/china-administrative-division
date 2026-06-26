@@ -67,7 +67,7 @@ export interface DivisionNode extends Division {
 export interface DivisionCsvRow {
   code: string;
   name: string;
-  level: number;
+  level: DivisionLevel;
   parent_code: string | null;
   year: number;
   status: DivisionStatus;
