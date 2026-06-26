@@ -27,10 +27,12 @@
 | 包 | 职责 |
 |---|---|
 | [`@cndiv/core`](./packages/core) | 领域模型（5 级区划）与区划码校验（`validateCode` / `getLevelFromCode` / `getParentCode`，码结构 2+2+2+3+3） |
-| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA`（复合主键 `code,year`）+ 基于 Zod 的 Patch 协议（`validatePatch`） |
+| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA`（复合主键 `code,year`）+ 基于 Zod 的 Patch 协议（`validatePatch`）+ 邮编/区号契约（`PostalRecordSchema`） |
 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` / `backfill`（库 API 与 bin 入口分离，import 零副作用） |
-| [`@cndiv/crawler`](./packages/crawler) | 增量采集：对接国家地名信息库 dmfw，逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（写盘前 `validatePatch` 守门、空名过滤；dmfw 覆盖 level 1–4，无村级） |
-| [`@cndiv/source-<year>`](./packages/source-2023) | 数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512 完整性锚点），经 npm 分发，由 `cndiv hydrate` 注水 |
+| [`@cndiv/crawler`](./packages/crawler) | 增量采集：① dmfw 逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（`validatePatch` 守门、空名过滤；覆盖 level 1–4，无村级）；② `cndiv-postal` 抓 ip138 邮编/区号 |
+| [`@cndiv/extractor`](./packages/extractor) | NLP 变更提取器：行政区划变更公告 → 结构化 Patch 操作（规则法兜底 + 可插拔 LLM，Tool Use 失败兜底；产物经 `validatePatch` 守门） |
+| [`@cndiv/source-<year>`](./packages/source-2023) | 区划数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512），由 `cndiv hydrate` 注水 |
+| [`@cndiv/source-postal`](./packages/source-postal) | 邮编/区号数据包：`postal.csv`（县级，源自 ip138）+ `manifest.json` |
 | [`legacy/`](./legacy) | v1 旧版爬虫历史存档（**已移出 pnpm workspace**，只读参考；数据源已失效，GB2260 1980–2021 历史经 `cndiv migrate --input=legacy/data/GB2260` 入库） |
 
 ## 数据获取
