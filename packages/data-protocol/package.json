@@ -17,8 +17,14 @@
   },
   "dependencies": {
     "@cndiv/core": "workspace:*",
-    "zod": "^3.22.0"
+    "zod": "^3.25.76"
   },
-  "keywords": ["china", "administrative", "division", "protocol", "schema"],
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "protocol",
+    "schema"
+  ],
   "license": "MIT"
 }

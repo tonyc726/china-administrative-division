@@ -24,9 +24,15 @@
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
-    "cheerio": "^1.0.0",
-    "got": "^14.0.0"
+    "cheerio": "^1.2.0",
+    "got": "^14.6.6"
   },
-  "keywords": ["china", "administrative", "division", "crawler", "mca"],
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "crawler",
+    "mca"
+  ],
   "license": "MIT"
 }
