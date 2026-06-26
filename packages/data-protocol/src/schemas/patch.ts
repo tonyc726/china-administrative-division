@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { DivisionLevel, SourceType } from '@cndiv/core';
+// NOTE: M2 将以 z.nativeEnum(SOURCE_TYPE/DIVISION_STATUS) 复用 @cndiv/core 的常量替换裸字面量。
 
 /** Evidence confidence levels */
 export const CONFIDENCE_LEVELS = {

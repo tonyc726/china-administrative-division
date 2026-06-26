@@ -663,3 +663,6 @@ xcuserdata/
 # source-* 数据包的生成产物（CSV 由 build-source 从 SQLite 生成，不进 git）
 /packages/source-*/data/
 /packages/source-*/*.tgz
+
+# 放行：tsconfig.base.json 被上面的 merge 残留规则 *.BASE.* 在大小写不敏感文件系统下误伤
+!tsconfig.base.json

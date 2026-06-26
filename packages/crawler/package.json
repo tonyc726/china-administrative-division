@@ -15,22 +15,14 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
     "crawl": "tsx src/run.ts"
-  },
-  "peerDependencies": {
-    "@cndiv/core": "workspace:*",
-    "@cndiv/data-protocol": "workspace:*"
   },
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
     "got": "^14.0.0"
-  },
-  "devDependencies": {
-    "@cndiv/core": "workspace:*",
-    "@cndiv/data-protocol": "workspace:*"
   },
   "keywords": ["china", "administrative", "division", "crawler", "mca"],
   "license": "MIT"

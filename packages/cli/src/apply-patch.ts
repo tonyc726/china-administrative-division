@@ -56,12 +56,12 @@ function applyOperation(db: Database.Database, op: Record<string, unknown>, year
     }
 
     case 'update': {
-      const { code, name, status, new_parent, note } = op as {
+      // TODO(M3): op.note 当前未持久化到 patch_history，重写 apply-patch 时补审计落库
+      const { code, name, status, new_parent } = op as {
         code: string;
         name?: string;
         status?: string;
         new_parent?: string;
-        note?: string;
       };
 
       if (status) {

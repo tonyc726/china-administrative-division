@@ -1,12 +1,12 @@
-name: Validate Patches
+name: CI
 
 on:
+  push:
+    branches: [master, 'refactor/**']
   pull_request:
-    paths:
-      - 'patches/**/*.json'
 
 jobs:
-  validate-patches:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -26,8 +26,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm --filter @cndiv/core --filter @cndiv/data-protocol build
+      - name: Build (tsc -b, project references)
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
 
       - name: Validate patch files
-        run: node scripts/validate-patches.mjs
+        run: pnpm validate-patches

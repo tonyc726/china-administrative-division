@@ -167,7 +167,7 @@ async function extractAndImport(
  * Main hydrate function
  */
 export async function hydrate(options: HydrateOptions): Promise<void> {
-  const { year, cacheDir = path.join(os.homedir(), '.cndiv'), verbose = false, tarball } = options;
+  const { year, cacheDir = path.join(os.homedir(), '.cndiv'), tarball } = options;
 
   console.log('='.repeat(60));
   console.log('Data Hydration Tool');
@@ -199,7 +199,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
   let tarballInfo: TarballInfo;
   try {
     tarballInfo = await getTarballUrl(packageName);
-  } catch (err) {
+  } catch {
     console.error(`Error: Package ${packageName} not found`);
     console.error('Please ensure the data package has been published to NPM.');
     return;

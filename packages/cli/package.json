@@ -15,29 +15,23 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
     "hydrate": "tsx src/cli.ts hydrate",
     "migrate": "tsx src/scripts/migrate-legacy.ts",
     "build-source": "tsx src/scripts/build-source.ts"
-  },
-  "peerDependencies": {
-    "@cndiv/core": "workspace:*",
-    "@cndiv/data-protocol": "workspace:*"
   },
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
     "better-sqlite3": "^9.4.0",
-    "cacache": "^18.0.0",
+    "csv-parse": "^6.1.0",
+    "glob": "^13.0.0",
     "got": "^14.0.0",
     "tar-stream": "^3.1.0"
   },
   "devDependencies": {
-    "@cndiv/core": "workspace:*",
-    "@cndiv/data-protocol": "workspace:*",
     "@types/better-sqlite3": "^7.6.8",
-    "@types/node": "^20.0.0",
     "@types/tar-stream": "^3.1.0"
   },
   "keywords": ["china", "administrative", "division", "cli"],

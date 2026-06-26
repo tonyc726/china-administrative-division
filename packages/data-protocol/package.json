@@ -12,17 +12,12 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
-  },
-  "peerDependencies": {
-    "@cndiv/core": "workspace:*"
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
   },
   "dependencies": {
+    "@cndiv/core": "workspace:*",
     "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "@cndiv/core": "workspace:*"
   },
   "keywords": ["china", "administrative", "division", "protocol", "schema"],
   "license": "MIT"
