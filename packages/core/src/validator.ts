@@ -7,12 +7,12 @@ import { DivisionLevel, DIVISION_LEVEL, PROVINCE_CODES } from './types.js';
 /**
  * Validate if a string is a valid 12-digit division code
  *
- * GB/T 2260 code structure:
- * - 2 digits: Province
- * - 2 digits: City
- * - 2 digits: County
- * - 2 digits: Township
- * - 4 digits: Village
+ * 国家统计局统计用区划代码（12 位）结构：2+2+2+3+3
+ * - 2 digits: Province 省
+ * - 2 digits: City 市
+ * - 2 digits: County 县
+ * - 3 digits: Township 乡/镇/街道
+ * - 3 digits: Village 村/居委会
  */
 export function validateCode(code: string): boolean {
   // Must be exactly 12 digits
@@ -37,25 +37,22 @@ export function getLevelFromCode(code: string): DivisionLevel | null {
     return null;
   }
 
-  // Check trailing zeros to determine level
-  // Village: xxxxxxxxxxxx (no trailing zeros beyond county level)
-  // Township: xxxxxx000000 (6 trailing zeros)
-  // County: xxxx00000000 (4 trailing zeros)
-  // City: xx0000000000 (2 trailing zeros)
-
-  const last6 = code.substring(6);
-
-  if (last6 === '000000') {
+  // 按尾零判级（结构 2+2+2+3+3）：
+  //   Province  PP0000000000  (后 10 位为 0)
+  //   City      PPCC00000000  (后 8 位为 0)
+  //   County    PPCCDD000000  (后 6 位为 0)
+  //   Township  PPCCDDTTT000  (后 3 位为 0)
+  //   Village   PPCCDDTTTVVV  (无尾零约束)
+  if (code.substring(2) === '0000000000') {
+    return DIVISION_LEVEL.PROVINCE;
+  }
+  if (code.substring(4) === '00000000') {
     return DIVISION_LEVEL.CITY;
   }
-
-  const last4 = code.substring(8);
-  if (last4 === '0000') {
+  if (code.substring(6) === '000000') {
     return DIVISION_LEVEL.COUNTY;
   }
-
-  const last2 = code.substring(10);
-  if (last2 === '00') {
+  if (code.substring(9) === '000') {
     return DIVISION_LEVEL.TOWNSHIP;
   }
 
@@ -93,13 +90,13 @@ export function getCountyCode(code: string): string | null {
 }
 
 /**
- * Extract township code (first 8 digits)
+ * Extract township code (first 9 digits: 2+2+2+3)
  */
 export function getTownshipCode(code: string): string | null {
   if (!validateCode(code)) {
     return null;
   }
-  return code.substring(0, 8);
+  return code.substring(0, 9);
 }
 
 /**
@@ -111,12 +108,16 @@ export function getParentCode(code: string, childLevel: DivisionLevel): string |
   }
 
   switch (childLevel) {
+    case DIVISION_LEVEL.CITY:
+      return code.substring(0, 2) + '0000000000'; // → province
+    case DIVISION_LEVEL.COUNTY:
+      return code.substring(0, 4) + '00000000'; // → city
     case DIVISION_LEVEL.TOWNSHIP:
-      return code.substring(0, 6) + '000000';
+      return code.substring(0, 6) + '000000'; // → county
     case DIVISION_LEVEL.VILLAGE:
-      return code.substring(0, 8) + '00';
+      return code.substring(0, 9) + '000'; // → township
     default:
-      return null;
+      return null; // PROVINCE 无父级
   }
 }
 

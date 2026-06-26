@@ -11,6 +11,7 @@
 import Database from 'better-sqlite3';
 import got from 'got';
 import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 import tar from 'tar-stream';
 import { createGunzip } from 'zlib';
 import { mkdir } from 'fs/promises';
@@ -18,6 +19,7 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { parse } from 'csv-parse/sync';
+import { DATABASE_SCHEMA } from '@cn-division/data-protocol';
 
 interface HydrateOptions {
   year: string;
@@ -73,28 +75,9 @@ function initCacheDb(dbPath: string): Database.Database {
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS divisions (
-      code TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      level INTEGER NOT NULL,
-      parent_code TEXT,
-      year INTEGER NOT NULL,
-      status TEXT DEFAULT 'active',
-      source_type TEXT,
-      confidence_score INTEGER,
-      UNIQUE(code, year)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_parent ON divisions(parent_code);
-    CREATE INDEX IF NOT EXISTS idx_year ON divisions(year);
-
-    CREATE TABLE IF NOT EXISTS cache_meta (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL,
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
+  // 复用 data-protocol 的权威 schema（divisions/metadata/patch_history），
+  // 避免与 DATABASE_SCHEMA 漂移，并确保 apply-patch 依赖的 patch_history 表存在。
+  db.exec(DATABASE_SCHEMA);
 
   return db;
 }
@@ -187,7 +170,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     key: string;
     value: string;
   }
-  const existingHash = db.prepare('SELECT value FROM cache_meta WHERE key = ?').get(`shasum-${year}`) as CacheMeta | undefined;
+  const existingHash = db.prepare('SELECT value FROM metadata WHERE key = ?').get(`shasum-${year}`) as CacheMeta | undefined;
   if (existingHash && existingHash.value === tarballInfo.shasum) {
     console.log(`Data for ${year} is already up to date (SHA verified)`);
     db.close();
@@ -229,18 +212,19 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     }
   });
 
+  // 从已下载且通过 SHA 校验的 buffer 解包：避免二次下载，且保证"入库内容 === 已校验内容"
   await pipeline(
-    got.stream(tarballInfo.url) as NodeJS.ReadableStream,
+    Readable.from(response.body),
     createGunzip(),
     extract
   );
 
   // Update cache metadata
-  db.prepare('INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)').run(
+  db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(
     `shasum-${year}`,
     tarballInfo.shasum
   );
-  db.prepare('INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)').run(
+  db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(
     `updated-${year}`,
     new Date().toISOString()
   );

@@ -10,6 +10,7 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { validatePatch, DATABASE_SCHEMA } from '@cn-division/data-protocol';
 
 interface ApplyPatchOptions {
   patch: string;
@@ -20,7 +21,7 @@ interface ApplyPatchOptions {
 /**
  * Apply a single patch operation to the database
  */
-function applyOperation(db: Database.Database, op: Record<string, unknown>): void {
+function applyOperation(db: Database.Database, op: Record<string, unknown>, year: number): void {
   const operation = op.op as string;
 
   switch (operation) {
@@ -34,15 +35,14 @@ function applyOperation(db: Database.Database, op: Record<string, unknown>): voi
         confidence_score?: number;
       };
 
-      // Extract year from patch file path (simplified)
       const insert = db.prepare(`
         INSERT OR REPLACE INTO divisions (
           code, name, level, parent_code, year,
           status, source_type, confidence_score
-        ) VALUES (?, ?, ?, ?, 2025, 'active', ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
       `);
 
-      insert.run(code, name, level, parent_code, source_type || 'community', confidence_score || 50);
+      insert.run(code, name, level, parent_code, year, source_type || 'community', confidence_score || 50);
       console.log(`  ADD: ${code} - ${name}`);
       break;
     }
@@ -98,6 +98,21 @@ function applyOperation(db: Database.Database, op: Record<string, unknown>): voi
 }
 
 /**
+ * 解析 patch 的目标年份：优先 patches/<YYYY>/ 目录约定，其次 meta.created_at。
+ */
+function resolvePatchYear(patchPath: string, createdAt?: string): number {
+  const dirMatch = patchPath.match(/(?:^|[\\/])(\d{4})(?=[\\/])/);
+  if (dirMatch) {
+    return parseInt(dirMatch[1], 10);
+  }
+  if (createdAt) {
+    const y = new Date(createdAt).getFullYear();
+    if (!Number.isNaN(y)) return y;
+  }
+  return new Date().getFullYear();
+}
+
+/**
  * Main apply-patch function
  */
 export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
@@ -117,16 +132,22 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
   }
 
   const patchContent = fs.readFileSync(patchPath, 'utf-8');
-  const patch = JSON.parse(patchContent);
 
-  // Validate patch structure (basic validation)
-  if (!patch.meta || !patch.operations) {
-    console.error('Error: Invalid patch structure - missing meta or operations');
+  // 用 data-protocol 的 zod schema 严格校验（op 形状 / 12 位码 / level 范围等）
+  const validation = validatePatch(JSON.parse(patchContent));
+  if (!validation.success) {
+    console.error('Error: Invalid patch — 未通过 schema 校验');
+    console.error(validation.error);
     return;
   }
+  const patch = validation.data;
+
+  // 目标年份：优先取 patches/<YYYY>/ 目录约定，其次 meta.created_at，避免硬编码
+  const year = resolvePatchYear(patchPath, patch.meta.created_at);
 
   console.log(`Author: ${patch.meta.author}`);
   console.log(`Source: ${patch.meta.source_url || 'unknown'}`);
+  console.log(`Target year: ${year}`);
   console.log(`Operations: ${patch.operations.length}`);
   console.log('');
 
@@ -150,21 +171,21 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
 
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
+  // 确保 patch_history/metadata 等表存在（兼容早期 hydrate 生成的库）
+  db.exec(DATABASE_SCHEMA);
 
-  // Apply operations in transaction
-  const applyTransaction = db.transaction((operations) => {
-    for (const op of operations) {
-      applyOperation(db, op);
+  // 操作与审计写入同一事务：杜绝"数据已改、审计失败"的不一致中间态
+  const applyTransaction = db.transaction(() => {
+    for (const op of patch.operations) {
+      applyOperation(db, op as unknown as Record<string, unknown>, year);
     }
+    db.prepare(`
+      INSERT INTO patch_history (patch_file, author, operations_count)
+      VALUES (?, ?, ?)
+    `).run(path.basename(patchPath), patch.meta.author, patch.operations.length);
   });
 
-  applyTransaction(patch.operations);
-
-  // Log patch history
-  db.prepare(`
-    INSERT INTO patch_history (patch_file, author, operations_count)
-    VALUES (?, ?, ?)
-  `).run(path.basename(patchPath), patch.meta.author, patch.operations.length);
+  applyTransaction();
 
   console.log('');
   console.log('='.repeat(60));

@@ -7,7 +7,7 @@
 /** SQLite table creation statements */
 export const DATABASE_SCHEMA = `
 CREATE TABLE IF NOT EXISTS divisions (
-    code TEXT PRIMARY KEY,
+    code TEXT NOT NULL,
     name TEXT NOT NULL,
     level INTEGER NOT NULL,
     parent_code TEXT,
@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS divisions (
     source_type TEXT,
     confidence_score INTEGER,
     urban_rural_code TEXT,
-    UNIQUE(code, year)
+    -- 复合主键：同一区划码可跨多个年份并存（年份版本化的真相源）
+    PRIMARY KEY (code, year)
 );
 
 CREATE INDEX IF NOT EXISTS idx_parent ON divisions(parent_code);

@@ -13,11 +13,11 @@
       "code": "310115001002",
       "name": "新设立社区居委会",
       "level": 5,
-      "parent_code": "310115001"
+      "parent_code": "310115001000"
     },
     {
       "op": "update",
-      "code": "310115102",
+      "code": "310115102000",
       "status": "deprecated",
       "note": "撤销合并"
     }
