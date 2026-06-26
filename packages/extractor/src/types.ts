@@ -13,8 +13,6 @@ export type ChangeIntent =
   | { kind: 'establish'; name: string; evidence: string }
   | { kind: 'transfer'; target: string; newParent: string; evidence: string };
 
-export type ChangeKind = ChangeIntent['kind'];
-
 /** 名称 → 12 位区划码解析器（通常基于基线 cache.db 的 divisions 名称索引；未命中返回 null） */
 export type CodeResolver = (name: string) => string | null;
 

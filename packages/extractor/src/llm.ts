@@ -10,7 +10,7 @@ import type { ChangeIntent } from './types.js';
 export type LlmComplete = (prompt: string) => Promise<string>;
 
 /** 构造结构化抽取 prompt：要求模型只输出 ChangeIntent[] 的 JSON */
-export function buildExtractPrompt(text: string): string {
+function buildExtractPrompt(text: string): string {
   return [
     '你是行政区划变更公告的结构化抽取器。从下面公告中抽取所有区划变更意图。',
     '只输出 JSON 数组，不要任何解释或代码块标记。每个元素形如：',
@@ -30,7 +30,7 @@ const KINDS = new Set<string>(['rename', 'abolish', 'establish', 'transfer']);
  * 解析 LLM 返回为 ChangeIntent[]：容错截取 JSON 数组、丢弃 kind 越界元素。
  * 仅做粗筛——字段形状由下游 intentsToPatch + validatePatch 二次把关。
  */
-export function parseLlmIntents(raw: string): ChangeIntent[] {
+function parseLlmIntents(raw: string): ChangeIntent[] {
   let data: unknown;
   try {
     const s = raw.indexOf('[');

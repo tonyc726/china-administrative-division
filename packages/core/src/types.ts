@@ -57,24 +57,6 @@ export interface Division {
   urban_rural_code?: string;
 }
 
-/** Division tree node for hierarchical representation */
-export interface DivisionNode extends Division {
-  /** Child divisions */
-  children: DivisionNode[];
-}
-
-/** Flattened division for CSV export */
-export interface DivisionCsvRow {
-  code: string;
-  name: string;
-  level: DivisionLevel;
-  parent_code: string | null;
-  year: number;
-  status: DivisionStatus;
-  source_type: SourceType;
-  confidence_score: number;
-}
-
 /** Province code mapping (first 2 digits) */
 export const PROVINCE_CODES: Record<string, string> = {
   '11': '北京市',

@@ -43,14 +43,6 @@ CREATE TABLE IF NOT EXISTS patch_history (
 );
 `;
 
-/** Division insert statement (prepared) */
-export const INSERT_DIVISION = `
-INSERT OR REPLACE INTO divisions (
-    code, name, level, parent_code, year,
-    status, source_type, confidence_score, urban_rural_code
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
-
 /** Batch insert for migrations */
 export const INSERT_DIVISIONS_BATCH = `
 INSERT OR REPLACE INTO divisions (

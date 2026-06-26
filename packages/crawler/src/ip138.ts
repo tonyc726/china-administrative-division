@@ -30,7 +30,7 @@ const fetchText = (url: string): Promise<string> =>
   }).text();
 
 /** 抓 /post/ 取大陆省级链接（仅 `/<2位数字>/` 形式 + 省/市/自治区 锚文本） */
-export async function fetchProvinceLinks(): Promise<ProvinceLink[]> {
+async function fetchProvinceLinks(): Promise<ProvinceLink[]> {
   const $ = load(await fetchText(`${IP138_BASE}/post/`));
   const links: ProvinceLink[] = [];
   const seen = new Set<string>();
@@ -48,7 +48,7 @@ export async function fetchProvinceLinks(): Promise<ProvinceLink[]> {
 }
 
 /** 抓某省页并解析为 PostalRecord[] */
-export async function fetchProvincePostal(link: ProvinceLink): Promise<PostalRecord[]> {
+async function fetchProvincePostal(link: ProvinceLink): Promise<PostalRecord[]> {
   const html = await fetchText(`${IP138_BASE}/${link.id}/`);
   return parseProvincePostal(html, link.name);
 }

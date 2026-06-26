@@ -16,8 +16,6 @@ export const CONFIDENCE_LEVELS = {
   LOW: 'low' as const,        // Community submission or inferred
 } as const;
 
-export type ConfidenceLevel = typeof CONFIDENCE_LEVELS[keyof typeof CONFIDENCE_LEVELS];
-
 /** Patch metadata */
 export const PatchMetaSchema = z.object({
   /** Patch author (GitHub username or ID) */
@@ -34,8 +32,6 @@ export const PatchMetaSchema = z.object({
   notes: z.string().optional(),
 });
 
-export type PatchMeta = z.infer<typeof PatchMetaSchema>;
-
 /** Patch operation types */
 export const PATCH_OPERATION = {
   ADD: 'add' as const,
@@ -43,8 +39,6 @@ export const PATCH_OPERATION = {
   UPDATE: 'update' as const,
   MOVE: 'move' as const,
 } as const;
-
-export type PatchOperationType = typeof PATCH_OPERATION[keyof typeof PATCH_OPERATION];
 
 /** Add operation */
 export const AddOperationSchema = z.object({
