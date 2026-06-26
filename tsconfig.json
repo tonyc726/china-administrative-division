@@ -5,6 +5,7 @@
     { "path": "packages/core" },
     { "path": "packages/data-protocol" },
     { "path": "packages/crawler" },
-    { "path": "packages/cli" }
+    { "path": "packages/cli" },
+    { "path": "packages/extractor" }
   ]
 }

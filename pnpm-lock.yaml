@@ -96,6 +96,12 @@ importers:
         specifier: ^3.22.0
         version: 3.25.76
 
+  packages/extractor:
+    dependencies:
+      '@cndiv/data-protocol':
+        specifier: workspace:*
+        version: link:../data-protocol
+
   packages/source-2023: {}
 
   packages/source-postal: {}
