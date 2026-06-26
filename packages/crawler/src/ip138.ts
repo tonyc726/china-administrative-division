@@ -48,7 +48,9 @@ async function fetchProvinceLinks(): Promise<ProvinceLink[]> {
 }
 
 /** 抓某省页并解析为 PostalRecord[] */
-async function fetchProvincePostal(link: ProvinceLink): Promise<PostalRecord[]> {
+async function fetchProvincePostal(
+  link: ProvinceLink
+): Promise<PostalRecord[]> {
   const html = await fetchText(`${IP138_BASE}/${link.id}/`);
   return parseProvincePostal(html, link.name);
 }
@@ -60,10 +62,13 @@ export interface FetchAllOptions {
   onProvince?: (name: string, count: number) => void;
 }
 
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /** 顺序限速抓取全部大陆省份的邮编/区号 */
-export async function fetchAllPostal(options: FetchAllOptions = {}): Promise<PostalRecord[]> {
+export async function fetchAllPostal(
+  options: FetchAllOptions = {}
+): Promise<PostalRecord[]> {
   const { delayMs = 150, onProvince } = options;
   const links = await fetchProvinceLinks();
   const all: PostalRecord[] = [];

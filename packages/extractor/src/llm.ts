@@ -42,14 +42,19 @@ function parseLlmIntents(raw: string): ChangeIntent[] {
   if (!Array.isArray(data)) return [];
   return data.filter(
     (item): item is ChangeIntent =>
-      !!item && typeof item === 'object' && KINDS.has((item as { kind?: string }).kind ?? ''),
+      !!item &&
+      typeof item === 'object' &&
+      KINDS.has((item as { kind?: string }).kind ?? '')
   );
 }
 
 /**
  * LLM 路径：调用注入的 complete → 解析 intents；任何失败返回 []（交上层回退规则法）。
  */
-export async function extractIntentsWithLlm(text: string, complete: LlmComplete): Promise<ChangeIntent[]> {
+export async function extractIntentsWithLlm(
+  text: string,
+  complete: LlmComplete
+): Promise<ChangeIntent[]> {
   try {
     return parseLlmIntents(await complete(buildExtractPrompt(text)));
   } catch {

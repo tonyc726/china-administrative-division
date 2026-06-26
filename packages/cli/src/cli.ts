@@ -24,13 +24,19 @@ async function main() {
     case 'hydrate': {
       // Parse hydrate arguments
       const year = args.find((a) => a.startsWith('--year='))?.split('=')[1];
-      const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
-      const tarball = args.find((a) => a.startsWith('--tarball='))?.split('=')[1];
+      const cacheDir = args
+        .find((a) => a.startsWith('--cache='))
+        ?.split('=')[1];
+      const tarball = args
+        .find((a) => a.startsWith('--tarball='))
+        ?.split('=')[1];
       const verbose = args.includes('--verbose');
 
       if (!year) {
         console.error('Error: --year is required');
-        console.error('Usage: cndiv hydrate --year=<YYYY> [--tarball=<file.tgz>]');
+        console.error(
+          'Usage: cndiv hydrate --year=<YYYY> [--tarball=<file.tgz>]'
+        );
         process.exit(1);
       }
 
@@ -48,7 +54,9 @@ async function main() {
 
       if (!input) {
         console.error('Error: --input is required');
-        console.error('Usage: cndiv migrate --input=<directory> [--output=<db>] [--csv=<datapackage.csv>]');
+        console.error(
+          'Usage: cndiv migrate --input=<directory> [--output=<db>] [--csv=<datapackage.csv>]'
+        );
         process.exit(1);
       }
 
@@ -56,10 +64,12 @@ async function main() {
       const { migrate } = await import('./migrate.js');
       const result = await migrate({ input, output, csv });
       console.log(
-        `\nMigration complete: ${result.records} 条 / ${result.years.length} 年 (${result.skipped} 跳过) → ${output}`,
+        `\nMigration complete: ${result.records} 条 / ${result.years.length} 年 (${result.skipped} 跳过) → ${output}`
       );
       if (result.csvPath) {
-        console.log(`数据包固化: ${result.csvRows} 条 → ${result.csvPath} (+manifest.json)`);
+        console.log(
+          `数据包固化: ${result.csvRows} 条 → ${result.csvPath} (+manifest.json)`
+        );
       }
       break;
     }
@@ -67,7 +77,9 @@ async function main() {
     case 'export': {
       const year = args.find((a) => a.startsWith('--year='))?.split('=')[1];
       const output = args.find((a) => a.startsWith('--output='))?.split('=')[1];
-      const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
+      const cacheDir = args
+        .find((a) => a.startsWith('--cache='))
+        ?.split('=')[1];
 
       if (!year) {
         console.error('Error: --year is required');
@@ -83,7 +95,9 @@ async function main() {
       // 回灌：把 cache.db 中某年份分区（基线 + 已 apply 的 patch）导出回 source 数据包 CSV，
       // 合上闭环 crawler → patches → apply-patch → backfill → source-<year> → (重建/发布)。
       const year = args.find((a) => a.startsWith('--year='))?.split('=')[1];
-      const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
+      const cacheDir = args
+        .find((a) => a.startsWith('--cache='))
+        ?.split('=')[1];
       const output =
         args.find((a) => a.startsWith('--output='))?.split('=')[1] ||
         `packages/source-${year}/data/divisions.csv`;
@@ -95,19 +109,27 @@ async function main() {
       }
 
       await exportFromCache(parseInt(year, 10), cacheDir, output);
-      console.log(`回灌完成 → ${output}（可据此重建/发布 @cndiv/source-${year} 合上闭环）`);
+      console.log(
+        `回灌完成 → ${output}（可据此重建/发布 @cndiv/source-${year} 合上闭环）`
+      );
       break;
     }
 
     case 'apply-patch':
     case 'patch': {
-      const patchPath = args.find((a) => a.startsWith('--patch='))?.split('=')[1];
-      const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
+      const patchPath = args
+        .find((a) => a.startsWith('--patch='))
+        ?.split('=')[1];
+      const cacheDir = args
+        .find((a) => a.startsWith('--cache='))
+        ?.split('=')[1];
       const dryRun = args.includes('--dry-run');
 
       if (!patchPath) {
         console.error('Error: --patch is required');
-        console.error('Usage: cndiv apply-patch --patch=<file.json> [--dry-run]');
+        console.error(
+          'Usage: cndiv apply-patch --patch=<file.json> [--dry-run]'
+        );
         process.exit(1);
       }
 
@@ -166,7 +188,10 @@ For more information, visit:
  */
 function isDirectRun(): boolean {
   try {
-    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+    return (
+      realpathSync(process.argv[1]) ===
+      realpathSync(fileURLToPath(import.meta.url))
+    );
   } catch {
     return false;
   }

@@ -19,7 +19,11 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { parse } from 'csv-parse/sync';
-import { DATABASE_SCHEMA, DIVISIONS_CSV_HEADER, csvCell } from '@cndiv/data-protocol';
+import {
+  DATABASE_SCHEMA,
+  DIVISIONS_CSV_HEADER,
+  csvCell,
+} from '@cndiv/data-protocol';
 
 interface HydrateOptions {
   year: string;
@@ -51,7 +55,9 @@ async function getTarballUrl(packageName: string): Promise<TarballInfo> {
   const packageInfo = body.versions[latestVersion];
 
   if (!packageInfo) {
-    throw new Error(`Package ${packageName} not found or has no valid versions`);
+    throw new Error(
+      `Package ${packageName} not found or has no valid versions`
+    );
   }
 
   return {
@@ -101,7 +107,11 @@ interface CsvRecord {
 /**
  * Import CSV data into SQLite
  */
-function importCsvToSqlite(db: Database.Database, csvContent: string, year: number): number {
+function importCsvToSqlite(
+  db: Database.Database,
+  csvContent: string,
+  year: number
+): number {
   const records = parse(csvContent, {
     columns: true,
     skip_empty_lines: true,
@@ -165,7 +175,8 @@ async function extractAndImport(
       const chunks: Buffer[] = [];
       stream.on('data', (chunk) => chunks.push(chunk));
       stream.on('end', () => {
-        if (base === 'manifest.json') manifestRaw = Buffer.concat(chunks).toString('utf-8');
+        if (base === 'manifest.json')
+          manifestRaw = Buffer.concat(chunks).toString('utf-8');
         else csvBuffers.set(base, Buffer.concat(chunks));
         next();
       });
@@ -182,7 +193,9 @@ async function extractAndImport(
   if (manifestRaw) {
     const manifest = JSON.parse(manifestRaw) as SourceManifest;
     const buf = csvBuffers.get(path.basename(manifest.file));
-    const actual = buf ? crypto.createHash('sha512').update(buf).digest('hex') : undefined;
+    const actual = buf
+      ? crypto.createHash('sha512').update(buf).digest('hex')
+      : undefined;
     verified = actual === manifest.sha512;
     if (!verified) {
       throw new Error(
@@ -204,7 +217,11 @@ async function extractAndImport(
  * Main hydrate function
  */
 export async function hydrate(options: HydrateOptions): Promise<void> {
-  const { year, cacheDir = path.join(os.homedir(), '.cndiv'), tarball } = options;
+  const {
+    year,
+    cacheDir = path.join(os.homedir(), '.cndiv'),
+    tarball,
+  } = options;
 
   console.log('='.repeat(60));
   console.log('Data Hydration Tool');
@@ -219,8 +236,14 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     const db = initCacheDb(path.join(cacheDir, 'cache.db'));
     console.log(`Importing from local tarball: ${tarball}`);
     const buf = await readFile(tarball);
-    const { recordCount: count, verified } = await extractAndImport(db, buf, parseInt(year, 10));
-    db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(`tarball-${year}`, tarball);
+    const { recordCount: count, verified } = await extractAndImport(
+      db,
+      buf,
+      parseInt(year, 10)
+    );
+    db.prepare(
+      'INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)'
+    ).run(`tarball-${year}`, tarball);
     console.log('');
     console.log('='.repeat(60));
     console.log(`Hydration complete (offline): ${count} records imported`);
@@ -260,7 +283,9 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     key: string;
     value: string;
   }
-  const existingHash = db.prepare('SELECT value FROM metadata WHERE key = ?').get(`shasum-${year}`) as CacheMeta | undefined;
+  const existingHash = db
+    .prepare('SELECT value FROM metadata WHERE key = ?')
+    .get(`shasum-${year}`) as CacheMeta | undefined;
   if (existingHash && existingHash.value === tarballInfo.shasum) {
     console.log(`Data for ${year} is already up to date (SHA verified)`);
     db.close();
@@ -273,7 +298,9 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
 
   // Verify checksum
   if (!verifyChecksum(response.body, tarballInfo.shasum)) {
-    console.error('Error: SHA checksum mismatch - possible corruption or tampering');
+    console.error(
+      'Error: SHA checksum mismatch - possible corruption or tampering'
+    );
     db.close();
     return;
   }
@@ -282,7 +309,11 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
 
   // Extract and import — 从已下载且通过 SHA 校验的 buffer 解包，保证"入库内容 === 已校验内容"
   console.log('Extracting data...');
-  const { recordCount } = await extractAndImport(db, response.body, parseInt(year, 10));
+  const { recordCount } = await extractAndImport(
+    db,
+    response.body,
+    parseInt(year, 10)
+  );
 
   // Update cache metadata
   db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(
@@ -313,7 +344,9 @@ export async function exportFromCache(
   const dbPath = path.join(cacheDir, 'cache.db');
   const db = new Database(dbPath);
 
-  const records = db.prepare('SELECT * FROM divisions WHERE year = ?').all(year) as Array<{
+  const records = db
+    .prepare('SELECT * FROM divisions WHERE year = ?')
+    .all(year) as Array<{
     code: string;
     name: string;
     level: number;

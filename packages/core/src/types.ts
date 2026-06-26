@@ -7,14 +7,15 @@
 
 /** Division level enumeration */
 export const DIVISION_LEVEL = {
-  PROVINCE: 1 as const,   // 省/直辖市/自治区/特别行政区
-  CITY: 2 as const,       // 地级市/自治州/地区/盟
-  COUNTY: 3 as const,     // 市辖区/县级市/县/旗
-  TOWNSHIP: 4 as const,   // 镇/乡/街道
-  VILLAGE: 5 as const,    // 村/居委会
+  PROVINCE: 1 as const, // 省/直辖市/自治区/特别行政区
+  CITY: 2 as const, // 地级市/自治州/地区/盟
+  COUNTY: 3 as const, // 市辖区/县级市/县/旗
+  TOWNSHIP: 4 as const, // 镇/乡/街道
+  VILLAGE: 5 as const, // 村/居委会
 } as const;
 
-export type DivisionLevel = typeof DIVISION_LEVEL[keyof typeof DIVISION_LEVEL];
+export type DivisionLevel =
+  (typeof DIVISION_LEVEL)[keyof typeof DIVISION_LEVEL];
 
 /** Division status */
 export const DIVISION_STATUS = {
@@ -23,17 +24,18 @@ export const DIVISION_STATUS = {
   SUSPENDED: 'suspended' as const,
 } as const;
 
-export type DivisionStatus = typeof DIVISION_STATUS[keyof typeof DIVISION_STATUS];
+export type DivisionStatus =
+  (typeof DIVISION_STATUS)[keyof typeof DIVISION_STATUS];
 
 /** Data source type with confidence ranking */
 export const SOURCE_TYPE = {
-  OFFICIAL_NBS: 'official_nbs' as const,      // 国家统计局官方数据 (最高置信度)
-  MCA_DECREE: 'mca_decree' as const,           // 民政部公报 (高置信度)
-  COMMUNITY: 'community' as const,             // 社区贡献 (中等置信度)
-  SHADOW_MAP: 'shadow_map' as const,           // 商业地图推断 (低置信度)
+  OFFICIAL_NBS: 'official_nbs' as const, // 国家统计局官方数据 (最高置信度)
+  MCA_DECREE: 'mca_decree' as const, // 民政部公报 (高置信度)
+  COMMUNITY: 'community' as const, // 社区贡献 (中等置信度)
+  SHADOW_MAP: 'shadow_map' as const, // 商业地图推断 (低置信度)
 } as const;
 
-export type SourceType = typeof SOURCE_TYPE[keyof typeof SOURCE_TYPE];
+export type SourceType = (typeof SOURCE_TYPE)[keyof typeof SOURCE_TYPE];
 
 /** Core division interface matching SQLite schema */
 export interface Division {

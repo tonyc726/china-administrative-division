@@ -34,10 +34,15 @@ export interface CrawlAllResult {
   cached: number;
 }
 
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /** 固定并发数地 map 一组任务（无外部依赖） */
-async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
   const results = new Array<R>(items.length);
   let next = 0;
   const worker = async (): Promise<void> => {
@@ -53,8 +58,17 @@ async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => P
 /**
  * 从 rootCode（''=全国）逐层并发抓取整棵区划树，展开为扁平 Division[]。
  */
-export async function crawlAll(rootCode: string, options: CrawlAllOptions): Promise<CrawlAllResult> {
-  const { year, maxLevel = 4, concurrency = 6, delayMs = 60, cacheDir } = options;
+export async function crawlAll(
+  rootCode: string,
+  options: CrawlAllOptions
+): Promise<CrawlAllResult> {
+  const {
+    year,
+    maxLevel = 4,
+    concurrency = 6,
+    delayMs = 60,
+    cacheDir,
+  } = options;
   const cache = cacheDir ? new FsCache(cacheDir) : null;
 
   const divisions: Division[] = [];

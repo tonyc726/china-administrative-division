@@ -22,7 +22,8 @@ import type { Division } from '@cndiv/core';
 import { validatePatch, type Operation } from '@cndiv/data-protocol';
 
 const args = process.argv.slice(2);
-const get = (key: string): string | undefined => args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
+const get = (key: string): string | undefined =>
+  args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
 
 async function main(): Promise<void> {
   const year = Number(get('year') ?? new Date().getFullYear());
@@ -36,21 +37,30 @@ async function main(): Promise<void> {
   const emitRemoves = (get('removes') ?? 'off') === 'on';
 
   if (!baselinePath) {
-    console.error('Usage: run --year=<YYYY> --baseline=<divisions.csv> [--root=<code>] [--out=<dir>] [--concurrency=6] [--maxLevel=4] [--cache=<dir>] [--removes=on]');
+    console.error(
+      'Usage: run --year=<YYYY> --baseline=<divisions.csv> [--root=<code>] [--out=<dir>] [--concurrency=6] [--maxLevel=4] [--cache=<dir>] [--removes=on]'
+    );
     process.exit(1);
   }
 
-  console.log(`抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}）...`);
+  console.log(
+    `抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}）...`
+  );
   const { divisions, failures, fetched, cached } = await crawlAll(root, {
     year,
     maxLevel,
     concurrency,
     cacheDir,
-    onWave: (lvl, fr, total) => console.log(`  level ${lvl}: 展开 ${fr} 节点 → 累计 ${total} 条`),
+    onWave: (lvl, fr, total) =>
+      console.log(`  level ${lvl}: 展开 ${fr} 节点 → 累计 ${total} 条`),
   });
-  console.log(`抓取完成：${divisions.length} 条（网络 ${fetched} / 缓存 ${cached}），失败 ${failures.length}`);
+  console.log(
+    `抓取完成：${divisions.length} 条（网络 ${fetched} / 缓存 ${cached}），失败 ${failures.length}`
+  );
   if (failures.length > 0) {
-    console.warn(`  失败节点(可重跑续爬): ${failures.slice(0, 10).join(', ')}${failures.length > 10 ? ' …' : ''}`);
+    console.warn(
+      `  失败节点(可重跑续爬): ${failures.slice(0, 10).join(', ')}${failures.length > 10 ? ' …' : ''}`
+    );
   }
 
   console.log(`加载基线: ${baselinePath}`);
@@ -58,11 +68,18 @@ async function main(): Promise<void> {
 
   // 自动对齐差分范围：按抓取根的省前缀 + 实际抓到的层级，避免误判（如 dmfw 无村级 → 不删基线村级）
   const prefix = root ? root.slice(0, 2) : '';
-  const levels = [...new Set(divisions.map((d) => d.level))].sort((a, b) => a - b);
-  const baseline = allBaseline.filter((d) => d.code.startsWith(prefix) && levels.includes(d.level));
+  const levels = [...new Set(divisions.map((d) => d.level))].sort(
+    (a, b) => a - b
+  );
+  const baseline = allBaseline.filter(
+    (d) => d.code.startsWith(prefix) && levels.includes(d.level)
+  );
 
-  const provincesOf = (list: Division[]): Set<string> => new Set(list.map((d) => d.code.slice(0, 2)));
-  const provinces = [...new Set([...provincesOf(divisions), ...provincesOf(baseline)])].sort();
+  const provincesOf = (list: Division[]): Set<string> =>
+    new Set(list.map((d) => d.code.slice(0, 2)));
+  const provinces = [
+    ...new Set([...provincesOf(divisions), ...provincesOf(baseline)]),
+  ].sort();
 
   await mkdir(outDir, { recursive: true });
   let written = 0;
@@ -95,7 +112,9 @@ async function main(): Promise<void> {
     const check = validatePatch(patch);
     if (!check.success) {
       rejected++;
-      console.error(`  ⛔ 跳过非法 patch ${pp}（未过 schema 校验）：${check.error}`);
+      console.error(
+        `  ⛔ 跳过非法 patch ${pp}（未过 schema 校验）：${check.error}`
+      );
       continue;
     }
 
@@ -106,12 +125,18 @@ async function main(): Promise<void> {
     console.log(`  ✏️  ${path.basename(file)}: ${ops.length} ops`);
   }
 
-  console.log(`\n完成：写出 ${written} 个 patch 文件，共 ${totalOps} 个变更操作 → ${outDir}/`);
+  console.log(
+    `\n完成：写出 ${written} 个 patch 文件，共 ${totalOps} 个变更操作 → ${outDir}/`
+  );
   if (skippedEmptyNames > 0) {
-    console.log(`ℹ️  跳过 ${skippedEmptyNames} 个空名节点（dmfw name=null，无法产出合法 add/update）`);
+    console.log(
+      `ℹ️  跳过 ${skippedEmptyNames} 个空名节点（dmfw name=null，无法产出合法 add/update）`
+    );
   }
   if (rejected > 0) {
-    console.log(`⛔ ${rejected} 个省级 patch 因未过 schema 校验被拒写（详见上方日志，不静默丢弃）`);
+    console.log(
+      `⛔ ${rejected} 个省级 patch 因未过 schema 校验被拒写（详见上方日志，不静默丢弃）`
+    );
   }
   if (suppressedRemoves > 0) {
     console.log(

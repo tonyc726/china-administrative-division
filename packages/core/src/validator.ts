@@ -102,7 +102,10 @@ export function getTownshipCode(code: string): string | null {
 /**
  * Build parent code from a child code based on level
  */
-export function getParentCode(code: string, childLevel: DivisionLevel): string | null {
+export function getParentCode(
+  code: string,
+  childLevel: DivisionLevel
+): string | null {
   if (!validateCode(code)) {
     return null;
   }

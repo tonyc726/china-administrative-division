@@ -5,7 +5,10 @@
 import type { Operation } from '@cndiv/data-protocol';
 import type { ChangeIntent, CodeResolver, ResolveResult } from './types.js';
 
-export function intentsToPatch(intents: ChangeIntent[], resolve: CodeResolver): ResolveResult {
+export function intentsToPatch(
+  intents: ChangeIntent[],
+  resolve: CodeResolver
+): ResolveResult {
   const operations: Operation[] = [];
   const unresolved: ResolveResult['unresolved'] = [];
 
@@ -23,7 +26,10 @@ export function intentsToPatch(intents: ChangeIntent[], resolve: CodeResolver): 
       case 'abolish': {
         const code = resolve(intent.target);
         if (!code) {
-          unresolved.push({ intent, reason: `未在基线找到「${intent.target}」` });
+          unresolved.push({
+            intent,
+            reason: `未在基线找到「${intent.target}」`,
+          });
           break;
         }
         operations.push({ op: 'remove', code, reason: intent.evidence });
@@ -44,7 +50,10 @@ export function intentsToPatch(intents: ChangeIntent[], resolve: CodeResolver): 
       }
       case 'establish': {
         // 新设实体无既有码，无法自动产出合法 add（需上级分配码后人工补）
-        unresolved.push({ intent, reason: `新设「${intent.name}」需人工分配区划码后补 add` });
+        unresolved.push({
+          intent,
+          reason: `新设「${intent.name}」需人工分配区划码后补 add`,
+        });
         break;
       }
     }

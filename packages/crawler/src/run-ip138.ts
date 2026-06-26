@@ -14,7 +14,8 @@ import { fetchAllPostal } from './ip138.js';
 import { validatePostalRecord, type PostalRecord } from '@cndiv/data-protocol';
 
 const args = process.argv.slice(2);
-const get = (key: string): string | undefined => args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
+const get = (key: string): string | undefined =>
+  args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
 
 const csvCell = (value: string): string => `"${value.replace(/"/g, '""')}"`;
 
@@ -35,15 +36,22 @@ async function main(): Promise<void> {
     if (validatePostalRecord(r).success) valid.push(r);
     else rejected++;
   }
-  console.log(`\n抓取 ${records.length} 条，合法 ${valid.length} 条${rejected ? `，剔除 ${rejected} 条非法` : ''}`);
+  console.log(
+    `\n抓取 ${records.length} 条，合法 ${valid.length} 条${rejected ? `，剔除 ${rejected} 条非法` : ''}`
+  );
 
   if (valid.length === 0) {
-    console.error('⛔ 零合法记录，疑似 ip138 结构再次变更，已中止写盘（不产出空数据包）');
+    console.error(
+      '⛔ 零合法记录，疑似 ip138 结构再次变更，已中止写盘（不产出空数据包）'
+    );
     process.exit(1);
   }
 
   // 稳定排序（province, name）→ 确定性 CSV / manifest
-  valid.sort((a, b) => a.province.localeCompare(b.province) || a.name.localeCompare(b.name));
+  valid.sort(
+    (a, b) =>
+      a.province.localeCompare(b.province) || a.name.localeCompare(b.name)
+  );
 
   let csv = 'province,name,zip_code,area_code\n';
   for (const r of valid) {
@@ -62,9 +70,14 @@ async function main(): Promise<void> {
     sha512: crypto.createHash('sha512').update(csv).digest('hex'),
     generator: '@cndiv/crawler run-ip138',
   };
-  await writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(
+    path.join(outDir, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`
+  );
 
-  console.log(`写出 ${valid.length} 条 → ${outDir}/postal.csv + manifest.json (sha512 ${manifest.sha512.slice(0, 16)}…)`);
+  console.log(
+    `写出 ${valid.length} 条 → ${outDir}/postal.csv + manifest.json (sha512 ${manifest.sha512.slice(0, 16)}…)`
+  );
 }
 
 main().catch((err: unknown) => {

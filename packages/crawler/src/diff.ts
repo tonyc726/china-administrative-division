@@ -25,12 +25,20 @@ export interface DiffResult {
  * 生成从 baseline → current 的 Patch（add / update / move / remove）。
  * 仅比对 options.levels 指定的层级。返回 patch 及被跳过的空名节点数。
  */
-export function diffToPatch(baseline: Division[], current: Division[], options: DiffOptions): DiffResult {
+export function diffToPatch(
+  baseline: Division[],
+  current: Division[],
+  options: DiffOptions
+): DiffResult {
   const levels = options.levels ?? [1, 2, 3, 4];
   const inScope = (d: Division): boolean => levels.includes(d.level);
 
-  const base = new Map<string, Division>(baseline.filter(inScope).map((d) => [d.code, d]));
-  const cur = new Map<string, Division>(current.filter(inScope).map((d) => [d.code, d]));
+  const base = new Map<string, Division>(
+    baseline.filter(inScope).map((d) => [d.code, d])
+  );
+  const cur = new Map<string, Division>(
+    current.filter(inScope).map((d) => [d.code, d])
+  );
 
   const operations: Operation[] = [];
   let skippedEmptyName = 0;
@@ -68,7 +76,11 @@ export function diffToPatch(baseline: Division[], current: Division[], options: 
   // 撤销（基线有、当前无）
   for (const code of base.keys()) {
     if (!cur.has(code)) {
-      operations.push({ op: 'remove', code, reason: 'not present in current dmfw snapshot' });
+      operations.push({
+        op: 'remove',
+        code,
+        reason: 'not present in current dmfw snapshot',
+      });
     }
   }
 

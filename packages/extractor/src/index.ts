@@ -32,7 +32,10 @@ export interface ExtractPatchResult extends ResolveResult {
  *
  * 注意：返回的 operations 是**草稿**，必须再经 `validatePatch` 守门后方可写入 patches/。
  */
-export async function extractPatch(text: string, options: ExtractOptions): Promise<ExtractPatchResult> {
+export async function extractPatch(
+  text: string,
+  options: ExtractOptions
+): Promise<ExtractPatchResult> {
   let intents: ChangeIntent[] = [];
   let via: 'llm' | 'rules' = 'rules';
 

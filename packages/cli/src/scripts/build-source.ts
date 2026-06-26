@@ -36,7 +36,11 @@ function pad12(code: string | null | undefined): string | null {
   return code ? code.padEnd(12, '0') : null;
 }
 
-function parseArgs(argv: string[]): { input?: string; year?: string; output: string } {
+function parseArgs(argv: string[]): {
+  input?: string;
+  year?: string;
+  output: string;
+} {
   const get = (key: string): string | undefined =>
     argv.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
   return {
@@ -50,7 +54,9 @@ function main(): void {
   const { input, year, output } = parseArgs(process.argv.slice(2));
 
   if (!input || !year) {
-    console.error('Usage: build-source --input=<NBS.YYYY.sqlite> --year=<YYYY> [--output=<csv>]');
+    console.error(
+      'Usage: build-source --input=<NBS.YYYY.sqlite> --year=<YYYY> [--output=<csv>]'
+    );
     process.exit(1);
   }
 
@@ -73,7 +79,11 @@ function main(): void {
   let total = 0;
   let skipped = 0;
   let maxLevel = 0;
-  const emit = <T extends BaseRow>(rows: T[], level: number, parentOf: (row: T) => string | null): void => {
+  const emit = <T extends BaseRow>(
+    rows: T[],
+    level: number,
+    parentOf: (row: T) => string | null
+  ): void => {
     for (const row of rows) {
       const code = pad12(row.code);
       if (!code) continue;
@@ -85,17 +95,41 @@ function main(): void {
         skipped++;
         continue;
       }
-      writeLine(`${code},${csvCell(row.name)},${level},${parent ?? ''},${year},active,official_nbs,100\n`);
+      writeLine(
+        `${code},${csvCell(row.name)},${level},${parent ?? ''},${year},active,official_nbs,100\n`
+      );
       total++;
       if (level > maxLevel) maxLevel = level;
     }
   };
 
-  emit(db.prepare('SELECT code, name FROM province').all() as BaseRow[], 1, () => null);
-  emit(db.prepare('SELECT code, name, provinceCode FROM city').all() as CityRow[], 2, (r) => pad12(r.provinceCode));
-  emit(db.prepare('SELECT code, name, cityCode FROM area').all() as AreaRow[], 3, (r) => pad12(r.cityCode));
-  emit(db.prepare('SELECT code, name, areaCode FROM street').all() as StreetRow[], 4, (r) => pad12(r.areaCode));
-  emit(db.prepare('SELECT code, name, streetCode FROM village').all() as VillageRow[], 5, (r) => pad12(r.streetCode));
+  emit(
+    db.prepare('SELECT code, name FROM province').all() as BaseRow[],
+    1,
+    () => null
+  );
+  emit(
+    db.prepare('SELECT code, name, provinceCode FROM city').all() as CityRow[],
+    2,
+    (r) => pad12(r.provinceCode)
+  );
+  emit(
+    db.prepare('SELECT code, name, cityCode FROM area').all() as AreaRow[],
+    3,
+    (r) => pad12(r.cityCode)
+  );
+  emit(
+    db.prepare('SELECT code, name, areaCode FROM street').all() as StreetRow[],
+    4,
+    (r) => pad12(r.areaCode)
+  );
+  emit(
+    db
+      .prepare('SELECT code, name, streetCode FROM village')
+      .all() as VillageRow[],
+    5,
+    (r) => pad12(r.streetCode)
+  );
 
   ws.end(() => {
     // manifest.json 与 CSV 同目录、随 files:["data"] 一起发布，供 hydrate 离线注水做完整性校验
@@ -116,7 +150,7 @@ function main(): void {
     console.log(
       `Wrote ${total} divisions for ${year} → ${output} ` +
         `(${skipped} self-referential placeholders skipped)\n` +
-        `Wrote manifest.json → sha512 ${manifest.sha512.slice(0, 16)}… (${bytes} bytes)`,
+        `Wrote manifest.json → sha512 ${manifest.sha512.slice(0, 16)}… (${bytes} bytes)`
     );
   });
   db.close();

@@ -11,9 +11,9 @@ import { DIVISION_LEVEL, DIVISION_STATUS, SOURCE_TYPE } from '@cndiv/core';
 
 /** Evidence confidence levels */
 export const CONFIDENCE_LEVELS = {
-  HIGH: 'high' as const,      // Official government source
-  MEDIUM: 'medium' as const,  // News report or official announcement
-  LOW: 'low' as const,        // Community submission or inferred
+  HIGH: 'high' as const, // Official government source
+  MEDIUM: 'medium' as const, // News report or official announcement
+  LOW: 'low' as const, // Community submission or inferred
 } as const;
 
 /** Patch metadata */
@@ -101,7 +101,9 @@ export const PatchSchema = z.object({
 export type Patch = z.infer<typeof PatchSchema>;
 
 /** Validate a patch file */
-export function validatePatch(data: unknown): { success: true; data: Patch } | { success: false; error: string } {
+export function validatePatch(
+  data: unknown
+): { success: true; data: Patch } | { success: false; error: string } {
   const result = PatchSchema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };

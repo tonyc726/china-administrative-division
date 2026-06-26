@@ -16,7 +16,10 @@ const AREA_RE = /^0\d{2,3}$/;
 /**
  * 解析某省页 HTML → PostalRecord[]。province 为该省名称（用于回填记录）。
  */
-export function parseProvincePostal(html: string, province: string): PostalRecord[] {
+export function parseProvincePostal(
+  html: string,
+  province: string
+): PostalRecord[] {
   const $ = load(html);
   const records: PostalRecord[] = [];
 

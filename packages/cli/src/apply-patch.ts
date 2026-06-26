@@ -30,36 +30,43 @@ interface ApplyPatchOptions {
 function applyOperation(
   db: Database.Database,
   op: Record<string, unknown>,
-  year: number,
+  year: number
 ): string | null {
   const operation = op.op as string;
 
   switch (operation) {
     case 'add': {
-      const { code, name, level, parent_code, source_type, confidence_score } = op as {
-        code: string;
-        name: string;
-        level: number;
-        parent_code: string;
-        source_type?: string;
-        confidence_score?: number;
-      };
+      const { code, name, level, parent_code, source_type, confidence_score } =
+        op as {
+          code: string;
+          name: string;
+          level: number;
+          parent_code: string;
+          source_type?: string;
+          confidence_score?: number;
+        };
 
       db.prepare(
         `INSERT OR REPLACE INTO divisions (code, name, level, parent_code, year, status, source_type, confidence_score)
-         VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`,
-      ).run(code, name, level, parent_code, year, source_type || 'community', confidence_score || 50);
+         VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`
+      ).run(
+        code,
+        name,
+        level,
+        parent_code,
+        year,
+        source_type || 'community',
+        confidence_score || 50
+      );
       console.log(`  ADD: ${code} - ${name} @${year}`);
       return null;
     }
 
     case 'remove': {
       const { code } = op as { code: string };
-      db.prepare('UPDATE divisions SET status = ? WHERE code = ? AND year = ?').run(
-        'deprecated',
-        code,
-        year,
-      );
+      db.prepare(
+        'UPDATE divisions SET status = ? WHERE code = ? AND year = ?'
+      ).run('deprecated', code, year);
       console.log(`  REMOVE: ${code} @${year}`);
       return null;
     }
@@ -74,15 +81,21 @@ function applyOperation(
       };
 
       if (status) {
-        db.prepare('UPDATE divisions SET status = ? WHERE code = ? AND year = ?').run(status, code, year);
+        db.prepare(
+          'UPDATE divisions SET status = ? WHERE code = ? AND year = ?'
+        ).run(status, code, year);
         console.log(`  UPDATE STATUS: ${code} -> ${status} @${year}`);
       }
       if (new_parent) {
-        db.prepare('UPDATE divisions SET parent_code = ? WHERE code = ? AND year = ?').run(new_parent, code, year);
+        db.prepare(
+          'UPDATE divisions SET parent_code = ? WHERE code = ? AND year = ?'
+        ).run(new_parent, code, year);
         console.log(`  UPDATE PARENT: ${code} -> ${new_parent} @${year}`);
       }
       if (name) {
-        db.prepare('UPDATE divisions SET name = ? WHERE code = ? AND year = ?').run(name, code, year);
+        db.prepare(
+          'UPDATE divisions SET name = ? WHERE code = ? AND year = ?'
+        ).run(name, code, year);
         console.log(`  UPDATE NAME: ${code} -> ${name} @${year}`);
       }
       return note ?? null;
@@ -90,7 +103,9 @@ function applyOperation(
 
     case 'move': {
       const { code, new_parent } = op as { code: string; new_parent: string };
-      db.prepare('UPDATE divisions SET parent_code = ? WHERE code = ? AND year = ?').run(new_parent, code, year);
+      db.prepare(
+        'UPDATE divisions SET parent_code = ? WHERE code = ? AND year = ?'
+      ).run(new_parent, code, year);
       console.log(`  MOVE: ${code} -> parent ${new_parent} @${year}`);
       return null;
     }
@@ -120,7 +135,10 @@ function resolvePatchYear(patchPath: string, createdAt?: string): number {
  * 从 meta.apply_after 解析基线年份，如 "2023-baseline" / "2023" → 2023。
  * 无法解析时回退到 targetYear（即原地修改、不克隆）。
  */
-function parseBaselineYear(applyAfter: string | undefined, fallback: number): number {
+function parseBaselineYear(
+  applyAfter: string | undefined,
+  fallback: number
+): number {
   const m = applyAfter?.match(/(\d{4})/);
   return m ? parseInt(m[1], 10) : fallback;
 }
@@ -191,7 +209,9 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
     /* 列已存在，忽略 */
   }
 
-  const countByYear = db.prepare('SELECT COUNT(*) AS c FROM divisions WHERE year = ?');
+  const countByYear = db.prepare(
+    'SELECT COUNT(*) AS c FROM divisions WHERE year = ?'
+  );
 
   // 操作 + 克隆 + 审计写入同一事务：杜绝"数据已改、审计失败"的不一致中间态
   const applyTransaction = db.transaction(() => {
@@ -202,15 +222,17 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
         const baseCount = (countByYear.get(baselineYear) as { c: number }).c;
         if (baseCount === 0) {
           console.warn(
-            `  ⚠️ 基线年 ${baselineYear} 无数据，无法克隆；ops 将作用于空的 ${targetYear} 分区`,
+            `  ⚠️ 基线年 ${baselineYear} 无数据，无法克隆；ops 将作用于空的 ${targetYear} 分区`
           );
         } else {
           db.prepare(
             `INSERT INTO divisions (code, name, level, parent_code, year, status, source_type, confidence_score, urban_rural_code)
              SELECT code, name, level, parent_code, ?, status, source_type, confidence_score, urban_rural_code
-             FROM divisions WHERE year = ?`,
+             FROM divisions WHERE year = ?`
           ).run(targetYear, baselineYear);
-          console.log(`  克隆基线 ${baselineYear} → ${targetYear} (${baseCount} 行)`);
+          console.log(
+            `  克隆基线 ${baselineYear} → ${targetYear} (${baseCount} 行)`
+          );
         }
       }
     }
@@ -218,18 +240,22 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
     // 2) 应用所有操作到 targetYear，聚合 update 的 note 供审计
     const notes: string[] = [];
     for (const op of patch.operations) {
-      const note = applyOperation(db, op as unknown as Record<string, unknown>, targetYear);
+      const note = applyOperation(
+        db,
+        op as unknown as Record<string, unknown>,
+        targetYear
+      );
       if (note) notes.push(note);
     }
 
     // 3) 审计落库（含聚合的 notes）
     db.prepare(
-      `INSERT INTO patch_history (patch_file, author, operations_count, notes) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO patch_history (patch_file, author, operations_count, notes) VALUES (?, ?, ?, ?)`
     ).run(
       path.basename(patchPath),
       patch.meta.author,
       patch.operations.length,
-      notes.length ? notes.join('; ') : null,
+      notes.length ? notes.join('; ') : null
     );
   });
 

@@ -20,6 +20,8 @@ export const PostalRecordSchema = z.object({
 export type PostalRecord = z.infer<typeof PostalRecordSchema>;
 
 /** 校验单条邮编/区号记录；返回 zod SafeParse 结果 */
-export function validatePostalRecord(data: unknown): z.SafeParseReturnType<unknown, PostalRecord> {
+export function validatePostalRecord(
+  data: unknown
+): z.SafeParseReturnType<unknown, PostalRecord> {
   return PostalRecordSchema.safeParse(data);
 }
