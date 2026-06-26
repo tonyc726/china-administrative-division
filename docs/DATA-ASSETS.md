@@ -111,3 +111,43 @@
 - `NBS.2022/2023.sqlite` 存在但**无对应原始 JSON**（止于 2021），溯源链缺失。
 - README 称「NBS village 含台港澳」**实测为假**（71/81/82 前缀记录为 0）。
 - categoryCodes 城乡分类码仅 2009-2014。
+
+## 六、可复现性证明（build-source 确定性）
+
+> **不变量**：`packages/cli/src/scripts/build-source.ts`（代码，已在 git）+ 冷母本
+> `NBS.<year>.sqlite`（数据，在 git 外）⟹ **确定性**产出 `source-<year>/divisions.csv`。
+> 即数据包可随时从冷母本无损重建，**无需信任工作树里那份 50MB CSV**（它本就 .gitignore）。
+
+实测验证记录（2026-06-26）：
+
+| 输入 sqlite | 输入 SHA-256（前16） | 输出 CSV | 输出 SHA-256 | 行数 |
+|---|---|---|---|---|
+| `NBS.2023.sqlite` | `02b89aab3e4e08da` | `divisions.csv` | `243d8035b004a7f0c02d88ce0e756ec6d21434a10437594612b11c5fb0e06f5e` | 665,272 |
+
+复现命令：
+
+```bash
+cd packages/cli
+tsx src/scripts/build-source.ts \
+  --input=/path/to/NBS.2023.sqlite --year=2023 \
+  --output=../source-2023/data/divisions.csv
+# 期望输出: Wrote 665271 divisions for 2023 (5 self-referential placeholders skipped)
+```
+
+## 七、完整性校验与备份（runbook）
+
+- **可机检校验文件**：`docs/cold-master.sha256`（58 项 = NBS 14 + GB2260 44；`NBS.2015.sqlite`
+  因 0 字节损坏已排除）。
+- **校验某副本完整性**：`scripts/verify-cold-master.sh <资产目录>`（内部 `shasum -a 256 -c`，
+  检测丢失/位腐）。
+- **创建/刷新异地副本**：`scripts/backup-cold-master.sh <源目录> <目标目录>`（rsync + 自动校验）。
+- 🔴 **P0 提醒**：冷母本当前仍**仅存于 `维护者本地备份目录`
+  单点**。请至少执行一次异地副本（外置盘 / 对象存储），否则一次磁盘故障即永久丢失（上游
+  stats.gov.cn 已死，不可再生）。源数据包发布到 npm（M4）后将获得第二重持久化。
+
+## 八、NBS.2015 修复路径（已知可行，暂缓执行）
+
+`NBS.2015.sqlite` 0 字节损坏，但原始 `2015.json`（119.2MB，见 §二）**完好存在** ⟹ 可重建。
+重建需要把旧 `legacy/scripts/utils/exportSqlite.js`（Sequelize，JSON→5 表 sqlite）**移植为
+better-sqlite3 TS**。按 Occam 当前暂缓（其余 14 年 sqlite 成品齐全，2015 非阻塞）；待真正需要
+2015 数据或做全量年份数据包时，与该移植一并执行。
