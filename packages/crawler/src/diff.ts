@@ -15,11 +15,17 @@ export interface DiffOptions {
   levels?: number[];
 }
 
+export interface DiffResult {
+  patch: Patch;
+  /** 因 name 为空被跳过的节点数（dmfw 偶发 null name，无法产出合法 add/update） */
+  skippedEmptyName: number;
+}
+
 /**
  * 生成从 baseline → current 的 Patch（add / update / move / remove）。
- * 仅比对 options.levels 指定的层级。
+ * 仅比对 options.levels 指定的层级。返回 patch 及被跳过的空名节点数。
  */
-export function diffToPatch(baseline: Division[], current: Division[], options: DiffOptions): Patch {
+export function diffToPatch(baseline: Division[], current: Division[], options: DiffOptions): DiffResult {
   const levels = options.levels ?? [1, 2, 3, 4];
   const inScope = (d: Division): boolean => levels.includes(d.level);
 
@@ -27,11 +33,18 @@ export function diffToPatch(baseline: Division[], current: Division[], options: 
   const cur = new Map<string, Division>(current.filter(inScope).map((d) => [d.code, d]));
 
   const operations: Operation[] = [];
+  let skippedEmptyName = 0;
 
   // 新增 / 变更
   for (const [code, d] of cur) {
     const prev = base.get(code);
     if (!prev) {
+      // FMEA：dmfw 某些节点 name 可能为 null（crawlAll 兜底为 ''），无法产出合法 add
+      //（AddOperationSchema.name = z.string().min(1)）→ 跳过空名节点，计入 skippedEmptyName
+      if (!d.name) {
+        skippedEmptyName++;
+        continue;
+      }
       operations.push({
         op: 'add',
         code,
@@ -41,7 +54,8 @@ export function diffToPatch(baseline: Division[], current: Division[], options: 
       });
       continue;
     }
-    if (prev.name !== d.name) {
+    // 仅当新名非空时才产出 update（同理避免空名 update 非法）
+    if (prev.name !== d.name && d.name) {
       operations.push({ op: 'update', code, name: d.name });
     }
     const prevParent = prev.parent_code ?? null;
@@ -59,12 +73,15 @@ export function diffToPatch(baseline: Division[], current: Division[], options: 
   }
 
   return {
-    meta: {
-      author: options.author,
-      source_url: options.source_url,
-      evidence_confidence: 'high',
-      apply_after: options.apply_after ?? '2023-baseline',
+    patch: {
+      meta: {
+        author: options.author,
+        source_url: options.source_url,
+        evidence_confidence: 'high',
+        apply_after: options.apply_after ?? '2023-baseline',
+      },
+      operations,
     },
-    operations,
+    skippedEmptyName,
   };
 }

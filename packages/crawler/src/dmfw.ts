@@ -7,7 +7,6 @@
  * 码已是 12 位定长；level: 1省 2市 3县 4乡镇街道（直辖市跳 level2，无村级 level5）。
  */
 import got from 'got';
-import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cndiv/core';
 
 const DMFW_GETLIST = 'https://dmfw.mca.gov.cn/9095/xzqh/getList';
 const UA =
@@ -54,62 +53,5 @@ export async function fetchChildren(code: string): Promise<DmfwNode[]> {
   }
 }
 
-export interface CrawlOptions {
-  /** 数据年份（写入 Division.year） */
-  year: number;
-  /** 最深抓到的层级（1省…4乡镇街道），默认 4 */
-  maxLevel?: number;
-  /** 每次请求间隔毫秒（限速，避免触发反爬），默认 80 */
-  delayMs?: number;
-  /** 进度回调 */
-  onProgress?: (count: number, lastCode: string) => void;
-}
-
-export interface CrawlResult {
-  divisions: Division[];
-  /** 抓取失败的节点 code（部分容错，不阻塞整体） */
-  failures: string[];
-}
-
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * 从 rootCode（空字符串=全国）递归抓取行政区划树，展开为扁平 Division[]。
- * 单节点抓取失败仅记入 failures、不中断整体（FMEA：部分可用优于全盘失败）。
- */
-export async function crawl(rootCode: string, options: CrawlOptions): Promise<CrawlResult> {
-  const { year, maxLevel = 4, delayMs = 80 } = options;
-  const divisions: Division[] = [];
-  const failures: string[] = [];
-
-  const walk = async (code: string, parentCode: string | null): Promise<void> => {
-    let children: DmfwNode[];
-    try {
-      children = await fetchChildren(code);
-    } catch {
-      failures.push(code);
-      return;
-    }
-
-    for (const node of children) {
-      divisions.push({
-        code: node.code,
-        name: node.name ?? '',
-        level: node.level as DivisionLevel,
-        parent_code: parentCode,
-        year,
-        source_type: SOURCE_TYPE.MCA_DECREE,
-        confidence_score: 90,
-      });
-      options.onProgress?.(divisions.length, node.code);
-
-      if (node.level < maxLevel) {
-        await delay(delayMs);
-        await walk(node.code, node.code);
-      }
-    }
-  };
-
-  await walk(rootCode, rootCode === '' ? null : rootCode);
-  return { divisions, failures };
-}
+// 注：全量抓取请用 crawl-all.ts 的 crawlAll（逐层 BFS + 并发池 + 断点续爬）。
+// 早期串行 crawl() 已废弃删除，fetchChildren 是两者共享的唯一抓取原语。

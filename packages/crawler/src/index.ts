@@ -5,9 +5,9 @@
  * 与基线快照差分，产出社区 Patch（apply_after: 2023-baseline）。
  *
  * 用法示例：
- *   import { crawl, diffToPatch } from '@cndiv/crawler';
- *   const { divisions } = await crawl('', { year: 2026, maxLevel: 4 });
- *   const patch = diffToPatch(baseline2023, divisions, { author: 'bot', source_url: 'https://dmfw.mca.gov.cn/' });
+ *   import { crawlAll, diffToPatch } from '@cndiv/crawler';
+ *   const { divisions } = await crawlAll('', { year: 2026, maxLevel: 4 });
+ *   const { patch } = diffToPatch(baseline2023, divisions, { author: 'bot', source_url: 'https://dmfw.mca.gov.cn/' });
  */
 export * from './dmfw.js';
 export * from './diff.js';

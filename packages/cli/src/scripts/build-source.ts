@@ -9,7 +9,8 @@
  *     --output=../source-2023/data/divisions.csv
  */
 import Database from 'better-sqlite3';
-import { mkdirSync, createWriteStream } from 'fs';
+import { mkdirSync, createWriteStream, writeFileSync } from 'fs';
+import crypto from 'crypto';
 import path from 'path';
 
 interface BaseRow {
@@ -61,10 +62,21 @@ function main(): void {
 
   mkdirSync(path.dirname(output), { recursive: true });
   const ws = createWriteStream(output);
-  ws.write('code,name,level,parent_code,year,status,source_type,confidence_score\n');
+
+  // 边写边算 SHA-512 与字节数，产出确定性 manifest（无时间戳→同输入字节一致，保持 M0 可复现）
+  const hash = crypto.createHash('sha512');
+  let bytes = 0;
+  const writeLine = (s: string): void => {
+    ws.write(s);
+    hash.update(s);
+    bytes += Buffer.byteLength(s);
+  };
+
+  writeLine('code,name,level,parent_code,year,status,source_type,confidence_score\n');
 
   let total = 0;
   let skipped = 0;
+  let maxLevel = 0;
   const emit = <T extends BaseRow>(rows: T[], level: number, parentOf: (row: T) => string | null): void => {
     for (const row of rows) {
       const code = pad12(row.code);
@@ -77,8 +89,9 @@ function main(): void {
         skipped++;
         continue;
       }
-      ws.write(`${code},${csvCell(row.name)},${level},${parent ?? ''},${year},active,official_nbs,100\n`);
+      writeLine(`${code},${csvCell(row.name)},${level},${parent ?? ''},${year},active,official_nbs,100\n`);
       total++;
+      if (level > maxLevel) maxLevel = level;
     }
   };
 
@@ -89,7 +102,26 @@ function main(): void {
   emit(db.prepare('SELECT code, name, streetCode FROM village').all() as VillageRow[], 5, (r) => pad12(r.streetCode));
 
   ws.end(() => {
-    console.log(`Wrote ${total} divisions for ${year} → ${output} (${skipped} self-referential placeholders skipped)`);
+    // manifest.json 与 CSV 同目录、随 files:["data"] 一起发布，供 hydrate 离线注水做完整性校验
+    const manifest = {
+      year: Number(year),
+      source: 'NBS',
+      format: 'csv',
+      file: path.basename(output),
+      rows: total,
+      levels: maxLevel,
+      bytes,
+      sha512: hash.digest('hex'),
+      placeholders_skipped: skipped,
+      generator: '@cndiv/cli build-source',
+    };
+    const manifestPath = path.join(path.dirname(output), 'manifest.json');
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    console.log(
+      `Wrote ${total} divisions for ${year} → ${output} ` +
+        `(${skipped} self-referential placeholders skipped)\n` +
+        `Wrote manifest.json → sha512 ${manifest.sha512.slice(0, 16)}… (${bytes} bytes)`,
+    );
   });
   db.close();
 }

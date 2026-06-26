@@ -133,24 +133,45 @@ function importCsvToSqlite(db: Database.Database, csvContent: string, year: numb
   return records.length;
 }
 
+interface SourceManifest {
+  file: string;
+  sha512: string;
+  rows?: number;
+}
+
 /**
  * 从 gzip tarball buffer 中解包并把所有 .csv 导入 SQLite，返回导入行数。
  * 供 NPM 注水与离线 --tarball 注水共用。
+ *
+ * 若包内含 manifest.json，则按其 SHA-512 校验对应 CSV（FMEA：离线注水无 registry shasum，
+ * manifest 是其唯一完整性凭据）；不符即抛错，杜绝把损坏/被篡改的数据静默灌入缓存。
  */
 async function extractAndImport(
   db: Database.Database,
   gzBuffer: Buffer,
   year: number
-): Promise<number> {
+): Promise<{ recordCount: number; verified: boolean | null }> {
   const extract = tar.extract();
   let recordCount = 0;
+  let manifestRaw: string | null = null;
+  const csvSha = new Map<string, string>();
 
   extract.on('entry', (header, stream, next) => {
-    if (header.name.endsWith('.csv')) {
+    const base = path.basename(header.name);
+    if (base === 'manifest.json') {
       const chunks: Buffer[] = [];
       stream.on('data', (chunk) => chunks.push(chunk));
       stream.on('end', () => {
-        recordCount += importCsvToSqlite(db, Buffer.concat(chunks).toString('utf-8'), year);
+        manifestRaw = Buffer.concat(chunks).toString('utf-8');
+        next();
+      });
+    } else if (header.name.endsWith('.csv')) {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk) => chunks.push(chunk));
+      stream.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        csvSha.set(base, crypto.createHash('sha512').update(buf).digest('hex'));
+        recordCount += importCsvToSqlite(db, buf.toString('utf-8'), year);
         next();
       });
     } else {
@@ -160,7 +181,20 @@ async function extractAndImport(
   });
 
   await pipeline(Readable.from(gzBuffer), createGunzip(), extract);
-  return recordCount;
+
+  let verified: boolean | null = null;
+  if (manifestRaw) {
+    const manifest = JSON.parse(manifestRaw) as SourceManifest;
+    const actual = csvSha.get(path.basename(manifest.file));
+    verified = actual === manifest.sha512;
+    if (!verified) {
+      throw new Error(
+        `manifest 完整性校验失败：${manifest.file} 的 SHA-512 与 manifest 不符（数据可能损坏或被篡改），已中止注水`
+      );
+    }
+  }
+
+  return { recordCount, verified };
 }
 
 /**
@@ -182,11 +216,16 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     const db = initCacheDb(path.join(cacheDir, 'cache.db'));
     console.log(`Importing from local tarball: ${tarball}`);
     const buf = await readFile(tarball);
-    const count = await extractAndImport(db, buf, parseInt(year, 10));
+    const { recordCount: count, verified } = await extractAndImport(db, buf, parseInt(year, 10));
     db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(`tarball-${year}`, tarball);
     console.log('');
     console.log('='.repeat(60));
     console.log(`Hydration complete (offline): ${count} records imported`);
+    console.log(
+      verified === true
+        ? 'Integrity: manifest SHA-512 verified ✅'
+        : 'Integrity: no manifest.json in package (skipped)'
+    );
     console.log('='.repeat(60));
     db.close();
     return;
@@ -240,7 +279,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
 
   // Extract and import — 从已下载且通过 SHA 校验的 buffer 解包，保证"入库内容 === 已校验内容"
   console.log('Extracting data...');
-  const recordCount = await extractAndImport(db, response.body, parseInt(year, 10));
+  const { recordCount } = await extractAndImport(db, response.body, parseInt(year, 10));
 
   // Update cache metadata
   db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(

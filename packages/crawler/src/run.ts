@@ -19,7 +19,7 @@ import { crawlAll } from './crawl-all.js';
 import { diffToPatch } from './diff.js';
 import { loadBaselineCsv } from './baseline.js';
 import type { Division } from '@cndiv/core';
-import type { Operation } from '@cndiv/data-protocol';
+import { validatePatch, type Operation } from '@cndiv/data-protocol';
 
 const args = process.argv.slice(2);
 const get = (key: string): string | undefined => args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];
@@ -68,15 +68,18 @@ async function main(): Promise<void> {
   let written = 0;
   let totalOps = 0;
   let suppressedRemoves = 0;
+  let skippedEmptyNames = 0;
+  let rejected = 0;
   for (const pp of provinces) {
     const cur = divisions.filter((d) => d.code.startsWith(pp));
     const base = baseline.filter((d) => d.code.startsWith(pp));
-    const patch = diffToPatch(base, cur, {
+    const { patch, skippedEmptyName } = diffToPatch(base, cur, {
       author,
       source_url: 'https://dmfw.mca.gov.cn/',
       apply_after: '2023-baseline',
       levels,
     });
+    skippedEmptyNames += skippedEmptyName;
 
     let ops: Operation[] = patch.operations;
     if (!emitRemoves) {
@@ -87,6 +90,15 @@ async function main(): Promise<void> {
     if (ops.length === 0) continue;
 
     patch.operations = ops;
+
+    // 写盘前守门：用 data-protocol schema 校验，拒绝任何非法 patch（防脏数据落进 patches/）
+    const check = validatePatch(patch);
+    if (!check.success) {
+      rejected++;
+      console.error(`  ⛔ 跳过非法 patch ${pp}（未过 schema 校验）：${check.error}`);
+      continue;
+    }
+
     const file = path.join(outDir, `${pp}0000000000-dmfw-${year}.json`);
     await writeFile(file, `${JSON.stringify(patch, null, 2)}\n`);
     written++;
@@ -95,6 +107,12 @@ async function main(): Promise<void> {
   }
 
   console.log(`\n完成：写出 ${written} 个 patch 文件，共 ${totalOps} 个变更操作 → ${outDir}/`);
+  if (skippedEmptyNames > 0) {
+    console.log(`ℹ️  跳过 ${skippedEmptyNames} 个空名节点（dmfw name=null，无法产出合法 add/update）`);
+  }
+  if (rejected > 0) {
+    console.log(`⛔ ${rejected} 个省级 patch 因未过 schema 校验被拒写（详见上方日志，不静默丢弃）`);
+  }
   if (suppressedRemoves > 0) {
     console.log(
       `⚠️  抑制 ${suppressedRemoves} 个 remove（dmfw 覆盖<NBS：无村级/开发区管委会，absence≠撤销）。` +

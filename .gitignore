@@ -660,8 +660,10 @@ xcuserdata/
 /pageCacheDB/
 /database/
 
-# source-* 数据包的生成产物（CSV 由 build-source 从 SQLite 生成，不进 git）
-/packages/source-*/data/
+# source-* 数据包的生成产物：CSV(~50MB)由 build-source 从 SQLite 生成，不进 git；
+# 仅保留 manifest.json（SHA-512 完整性锚点，确定性可复现，~400B）入库
+/packages/source-*/data/*
+!/packages/source-*/data/manifest.json
 /packages/source-*/*.tgz
 
 # 放行：tsconfig.base.json 被上面的 merge 残留规则 *.BASE.* 在大小写不敏感文件系统下误伤
