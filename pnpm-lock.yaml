@@ -172,16 +172,9 @@ importers:
       '@cn-division/data-protocol':
         specifier: workspace:*
         version: link:../data-protocol
-      cheerio:
-        specifier: ^1.0.0-rc.12
-        version: 1.1.2
       got:
         specifier: ^14.0.0
         version: 14.6.6
-    devDependencies:
-      '@types/cheerio':
-        specifier: ^0.22.35
-        version: 0.22.35
 
   packages/data-protocol:
     dependencies:
@@ -192,6 +185,8 @@ importers:
       '@cn-division/core':
         specifier: workspace:*
         version: link:../core
+
+  packages/source-2023: {}
 
 packages:
 
@@ -821,9 +816,6 @@ packages:
 
   '@types/better-sqlite3@7.6.13':
     resolution: {integrity: sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA==}
-
-  '@types/cheerio@0.22.35':
-    resolution: {integrity: sha512-yD57BchKRvTV+JD53UZ6PD8KWY5g5rvvMLRnZR3EQBCZXiDT/HR+pKpMzFGlWNhFrXlo7VPZXtKvIEwZkAWOIA==}
 
   '@types/conventional-commits-parser@5.0.2':
     resolution: {integrity: sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g==}
@@ -5129,10 +5121,6 @@ snapshots:
   '@types/better-sqlite3@7.6.13':
     dependencies:
       '@types/node': 20.19.27
-
-  '@types/cheerio@0.22.35':
-    dependencies:
-      '@types/node': 25.0.3
 
   '@types/conventional-commits-parser@5.0.2':
     dependencies:

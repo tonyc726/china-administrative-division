@@ -1,10 +1,13 @@
 {
   "name": "@cn-division/crawler",
   "version": "1.0.0",
-  "description": "Intelligence gathering module for MCA decrees and map APIs",
+  "description": "后统计局时代增量采集引擎：对接国家地名信息库(dmfw)抓取并差分产出 Patch",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "cn-div-crawl": "dist/run.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -13,7 +16,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "crawl": "tsx src/run.ts"
   },
   "peerDependencies": {
     "@cn-division/core": "workspace:*",
@@ -22,13 +26,11 @@
   "dependencies": {
     "@cn-division/core": "workspace:*",
     "@cn-division/data-protocol": "workspace:*",
-    "cheerio": "^1.0.0-rc.12",
     "got": "^14.0.0"
   },
   "devDependencies": {
     "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*",
-    "@types/cheerio": "^0.22.35"
+    "@cn-division/data-protocol": "workspace:*"
   },
   "keywords": ["china", "administrative", "division", "crawler", "mca"],
   "license": "MIT"

@@ -11,3 +11,6 @@
  */
 export * from './dmfw.js';
 export * from './diff.js';
+export * from './crawl-all.js';
+export * from './cache.js';
+export * from './baseline.js';
