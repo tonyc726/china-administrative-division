@@ -19,7 +19,7 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { parse } from 'csv-parse/sync';
-import { DATABASE_SCHEMA } from '@cndiv/data-protocol';
+import { DATABASE_SCHEMA, DIVISIONS_CSV_HEADER, csvCell } from '@cndiv/data-protocol';
 
 interface HydrateOptions {
   year: string;
@@ -332,11 +332,11 @@ export async function exportFromCache(
       const ws = createWriteStream(outputPath);
       ws.on('error', reject);
       ws.on('finish', () => resolve());
-      ws.write('code,name,level,parent_code,year,status,source_type,confidence_score\n');
+      ws.write(`${DIVISIONS_CSV_HEADER}\n`);
       for (const record of records) {
         const line = [
           record.code,
-          `"${record.name.replace(/"/g, '""')}"`,
+          csvCell(record.name),
           record.level,
           record.parent_code || '',
           record.year,
@@ -351,10 +351,10 @@ export async function exportFromCache(
     console.log(`Exported ${records.length} records to ${outputPath}`);
   } else {
     // Output to stdout as CSV
-    console.log('code,name,level,parent_code,year,status,source_type,confidence_score');
+    console.log(DIVISIONS_CSV_HEADER);
     for (const record of records) {
       console.log(
-        `${record.code},"${record.name.replace(/"/g, '""')}",${record.level},${record.parent_code || ''},${record.year},${record.status},${record.source_type || ''},${record.confidence_score || 100}`
+        `${record.code},${csvCell(record.name)},${record.level},${record.parent_code || ''},${record.year},${record.status},${record.source_type || ''},${record.confidence_score || 100}`
       );
     }
   }

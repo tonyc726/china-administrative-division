@@ -23,7 +23,12 @@ import {
   normalizeCode,
   type Division,
 } from '@cndiv/core';
-import { DATABASE_SCHEMA, INSERT_DIVISIONS_BATCH } from '@cndiv/data-protocol';
+import {
+  DATABASE_SCHEMA,
+  INSERT_DIVISIONS_BATCH,
+  DIVISIONS_CSV_HEADER,
+  csvCell,
+} from '@cndiv/data-protocol';
 
 export interface MigrateOptions {
   /** 输入目录（含 *.json.gz / *.json），默认 ./legacy/data/GB2260 */
@@ -44,8 +49,6 @@ export interface MigrateResult {
   csvRows?: number;
   csvSha512?: string;
 }
-
-const csvCell = (value: string): string => `"${value.replace(/"/g, '""')}"`;
 
 /**
  * 把 migrate 产出的多年份 SQLite 固化为确定性数据包 CSV（按 code,year 稳定排序）+ manifest。
@@ -80,7 +83,7 @@ async function exportDbToDataPackage(
   };
 
   let csv = '';
-  write((csv = 'code,name,level,parent_code,year,status,source_type,confidence_score\n'));
+  write((csv = `${DIVISIONS_CSV_HEADER}\n`));
   const parts: string[] = [csv];
   for (const r of rows) {
     yearSet.add(r.year);

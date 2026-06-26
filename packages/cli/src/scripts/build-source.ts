@@ -12,6 +12,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, createWriteStream, writeFileSync } from 'fs';
 import crypto from 'crypto';
 import path from 'path';
+import { DIVISIONS_CSV_HEADER, csvCell } from '@cndiv/data-protocol';
 
 interface BaseRow {
   code: string;
@@ -33,11 +34,6 @@ interface VillageRow extends BaseRow {
 /** NBS 码为 6/9/12 位混合，统一右补零到 12 位定长 */
 function pad12(code: string | null | undefined): string | null {
   return code ? code.padEnd(12, '0') : null;
-}
-
-/** CSV 字段转义（name 可能含逗号/引号） */
-function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
 }
 
 function parseArgs(argv: string[]): { input?: string; year?: string; output: string } {
@@ -72,7 +68,7 @@ function main(): void {
     bytes += Buffer.byteLength(s);
   };
 
-  writeLine('code,name,level,parent_code,year,status,source_type,confidence_score\n');
+  writeLine(`${DIVISIONS_CSV_HEADER}\n`);
 
   let total = 0;
   let skipped = 0;
