@@ -636,7 +636,7 @@ xcuserdata/
 # 数据资产与缓存：绝不进 git
 #   本仓库历史曾因 GB 级 SQLite / LevelDB 缓存进库膨胀，已用 git-filter-repo 清理。
 #   下列规则按「内容类型」兜底，不再依赖「目录名恰好叫 data」这种脆弱约定。
-#   行政区划数据请走 NPM(@cn-division/source-YYYY) / GitHub Release 分发。
+#   行政区划数据请走 NPM(@cndiv/source-YYYY) / GitHub Release 分发。
 # ─────────────────────────────────────────────────────────────
 
 # 大体积数据库 / 数据快照（任何位置）

@@ -133,10 +133,10 @@ importers:
 
   packages/cli:
     dependencies:
-      '@cn-division/core':
+      '@cndiv/core':
         specifier: workspace:*
         version: link:../core
-      '@cn-division/data-protocol':
+      '@cndiv/data-protocol':
         specifier: workspace:*
         version: link:../data-protocol
       better-sqlite3:
@@ -166,10 +166,10 @@ importers:
 
   packages/crawler:
     dependencies:
-      '@cn-division/core':
+      '@cndiv/core':
         specifier: workspace:*
         version: link:../core
-      '@cn-division/data-protocol':
+      '@cndiv/data-protocol':
         specifier: workspace:*
         version: link:../data-protocol
       got:
@@ -182,7 +182,7 @@ importers:
         specifier: ^3.22.0
         version: 3.25.76
     devDependencies:
-      '@cn-division/core':
+      '@cndiv/core':
         specifier: workspace:*
         version: link:../core
 

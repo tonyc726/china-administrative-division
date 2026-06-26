@@ -4,8 +4,8 @@
  * Downloads and imports division data from NPM packages.
  *
  * Usage:
- *   cn-div hydrate --year 2023
- *   cn-div hydrate --year 2023 --cache ~/.cn-division/cache.db
+ *   cndiv hydrate --year 2023
+ *   cndiv hydrate --year 2023 --cache ~/.cndiv/cache.db
  */
 
 import Database from 'better-sqlite3';
@@ -19,7 +19,7 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 import { parse } from 'csv-parse/sync';
-import { DATABASE_SCHEMA } from '@cn-division/data-protocol';
+import { DATABASE_SCHEMA } from '@cndiv/data-protocol';
 
 interface HydrateOptions {
   year: string;
@@ -167,7 +167,7 @@ async function extractAndImport(
  * Main hydrate function
  */
 export async function hydrate(options: HydrateOptions): Promise<void> {
-  const { year, cacheDir = path.join(os.homedir(), '.cn-division'), verbose = false, tarball } = options;
+  const { year, cacheDir = path.join(os.homedir(), '.cndiv'), verbose = false, tarball } = options;
 
   console.log('='.repeat(60));
   console.log('Data Hydration Tool');
@@ -192,7 +192,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
     return;
   }
 
-  const packageName = `@cn-division/source-${year}`;
+  const packageName = `@cndiv/source-${year}`;
   console.log(`Fetching package metadata: ${packageName}`);
 
   // Get tarball URL from NPM
@@ -265,7 +265,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
  */
 export async function exportFromCache(
   year: number,
-  cacheDir: string = path.join(os.homedir(), '.cn-division'),
+  cacheDir: string = path.join(os.homedir(), '.cndiv'),
   outputPath?: string
 ): Promise<void> {
   const dbPath = path.join(cacheDir, 'cache.db');

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * @cn-division/cli
+ * @cndiv/cli
  *
  * Command-line interface for Chinese administrative division data management.
  *
  * Usage:
- *   cn-div hydrate --year 2023    Download and import data from NPM
- *   cn-div migrate --input <dir>  Migrate legacy JSON data to SQLite
- *   cn-div export --year 2023     Export data to CSV
+ *   cndiv hydrate --year 2023    Download and import data from NPM
+ *   cndiv migrate --input <dir>  Migrate legacy JSON data to SQLite
+ *   cndiv export --year 2023     Export data to CSV
  */
 
 import { hydrate, exportFromCache } from './hydrate.js';
@@ -29,7 +29,7 @@ async function main() {
 
       if (!year) {
         console.error('Error: --year is required');
-        console.error('Usage: cn-div hydrate --year=<YYYY> [--tarball=<file.tgz>]');
+        console.error('Usage: cndiv hydrate --year=<YYYY> [--tarball=<file.tgz>]');
         process.exit(1);
       }
 
@@ -44,7 +44,7 @@ async function main() {
 
       if (!inputDir) {
         console.error('Error: --input is required');
-        console.error('Usage: cn-div migrate --input <directory>');
+        console.error('Usage: cndiv migrate --input <directory>');
         process.exit(1);
       }
 
@@ -155,7 +155,7 @@ async function main() {
 
       if (!year) {
         console.error('Error: --year is required');
-        console.error('Usage: cn-div export --year <YYYY> [--output <file>]');
+        console.error('Usage: cndiv export --year <YYYY> [--output <file>]');
         process.exit(1);
       }
 
@@ -171,7 +171,7 @@ async function main() {
 
       if (!patchPath) {
         console.error('Error: --patch is required');
-        console.error('Usage: cn-div apply-patch --patch <file.json> [--dry-run]');
+        console.error('Usage: cndiv apply-patch --patch <file.json> [--dry-run]');
         process.exit(1);
       }
 
@@ -182,7 +182,7 @@ async function main() {
     case 'version':
     case '--version':
     case '-v': {
-      console.log('@cn-division/cli v1.0.0');
+      console.log('@cndiv/cli v1.0.0');
       break;
     }
 
@@ -191,10 +191,10 @@ async function main() {
     case '-h':
     default: {
       console.log(`
-@cn-division/cli - Chinese Administrative Division Data CLI
+@cndiv/cli - Chinese Administrative Division Data CLI
 
 Usage:
-  cn-div <command> [options]
+  cndiv <command> [options]
 
 注：参数使用 --key=value 连写形式。
 
@@ -207,15 +207,15 @@ Commands:
   help                        Show this help message
 
 Examples:
-  cn-div hydrate --year=2023
-  cn-div hydrate --year=2023 --tarball=./cn-division-source-2023-2023.0.0.tgz
-  cn-div hydrate --year=2023 --cache=~/.cn-division
-  cn-div migrate --input=./legacy/data/GB2260 --output=./dist/data.db
-  cn-div export --year=2023 --output=./2023.csv
-  cn-div apply-patch --patch=patches/2025/310115-pudong-update.json
+  cndiv hydrate --year=2023
+  cndiv hydrate --year=2023 --tarball=./cndiv-source-2023-2023.0.0.tgz
+  cndiv hydrate --year=2023 --cache=~/.cndiv
+  cndiv migrate --input=./legacy/data/GB2260 --output=./dist/data.db
+  cndiv export --year=2023 --output=./2023.csv
+  cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
 
 For more information, visit:
-  https://github.com/cn-division/china-administrative-division
+  https://github.com/tonyc726/china-administrative-division
 `);
       break;
     }

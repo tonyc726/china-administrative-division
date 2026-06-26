@@ -32,7 +32,7 @@ if [ "$blocked" -ne 0 ]; then
 
 ✋ pre-commit 拦截：检测到大文件或数据库快照。
    行政区划数据(SQLite/大 JSON)请勿提交进 git——历史曾因此膨胀到 GB 级并被迫 filter-repo 清理。
-   正确做法：作为 @cn-division/source-YYYY 发到 NPM，或走 GitHub Release 附件 / 私有 OSS。
+   正确做法：作为 @cndiv/source-YYYY 发到 NPM，或走 GitHub Release 附件 / 私有 OSS。
    确需强制提交：git commit --no-verify（请三思）。
 EOF
   exit 1

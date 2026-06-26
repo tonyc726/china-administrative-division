@@ -1,5 +1,5 @@
 {
-  "name": "@cn-division/core",
+  "name": "@cndiv/core",
   "version": "1.0.0",
   "description": "Core types and validation algorithms for Chinese administrative divisions",
   "type": "module",

@@ -7,7 +7,7 @@
  */
 import { fetchChildren, type DmfwNode } from './dmfw.js';
 import { FsCache } from './cache.js';
-import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cn-division/core';
+import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cndiv/core';
 
 export interface CrawlAllOptions {
   /** 数据年份 */

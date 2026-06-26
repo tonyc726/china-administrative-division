@@ -1,5 +1,5 @@
 /**
- * @cn-division/cli
+ * @cndiv/cli
  *
  * CLI tool for data hydration, migration and export
  */

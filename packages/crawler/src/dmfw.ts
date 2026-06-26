@@ -7,7 +7,7 @@
  * 码已是 12 位定长；level: 1省 2市 3县 4乡镇街道（直辖市跳 level2，无村级 level5）。
  */
 import got from 'got';
-import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cn-division/core';
+import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cndiv/core';
 
 const DMFW_GETLIST = 'https://dmfw.mca.gov.cn/9095/xzqh/getList';
 const UA =

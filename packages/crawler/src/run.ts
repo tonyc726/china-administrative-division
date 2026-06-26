@@ -18,8 +18,8 @@ import path from 'path';
 import { crawlAll } from './crawl-all.js';
 import { diffToPatch } from './diff.js';
 import { loadBaselineCsv } from './baseline.js';
-import type { Division } from '@cn-division/core';
-import type { Operation } from '@cn-division/data-protocol';
+import type { Division } from '@cndiv/core';
+import type { Operation } from '@cndiv/data-protocol';
 
 const args = process.argv.slice(2);
 const get = (key: string): string | undefined => args.find((a) => a.startsWith(`--${key}=`))?.split('=')[1];

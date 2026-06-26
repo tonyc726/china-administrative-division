@@ -1,12 +1,12 @@
 {
-  "name": "@cn-division/crawler",
+  "name": "@cndiv/crawler",
   "version": "1.0.0",
   "description": "后统计局时代增量采集引擎：对接国家地名信息库(dmfw)抓取并差分产出 Patch",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "cn-div-crawl": "dist/run.js"
+    "cndiv-crawl": "dist/run.js"
   },
   "exports": {
     ".": {
@@ -20,17 +20,17 @@
     "crawl": "tsx src/run.ts"
   },
   "peerDependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*"
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*"
   },
   "dependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*",
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*",
     "got": "^14.0.0"
   },
   "devDependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*"
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*"
   },
   "keywords": ["china", "administrative", "division", "crawler", "mca"],
   "license": "MIT"

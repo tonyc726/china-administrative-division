@@ -27,7 +27,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: pnpm --filter @cn-division/core --filter @cn-division/data-protocol build
+        run: pnpm --filter @cndiv/core --filter @cndiv/data-protocol build
 
       - name: Validate patch files
         run: node scripts/validate-patches.mjs

@@ -13,8 +13,8 @@
 
 ```
 构建期(维护者)                     分发                用户运行期
-历史源/dmfw/镜像 → 合成 → SQLite → NPM @cn-division/source-YYYY → cn-div hydrate → ~/.cn-division/cache.db
-                                  + GitHub Release 归档        + patches/*.json  → cn-div apply-patch
+历史源/dmfw/镜像 → 合成 → SQLite → NPM @cndiv/source-YYYY → cndiv hydrate → ~/.cndiv/cache.db
+                                  + GitHub Release 归档        + patches/*.json  → cndiv apply-patch
 ```
 
 - **用户侧零爬虫**：只从 NPM 拉取数据包注水到本地 SQLite。
@@ -24,10 +24,10 @@
 
 | 包 | 职责 |
 |---|---|
-| [`@cn-division/core`](./packages/core) | 领域模型（5 级区划）与区划码校验（`validateCode` / `getLevelFromCode` / `getParentCode`，码结构 2+2+2+3+3） |
-| [`@cn-division/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA` + 基于 Zod 的 Patch 协议（`validatePatch`） |
-| [`@cn-division/cli`](./packages/cli) | `cn-div` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` |
-| [`@cn-division/crawler`](./packages/crawler) | 增量采集（对接国家地名信息库 dmfw，产出 Patch）— 🚧 开发中 |
+| [`@cndiv/core`](./packages/core) | 领域模型（5 级区划）与区划码校验（`validateCode` / `getLevelFromCode` / `getParentCode`，码结构 2+2+2+3+3） |
+| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA` + 基于 Zod 的 Patch 协议（`validatePatch`） |
+| [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` |
+| [`@cndiv/crawler`](./packages/crawler) | 增量采集（对接国家地名信息库 dmfw，产出 Patch）— 🚧 开发中 |
 | [`legacy/`](./legacy) | v1 旧版爬虫历史存档（仅参考，数据源已失效） |
 
 ## 数据获取
@@ -35,11 +35,11 @@
 ### 方式一：CLI 注水（推荐）
 
 ```bash
-npm i -g @cn-division/cli      # 或 pnpm add -g
+npm i -g @cndiv/cli      # 或 pnpm add -g
 
-cn-div hydrate --year=2023     # 下载 @cn-division/source-2023 → ~/.cn-division/cache.db
-cn-div apply-patch --patch=patches/2025/310115-pudong-update.json
-cn-div export --year=2023 --output=divisions-2023.csv
+cndiv hydrate --year=2023     # 下载 @cndiv/source-2023 → ~/.cndiv/cache.db
+cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
+cndiv export --year=2023 --output=divisions-2023.csv
 ```
 
 > ⚠️ 参数使用 `--key=value` 连写形式（如 `--year=2023`）。

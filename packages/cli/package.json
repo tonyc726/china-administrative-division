@@ -1,10 +1,10 @@
 {
-  "name": "@cn-division/cli",
+  "name": "@cndiv/cli",
   "version": "1.0.0",
   "description": "CLI tool for data hydration, migration and export",
   "type": "module",
   "bin": {
-    "cn-div": "dist/cli.js"
+    "cndiv": "dist/cli.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,20 +22,20 @@
     "build-source": "tsx src/scripts/build-source.ts"
   },
   "peerDependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*"
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*"
   },
   "dependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*",
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*",
     "better-sqlite3": "^9.4.0",
     "cacache": "^18.0.0",
     "got": "^14.0.0",
     "tar-stream": "^3.1.0"
   },
   "devDependencies": {
-    "@cn-division/core": "workspace:*",
-    "@cn-division/data-protocol": "workspace:*",
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*",
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.0.0",
     "@types/tar-stream": "^3.1.0"

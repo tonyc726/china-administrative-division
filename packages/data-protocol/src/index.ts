@@ -1,5 +1,5 @@
 /**
- * @cn-division/data-protocol
+ * @cndiv/data-protocol
  *
  * Protocol definitions for patches, schemas and data validation
  */

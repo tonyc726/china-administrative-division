@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { DivisionLevel, SourceType } from '@cn-division/core';
+import type { DivisionLevel, SourceType } from '@cndiv/core';
 
 /** Evidence confidence levels */
 export const CONFIDENCE_LEVELS = {

@@ -1,5 +1,5 @@
 /**
- * @cn-division/core
+ * @cndiv/core
  *
  * Core types and validation algorithms for Chinese administrative divisions
  */

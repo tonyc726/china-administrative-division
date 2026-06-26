@@ -4,8 +4,8 @@
  * 关键约束：dmfw 只到乡镇/街道（level 1-4），无村级（level 5）。
  * 因此差分默认只比对 level 1-4，避免把基线里的村全部误判为 remove。
  */
-import type { Division } from '@cn-division/core';
-import type { Patch, Operation } from '@cn-division/data-protocol';
+import type { Division } from '@cndiv/core';
+import type { Patch, Operation } from '@cndiv/data-protocol';
 
 export interface DiffOptions {
   author: string;

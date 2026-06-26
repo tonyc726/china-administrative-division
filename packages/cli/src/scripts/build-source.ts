@@ -1,8 +1,8 @@
 /**
- * Build a @cn-division/source-<year> data package CSV from an NBS five-level SQLite.
+ * Build a @cndiv/source-<year> data package CSV from an NBS five-level SQLite.
  *
  * 把 NBS.<year>.sqlite（province/city/area/street/village 五表）转换为统一的
- * divisions CSV（12 位定长码 + level 1-5 + parent_code），供 cn-div hydrate 注水。
+ * divisions CSV（12 位定长码 + level 1-5 + parent_code），供 cndiv hydrate 注水。
  *
  * Usage:
  *   tsx src/scripts/build-source.ts --input=NBS.2023.sqlite --year=2023 \

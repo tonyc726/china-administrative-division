@@ -2,8 +2,8 @@
 /**
  * 校验 patches/ 下所有 patch JSON 是否符合协议（供 CI 与本地使用）。
  *
- * 依赖已构建的 @cn-division/data-protocol：
- *   pnpm --filter @cn-division/data-protocol build
+ * 依赖已构建的 @cndiv/data-protocol：
+ *   pnpm --filter @cndiv/data-protocol build
  * 运行：
  *   node scripts/validate-patches.mjs
  *

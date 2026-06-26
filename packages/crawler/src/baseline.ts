@@ -4,7 +4,7 @@
  * 仅 name 字段带引号转义（""→"），无需引入 csv 解析依赖。
  */
 import { readFile } from 'fs/promises';
-import type { Division, DivisionLevel } from '@cn-division/core';
+import type { Division, DivisionLevel } from '@cndiv/core';
 
 export function parseDivisionsCsv(content: string): Division[] {
   const out: Division[] = [];

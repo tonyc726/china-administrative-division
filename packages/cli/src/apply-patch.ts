@@ -4,13 +4,13 @@
  * Applies community patches to the SQLite database.
  *
  * Usage:
- *   cn-div apply-patch --patch patches/2025/310115-pudong-update.json
+ *   cndiv apply-patch --patch patches/2025/310115-pudong-update.json
  */
 
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
-import { validatePatch, DATABASE_SCHEMA } from '@cn-division/data-protocol';
+import { validatePatch, DATABASE_SCHEMA } from '@cndiv/data-protocol';
 
 interface ApplyPatchOptions {
   patch: string;
@@ -116,7 +116,7 @@ function resolvePatchYear(patchPath: string, createdAt?: string): number {
  * Main apply-patch function
  */
 export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
-  const { patch: patchPath, cacheDir = '~/.cn-division', dryRun = false } = options;
+  const { patch: patchPath, cacheDir = '~/.cndiv', dryRun = false } = options;
 
   console.log('='.repeat(60));
   console.log('Patch Application Tool');
@@ -165,7 +165,7 @@ export async function applyPatch(options: ApplyPatchOptions): Promise<void> {
 
   if (!fs.existsSync(dbPath)) {
     console.error(`Error: Cache database not found: ${dbPath}`);
-    console.error('Please run "cn-div hydrate --year 2023" first');
+    console.error('Please run "cndiv hydrate --year 2023" first');
     return;
   }
 

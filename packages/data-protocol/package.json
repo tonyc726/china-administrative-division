@@ -1,5 +1,5 @@
 {
-  "name": "@cn-division/data-protocol",
+  "name": "@cndiv/data-protocol",
   "version": "1.0.0",
   "description": "Protocol definitions for patches, schemas and data validation",
   "type": "module",
@@ -16,13 +16,13 @@
     "dev": "tsc --watch"
   },
   "peerDependencies": {
-    "@cn-division/core": "workspace:*"
+    "@cndiv/core": "workspace:*"
   },
   "dependencies": {
     "zod": "^3.22.0"
   },
   "devDependencies": {
-    "@cn-division/core": "workspace:*"
+    "@cndiv/core": "workspace:*"
   },
   "keywords": ["china", "administrative", "division", "protocol", "schema"],
   "license": "MIT"
