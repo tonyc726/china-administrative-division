@@ -73,6 +73,26 @@ async function main() {
       break;
     }
 
+    case 'backfill': {
+      // 回灌：把 cache.db 中某年份分区（基线 + 已 apply 的 patch）导出回 source 数据包 CSV，
+      // 合上闭环 crawler → patches → apply-patch → backfill → source-<year> → (重建/发布)。
+      const year = args.find((a) => a.startsWith('--year='))?.split('=')[1];
+      const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
+      const output =
+        args.find((a) => a.startsWith('--output='))?.split('=')[1] ||
+        `packages/source-${year}/data/divisions.csv`;
+
+      if (!year) {
+        console.error('Error: --year is required');
+        console.error('Usage: cndiv backfill --year=<YYYY> [--output=<csv>]');
+        process.exit(1);
+      }
+
+      await exportFromCache(parseInt(year, 10), cacheDir, output);
+      console.log(`回灌完成 → ${output}（可据此重建/发布 @cndiv/source-${year} 合上闭环）`);
+      break;
+    }
+
     case 'apply-patch':
     case 'patch': {
       const patchPath = args.find((a) => a.startsWith('--patch='))?.split('=')[1];
@@ -112,7 +132,8 @@ Commands:
   hydrate --year=<YYYY>       Download and import data from NPM (或 --tarball=<file.tgz> 离线注水)
   migrate --input=<dir>       Migrate legacy GB2260 JSON data to SQLite (复合主键 code,year)
   export --year=<YYYY>        Export data to CSV format
-  apply-patch --patch=<file>  Apply a community patch to the database
+  apply-patch --patch=<file>  Apply a community patch to the database (按 apply_after 克隆到目标年)
+  backfill --year=<YYYY>      回灌：把已 apply 的某年份导出回 source-<year> CSV，合上闭环
   version                     Show version information
   help                        Show this help message
 
@@ -123,6 +144,7 @@ Examples:
   cndiv migrate --input=./legacy/data/GB2260 --output=./dist/source-history.db
   cndiv export --year=2023 --output=./2023.csv
   cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
+  cndiv backfill --year=2025 --output=packages/source-2025/data/divisions.csv
 
 For more information, visit:
   https://github.com/tonyc726/china-administrative-division

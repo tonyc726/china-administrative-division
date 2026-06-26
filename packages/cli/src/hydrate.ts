@@ -283,24 +283,29 @@ export async function exportFromCache(
   }>;
 
   if (outputPath) {
-    const { createWriteStream } = await import('fs');
-    const ws = createWriteStream(outputPath);
-    ws.write('code,name,level,parent_code,year,status,source_type,confidence_score\n');
-
-    for (const record of records) {
-      const line = [
-        record.code,
-        `"${record.name.replace(/"/g, '""')}"`,
-        record.level,
-        record.parent_code || '',
-        record.year,
-        record.status,
-        record.source_type || '',
-        record.confidence_score || 100,
-      ].join(',');
-      ws.write(line + '\n');
-    }
-    ws.end();
+    const { createWriteStream, mkdirSync } = await import('fs');
+    mkdirSync(path.dirname(outputPath), { recursive: true });
+    // 等待写流真正 flush+close，避免调用方在文件落盘前读取（导出/回灌的竞态）
+    await new Promise<void>((resolve, reject) => {
+      const ws = createWriteStream(outputPath);
+      ws.on('error', reject);
+      ws.on('finish', () => resolve());
+      ws.write('code,name,level,parent_code,year,status,source_type,confidence_score\n');
+      for (const record of records) {
+        const line = [
+          record.code,
+          `"${record.name.replace(/"/g, '""')}"`,
+          record.level,
+          record.parent_code || '',
+          record.year,
+          record.status,
+          record.source_type || '',
+          record.confidence_score || 100,
+        ].join(',');
+        ws.write(line + '\n');
+      }
+      ws.end();
+    });
     console.log(`Exported ${records.length} records to ${outputPath}`);
   } else {
     // Output to stdout as CSV

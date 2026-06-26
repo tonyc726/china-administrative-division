@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS patch_history (
     patch_file TEXT NOT NULL,
     applied_at TEXT DEFAULT (datetime('now')),
     author TEXT NOT NULL,
-    operations_count INTEGER NOT NULL
+    operations_count INTEGER NOT NULL,
+    notes TEXT
 );
 `;
 
