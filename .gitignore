@@ -632,6 +632,30 @@ xcuserdata/
 
 # End of https://www.toptal.com/developers/gitignore/api/git,svn,vim,node,linux,macos,xcode,eclipse,windows,sublimetext,tortoisegit,intellij+all,python
 
-data
-pageCacheDB
-legacy
+# ─────────────────────────────────────────────────────────────
+# 数据资产与缓存：绝不进 git
+#   本仓库历史曾因 GB 级 SQLite / LevelDB 缓存进库膨胀，已用 git-filter-repo 清理。
+#   下列规则按「内容类型」兜底，不再依赖「目录名恰好叫 data」这种脆弱约定。
+#   行政区划数据请走 NPM(@cn-division/source-YYYY) / GitHub Release 分发。
+# ─────────────────────────────────────────────────────────────
+
+# 大体积数据库 / 数据快照（任何位置）
+*.sqlite
+*.sqlite3
+*.db
+*.ldb
+*.mdb
+
+# 数据快照压缩态（如需纳管个别小文件，用 `!path/to/file.gz` 显式放行）
+*.gz
+
+# legacy 旧工程：保留 scripts/README/package.json 等参考代码，仅排除其数据与缓存
+/legacy/data/
+/legacy/database/
+/legacy/pageCacheDB/
+/legacy/logs/
+/legacy/node_modules/
+
+# v1 遗留的顶层缓存/数据目录
+/pageCacheDB/
+/database/
