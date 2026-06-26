@@ -659,3 +659,7 @@ xcuserdata/
 # v1 遗留的顶层缓存/数据目录
 /pageCacheDB/
 /database/
+
+# source-* 数据包的生成产物（CSV 由 build-source 从 SQLite 生成，不进 git）
+/packages/source-*/data/
+/packages/source-*/*.tgz

@@ -14,7 +14,7 @@ import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
 import tar from 'tar-stream';
 import { createGunzip } from 'zlib';
-import { mkdir } from 'fs/promises';
+import { mkdir, readFile } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
@@ -25,6 +25,8 @@ interface HydrateOptions {
   year: string;
   cacheDir?: string;
   verbose?: boolean;
+  /** 离线注水：直接从本地 gzip tarball(.tgz) 读取，跳过 NPM */
+  tarball?: string;
 }
 
 interface TarballInfo {
@@ -132,10 +134,40 @@ function importCsvToSqlite(db: Database.Database, csvContent: string, year: numb
 }
 
 /**
+ * 从 gzip tarball buffer 中解包并把所有 .csv 导入 SQLite，返回导入行数。
+ * 供 NPM 注水与离线 --tarball 注水共用。
+ */
+async function extractAndImport(
+  db: Database.Database,
+  gzBuffer: Buffer,
+  year: number
+): Promise<number> {
+  const extract = tar.extract();
+  let recordCount = 0;
+
+  extract.on('entry', (header, stream, next) => {
+    if (header.name.endsWith('.csv')) {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk) => chunks.push(chunk));
+      stream.on('end', () => {
+        recordCount += importCsvToSqlite(db, Buffer.concat(chunks).toString('utf-8'), year);
+        next();
+      });
+    } else {
+      stream.resume();
+      next();
+    }
+  });
+
+  await pipeline(Readable.from(gzBuffer), createGunzip(), extract);
+  return recordCount;
+}
+
+/**
  * Main hydrate function
  */
 export async function hydrate(options: HydrateOptions): Promise<void> {
-  const { year, cacheDir = path.join(os.homedir(), '.cn-division'), verbose = false } = options;
+  const { year, cacheDir = path.join(os.homedir(), '.cn-division'), verbose = false, tarball } = options;
 
   console.log('='.repeat(60));
   console.log('Data Hydration Tool');
@@ -143,6 +175,22 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
   console.log(`Year: ${year}`);
   console.log(`Cache directory: ${cacheDir}`);
   console.log('');
+
+  // 离线注水：从本地 .tgz 直接解包导入，跳过 NPM（适合直接消费 GitHub Release 附件）
+  if (tarball) {
+    await mkdir(cacheDir, { recursive: true });
+    const db = initCacheDb(path.join(cacheDir, 'cache.db'));
+    console.log(`Importing from local tarball: ${tarball}`);
+    const buf = await readFile(tarball);
+    const count = await extractAndImport(db, buf, parseInt(year, 10));
+    db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(`tarball-${year}`, tarball);
+    console.log('');
+    console.log('='.repeat(60));
+    console.log(`Hydration complete (offline): ${count} records imported`);
+    console.log('='.repeat(60));
+    db.close();
+    return;
+  }
 
   const packageName = `@cn-division/source-${year}`;
   console.log(`Fetching package metadata: ${packageName}`);
@@ -190,34 +238,9 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
 
   console.log('Checksum verified');
 
-  // Extract and import
+  // Extract and import — 从已下载且通过 SHA 校验的 buffer 解包，保证"入库内容 === 已校验内容"
   console.log('Extracting data...');
-
-  // Create extract stream
-  const extract = tar.extract();
-  let recordCount = 0;
-
-  extract.on('entry', (header, stream, next) => {
-    if (header.name.endsWith('.csv')) {
-      const chunks: Buffer[] = [];
-      stream.on('data', (chunk) => chunks.push(chunk));
-      stream.on('end', () => {
-        const csvContent = Buffer.concat(chunks).toString('utf-8');
-        recordCount = importCsvToSqlite(db, csvContent, parseInt(year, 10));
-        next();
-      });
-    } else {
-      stream.resume();
-      next();
-    }
-  });
-
-  // 从已下载且通过 SHA 校验的 buffer 解包：避免二次下载，且保证"入库内容 === 已校验内容"
-  await pipeline(
-    Readable.from(response.body),
-    createGunzip(),
-    extract
-  );
+  const recordCount = await extractAndImport(db, response.body, parseInt(year, 10));
 
   // Update cache metadata
   db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(

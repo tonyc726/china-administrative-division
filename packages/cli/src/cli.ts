@@ -24,15 +24,16 @@ async function main() {
       // Parse hydrate arguments
       const year = args.find((a) => a.startsWith('--year='))?.split('=')[1];
       const cacheDir = args.find((a) => a.startsWith('--cache='))?.split('=')[1];
+      const tarball = args.find((a) => a.startsWith('--tarball='))?.split('=')[1];
       const verbose = args.includes('--verbose');
 
       if (!year) {
         console.error('Error: --year is required');
-        console.error('Usage: cn-div hydrate --year <YYYY>');
+        console.error('Usage: cn-div hydrate --year=<YYYY> [--tarball=<file.tgz>]');
         process.exit(1);
       }
 
-      await hydrate({ year, cacheDir, verbose });
+      await hydrate({ year, cacheDir, verbose, tarball });
       break;
     }
 
@@ -195,20 +196,23 @@ async function main() {
 Usage:
   cn-div <command> [options]
 
+注：参数使用 --key=value 连写形式。
+
 Commands:
-  hydrate --year <YYYY>      Download and import data from NPM package
-  migrate --input <dir>      Migrate legacy JSON data to SQLite
-  export --year <YYYY>       Export data to CSV format
-  apply-patch --patch <file> Apply a community patch to the database
-  version                    Show version information
-  help                       Show this help message
+  hydrate --year=<YYYY>       Download and import data from NPM (或 --tarball=<file.tgz> 离线注水)
+  migrate --input=<dir>       Migrate legacy JSON data to SQLite
+  export --year=<YYYY>        Export data to CSV format
+  apply-patch --patch=<file>  Apply a community patch to the database
+  version                     Show version information
+  help                        Show this help message
 
 Examples:
-  cn-div hydrate --year 2023
-  cn-div hydrate --year 2023 --cache ~/.cn-division
-  cn-div migrate --input ./legacy/data/GB2260 --output ./dist/data.db
-  cn-div export --year 2023 --output ./2023.csv
-  cn-div apply-patch --patch patches/2025/310115-update.json
+  cn-div hydrate --year=2023
+  cn-div hydrate --year=2023 --tarball=./cn-division-source-2023-2023.0.0.tgz
+  cn-div hydrate --year=2023 --cache=~/.cn-division
+  cn-div migrate --input=./legacy/data/GB2260 --output=./dist/data.db
+  cn-div export --year=2023 --output=./2023.csv
+  cn-div apply-patch --patch=patches/2025/310115-pudong-update.json
 
 For more information, visit:
   https://github.com/cn-division/china-administrative-division
