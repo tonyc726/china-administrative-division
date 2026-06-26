@@ -10,6 +10,8 @@
  *   cndiv export --year=2023     Export data to CSV
  */
 
+import { realpathSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { hydrate, exportFromCache } from './hydrate.js';
 import { applyPatch } from './apply-patch.js';
 
@@ -154,4 +156,18 @@ For more information, visit:
   }
 }
 
-main().catch(console.error);
+/**
+ * 仅当本文件作为 bin 被直接执行时才运行 main()；被作为库 import 时零副作用。
+ * 用 realpathSync 在两侧解析软链，兼容 pnpm/npm 把 cndiv 软链到 dist/cli.js 的情形。
+ */
+function isDirectRun(): boolean {
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectRun()) {
+  main().catch(console.error);
+}

@@ -22,13 +22,16 @@
 
 ## Monorepo 结构
 
+> 本表为目录结构的**权威来源**（以实际 `packages/` 现状为准）；`docs/` 内的设计稿仅为历史方案，结构以本表为准。
+
 | 包 | 职责 |
 |---|---|
 | [`@cndiv/core`](./packages/core) | 领域模型（5 级区划）与区划码校验（`validateCode` / `getLevelFromCode` / `getParentCode`，码结构 2+2+2+3+3） |
-| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA` + 基于 Zod 的 Patch 协议（`validatePatch`） |
-| [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` |
-| [`@cndiv/crawler`](./packages/crawler) | 增量采集（对接国家地名信息库 dmfw，产出 Patch）— 🚧 开发中 |
-| [`legacy/`](./legacy) | v1 旧版爬虫历史存档（仅参考，数据源已失效） |
+| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA`（复合主键 `code,year`）+ 基于 Zod 的 Patch 协议（`validatePatch`） |
+| [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` / `backfill`（库 API 与 bin 入口分离，import 零副作用） |
+| [`@cndiv/crawler`](./packages/crawler) | 增量采集：对接国家地名信息库 dmfw，逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（写盘前 `validatePatch` 守门、空名过滤；dmfw 覆盖 level 1–4，无村级） |
+| [`@cndiv/source-<year>`](./packages/source-2023) | 数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512 完整性锚点），经 npm 分发，由 `cndiv hydrate` 注水 |
+| [`legacy/`](./legacy) | v1 旧版爬虫历史存档（**已移出 pnpm workspace**，只读参考；数据源已失效，GB2260 1980–2021 历史经 `cndiv migrate --input=legacy/data/GB2260` 入库） |
 
 ## 数据获取
 
@@ -88,8 +91,20 @@ PR 会由 CI（`validate-patches.yml`）用 `validatePatch` 自动校验。本�
 
 ```bash
 pnpm install         # 自动启用 .githooks（pre-commit 拦大文件/数据库）
-pnpm -r build        # 构建全部包
+pnpm build           # tsc -b 增量构建全部包
+pnpm typecheck && pnpm lint && pnpm test && pnpm validate-patches   # 本地复刻 CI 门禁
 ```
+
+### 发版（changesets 多包治理）
+
+```bash
+pnpm changeset           # 为本次改动登记版本意图（选包 + major/minor/patch）
+pnpm version-packages    # 消费 changeset：bump 版本 + 写 CHANGELOG
+pnpm release             # build + changeset publish 到 npm
+```
+
+> 数据包 `@cndiv/source-*` 按数据年份独立版本化，已在 changesets `ignore`，不随代码包 bump。
+> 数据闭环：`crawler` 抓取 → `patches/<YYYY>/` → `apply-patch`（克隆到目标年）→ `backfill` 导回 `source-<year>/divisions.csv` → 重建数据包。
 
 ## 数据来源与许可
 

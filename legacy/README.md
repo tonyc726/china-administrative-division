@@ -1,8 +1,13 @@
 # 中华人民共和国行政区划代码（v1 历史存档）
 
-> ⚠️ **本目录为 v1 旧版爬虫的历史存档，仅作参考。**
+> ⚠️ **本目录为 v1 旧版爬虫的历史存档，只读参考，不参与构建。**
+> 自 v2 起 `legacy/` 已**移出 pnpm workspace**（不再是 monorepo 成员，其 `package.json`/依赖/脚本与 v2 工具链无关），文件保留在 git 中（非 filter-repo）仅供考古。
 > 数据源 `stats.gov.cn`（统计用区划代码）已于 2024 年起停止公开发布、2026 年起统一转向「国家地名信息库」（dmfw.mca.gov.cn），旧爬虫的固定 URL 解析已失效。
 > 当前架构与用法见仓库根 [`README.md`](../README.md)；历史全量数据见 GitHub Release [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)。
+>
+> **GB2260 历史（1980–2021）入库**：`legacy/data/GB2260/<year>.json.gz` 由 v2 直接消费，无需 v1 工具链——
+> `pnpm --filter @cndiv/cli build && cndiv migrate --input=legacy/data/GB2260 --output=dist/source-history.db`
+> 产出按 `(code, year)` 复合主键版本化的真相源（实测 131356 条 / 42 年 / 0 丢弃）。
 
 > 本项目提供 2 个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
 
