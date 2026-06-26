@@ -14,3 +14,6 @@ export * from './diff.js';
 export * from './crawl-all.js';
 export * from './cache.js';
 export * from './baseline.js';
+// ip138 邮编/区号采集（产出 @cndiv/source-postal）
+export * from './ip138.js';
+export * from './postal.js';

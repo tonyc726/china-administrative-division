@@ -6,7 +6,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "cndiv-crawl": "dist/run.js"
+    "cndiv-crawl": "dist/run.js",
+    "cndiv-postal": "dist/run-ip138.js"
   },
   "exports": {
     ".": {
@@ -17,11 +18,13 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch",
-    "crawl": "tsx src/run.ts"
+    "crawl": "tsx src/run.ts",
+    "crawl:postal": "tsx src/run-ip138.ts"
   },
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
+    "cheerio": "^1.0.0",
     "got": "^14.0.0"
   },
   "keywords": ["china", "administrative", "division", "crawler", "mca"],

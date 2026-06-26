@@ -1,0 +1,9 @@
+{
+  "source": "ip138",
+  "format": "csv",
+  "file": "postal.csv",
+  "rows": 2855,
+  "bytes": 110108,
+  "sha512": "9dcbbf998ef4be55f7d0dc03383bf621b2a12974cc13b758b710b69ecc1c24d1cf981c93586c404a33dc7f5c3c43bc2f78412de8774499aff4e016e78ca9b5e7",
+  "generator": "@cndiv/crawler run-ip138"
+}

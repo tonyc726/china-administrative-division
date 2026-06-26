@@ -664,6 +664,8 @@ xcuserdata/
 # 仅保留 manifest.json（SHA-512 完整性锚点，确定性可复现，~400B）入库
 /packages/source-*/data/*
 !/packages/source-*/data/manifest.json
+# 例外：source-postal 的 postal.csv 体积小(~100KB)且源自 ip138 活站(不可靠复现)，入库保存
+!/packages/source-postal/data/postal.csv
 /packages/source-*/*.tgz
 
 # 放行：tsconfig.base.json 被上面的 merge 残留规则 *.BASE.* 在大小写不敏感文件系统下误伤

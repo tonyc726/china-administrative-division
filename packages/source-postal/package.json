@@ -1,0 +1,26 @@
+{
+  "name": "@cndiv/source-postal",
+  "version": "0.1.0",
+  "description": "China postal codes (邮编) and area codes (区号) by administrative division, sourced from ip138",
+  "license": "MIT",
+  "files": [
+    "data"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "china",
+    "postal-code",
+    "邮编",
+    "area-code",
+    "区号",
+    "ip138"
+  ],
+  "cndiv": {
+    "source": "ip138",
+    "granularity": "county",
+    "note": "邮编/区号为近静态参考数据，按需重抓；ip138 结构可能变动，解析器以 @cndiv/crawler 现网实现为准",
+    "build": "pnpm --filter @cndiv/crawler exec tsx src/run-ip138.ts --out=packages/source-postal/data"
+  }
+}
