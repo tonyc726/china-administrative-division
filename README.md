@@ -63,6 +63,56 @@ tar -xzf nbs-sqlite-2009-2023.tar.gz
 sqlite3 NBS.2023.sqlite "SELECT count(*) FROM village;"   # → 620573
 ```
 
+## 在代码中使用
+
+三个面向消费者的代码包，按需安装：
+
+| 我想… | 用 | 入口 |
+|---|---|---|
+| 校验/解析 12 位区划码（判级、取父码、补零） | [`@cndiv/core`](./packages/core) | 纯函数零依赖 |
+| 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](./packages/data-protocol) | `validatePatch` / `DATABASE_SCHEMA` |
+| 命令行注水、应用 patch、导出 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令（见上「数据获取」） |
+
+### 码工具（`@cndiv/core`，纯函数）
+
+```ts
+import { validateCode, getLevelFromCode, getParentCode, DIVISION_LEVEL } from '@cndiv/core';
+
+validateCode('310115000000');                          // true（结构 + 省码白名单，不保证真实存在）
+getLevelFromCode('310115000000');                      // 3 (COUNTY)
+getParentCode('310115000000', DIVISION_LEVEL.COUNTY);  // '310100000000'
+```
+
+> 16 个导出全清单与坑（无「码→名」反查、`normalizeCode` 不校验省码、`getParentCode` 需先判级等）见 [`@cndiv/core` README](./packages/core)。可跑示例：`npx tsx packages/core/examples/code-tools.ts`。
+
+### 查询注水后的数据
+
+`cndiv hydrate` 把数据落到 `~/.cndiv/cache.db`（标准 SQLite，表结构即 `@cndiv/data-protocol` 的 `DATABASE_SCHEMA`）。**仓库不提供封装查询 API**——自带 `better-sqlite3` 直查 `divisions` 表即可。两个必知坑：
+
+- **复合主键 `(code, year)`**：每条查询都要带 `year`，否则同一码跨年命中多行。
+- **直辖市「市辖区」占位层**：北京（`110000`）的直接子级是 `level=2` 的「市辖区」（`110100`），要再下钻一层才到东城区/西城区。
+
+```ts
+import Database from 'better-sqlite3';
+const db = new Database(`${process.env.HOME}/.cndiv/cache.db`, { readonly: true });
+const row = db
+  .prepare('SELECT name FROM divisions WHERE code=? AND year=?')
+  .get('110101000000', 2023); // → { name: '东城区' }
+// 查整棵子树用 SQLite 原生递归 CTE
+```
+
+> 完整查询范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
+
+### 校验 Patch（`@cndiv/data-protocol`）
+
+```ts
+import { validatePatch } from '@cndiv/data-protocol';
+const r = validatePatch(JSON.parse(patchJson));
+if (!r.success) throw new Error(r.error); // success 为 true 时 r.data 是规范化后的 Patch
+```
+
+> 可跑示例：`npx tsx packages/data-protocol/examples/validate-patch.ts`。
+
 ## 数据模型
 
 12 位统计用区划代码结构 **2+2+2+3+3**（省/市/县/乡镇街道/村居委会）：
