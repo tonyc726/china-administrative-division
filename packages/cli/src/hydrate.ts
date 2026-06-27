@@ -295,9 +295,11 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
   // Download tarball
   console.log('Downloading data package...');
   const response = await got(tarballInfo.url, { responseType: 'buffer' });
+  // got 15 的 body 类型为 Uint8Array；下游解包/校验链按 Buffer 处理，统一在此转一次
+  const body = Buffer.from(response.body);
 
   // Verify checksum
-  if (!verifyChecksum(response.body, tarballInfo.shasum)) {
+  if (!verifyChecksum(body, tarballInfo.shasum)) {
     console.error(
       'Error: SHA checksum mismatch - possible corruption or tampering'
     );
@@ -309,11 +311,7 @@ export async function hydrate(options: HydrateOptions): Promise<void> {
 
   // Extract and import — 从已下载且通过 SHA 校验的 buffer 解包，保证"入库内容 === 已校验内容"
   console.log('Extracting data...');
-  const { recordCount } = await extractAndImport(
-    db,
-    response.body,
-    parseInt(year, 10)
-  );
+  const { recordCount } = await extractAndImport(db, body, parseInt(year, 10));
 
   // Update cache metadata
   db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(

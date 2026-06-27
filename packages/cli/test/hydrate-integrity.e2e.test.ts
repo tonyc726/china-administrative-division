@@ -57,6 +57,14 @@ describe('hydrate 离线注水 fail-closed 完整性门', () => {
     );
     await hydrate({ year: '2023', cacheDir, tarball: tgz });
     expect(countRows()).toBe(1);
+
+    // WAL 自包含：better-sqlite3 在最后一个连接 close() 时自动 checkpoint 并删除 -wal/-shm，
+    // 故注水后的 cache.db 是自包含单文件——删掉边车后仍可读全部数据（消费者拷贝单文件 /
+    // @cndiv/reader 只读打开场景）。本断言锁住该契约：未来改动若破坏自包含，countRows() ≠ 1 → 红。
+    const dbPath = path.join(cacheDir, 'cache.db');
+    for (const sc of ['-wal', '-shm'])
+      if (existsSync(dbPath + sc)) rmSync(dbPath + sc);
+    expect(countRows()).toBe(1);
   });
 
   it('篡改包：CSV 被改但 manifest 不变 → 抛错且一行都不入库', async () => {

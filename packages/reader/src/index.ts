@@ -12,8 +12,8 @@
  * 递归查询用 UNION（去重，遇脏 parent_code 成环时自然终止，不会无限递归）；
  * 出口把 DB 的 NULL 归一为 undefined，使返回值真正符合 @cndiv/core 的 Division 契约。
  *
- * 注：cache.db 用 WAL 模式写入。若手动**拷贝**库文件到别处查询，请连同 `-wal`/`-shm`
- * 一起拷贝，或在 hydrate 后对其做 `wal_checkpoint(TRUNCATE)` 使其成为自包含单文件。
+ * 注：cndiv hydrate 注水的 cache.db 是自包含单文件（better-sqlite3 close 时自动 checkpoint
+ * 并清除 -wal/-shm 边车），可直接拷贝/分发，reader 只读打开零边车依赖。
  */
 import Database from 'better-sqlite3';
 import { homedir } from 'node:os';

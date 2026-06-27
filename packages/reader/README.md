@@ -65,7 +65,7 @@ try {
 
 ## 关于 WAL
 
-cache.db 用 WAL 模式写入。同机 hydrate→查询无需额外操作；若手动**拷贝**库文件到别处，请连同 `-wal`/`-shm` 一起拷贝，或在 hydrate 后对其做 `wal_checkpoint(TRUNCATE)` 使其成为自包含单文件。
+`cndiv hydrate` 用 WAL 模式写入，但 better-sqlite3 在关闭连接时自动 checkpoint 并清除 `-wal`/`-shm` 边车——**产出的 cache.db 是自包含单文件**，可直接拷贝/分发；reader 只读打开零边车依赖，无需额外操作。
 
 ## License
 
