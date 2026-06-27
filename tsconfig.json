@@ -6,6 +6,7 @@
     { "path": "packages/data-protocol" },
     { "path": "packages/crawler" },
     { "path": "packages/cli" },
-    { "path": "packages/extractor" }
+    { "path": "packages/extractor" },
+    { "path": "packages/reader" }
   ]
 }

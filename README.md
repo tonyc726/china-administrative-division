@@ -31,6 +31,7 @@
 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` / `backfill`（库 API 与 bin 入口分离，import 零副作用） |
 | [`@cndiv/crawler`](./packages/crawler) | 增量采集：① dmfw 逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（`validatePatch` 守门、空名过滤；覆盖 level 1–4，无村级）；② `cndiv-postal` 抓 ip138 邮编/区号 |
 | [`@cndiv/extractor`](./packages/extractor) | NLP 变更提取器：行政区划变更公告 → 结构化 Patch 操作（规则法兜底 + 可插拔 LLM，Tool Use 失败兜底；产物经 `validatePatch` 守门） |
+| [`@cndiv/reader`](./packages/reader) | cache.db 最小**只读查询 API**：`openCache` / `findByCode` / `getChildren` / `getDescendants`（薄封装 better-sqlite3，屏蔽复合主键 `(code,year)` 与市辖区占位层两个坑） |
 | [`@cndiv/source-<year>`](./packages/source-2023) | 区划数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512），由 `cndiv hydrate --year=<YYYY>` 注水 |
 | [`@cndiv/source-history`](./packages/source-history) | GB2260 历史数据包（1980–2021，逐行 `year` 版本化，131356 条 / 42 年），由 `cndiv hydrate --year=history` 注水 |
 | [`@cndiv/source-postal`](./packages/source-postal) | 邮编/区号数据包：`postal.csv`（县级，源自 ip138）+ `manifest.json` |
@@ -65,13 +66,14 @@ sqlite3 NBS.2023.sqlite "SELECT count(*) FROM village;"   # → 620573
 
 ## 在代码中使用
 
-三个面向消费者的代码包，按需安装：
+四个面向消费者的代码包，按需安装：
 
 | 我想… | 用 | 入口 |
 |---|---|---|
 | 校验/解析 12 位区划码（判级、取父码、补零） | [`@cndiv/core`](./packages/core) | 纯函数零依赖 |
 | 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](./packages/data-protocol) | `validatePatch` / `DATABASE_SCHEMA` |
 | 命令行注水、应用 patch、导出 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令（见上「数据获取」） |
+| 在 JS 里查询注水后的区划数据 | [`@cndiv/reader`](./packages/reader) | `openCache().findByCode(...)` |
 
 ### 码工具（`@cndiv/core`，纯函数）
 
@@ -87,21 +89,19 @@ getParentCode('310115000000', DIVISION_LEVEL.COUNTY);  // '310100000000'
 
 ### 查询注水后的数据
 
-`cndiv hydrate` 把数据落到 `~/.cndiv/cache.db`（标准 SQLite，表结构即 `@cndiv/data-protocol` 的 `DATABASE_SCHEMA`）。**仓库不提供封装查询 API**——自带 `better-sqlite3` 直查 `divisions` 表即可。两个必知坑：
-
-- **复合主键 `(code, year)`**：每条查询都要带 `year`，否则同一码跨年命中多行。
-- **直辖市「市辖区」占位层**：北京（`110000`）的直接子级是 `level=2` 的「市辖区」（`110100`），要再下钻一层才到东城区/西城区。
+`cndiv hydrate` 把数据落到 `~/.cndiv/cache.db`（标准 SQLite）。用 [`@cndiv/reader`](./packages/reader) 查询——它薄封装 `better-sqlite3`、只读打开，并自动屏蔽两个坑：**复合主键 `(code, year)`**（所有查询强制 `year`）与**直辖市「市辖区」占位层**（`skipPlaceholder` 穿透到真实区县）。
 
 ```ts
-import Database from 'better-sqlite3';
-const db = new Database(`${process.env.HOME}/.cndiv/cache.db`, { readonly: true });
-const row = db
-  .prepare('SELECT name FROM divisions WHERE code=? AND year=?')
-  .get('110101000000', 2023); // → { name: '东城区' }
-// 查整棵子树用 SQLite 原生递归 CTE
+import { openCache } from '@cndiv/reader';
+
+const cn = openCache(); // 默认 ~/.cndiv/cache.db，只读
+cn.findByCode('110101000000', 2023); // → Division（东城区）
+cn.getChildren('110000000000', 2023, { skipPlaceholder: true }); // → [东城区, 西城区]
+cn.getDescendants('110000000000', 2023); // 递归全部后代
+cn.close();
 ```
 
-> 完整查询范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
+> 也可不用 reader、自带 `better-sqlite3` 直接写 SQL（reader 即此封装）——底层范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
 
 ### 校验 Patch（`@cndiv/data-protocol`）
 

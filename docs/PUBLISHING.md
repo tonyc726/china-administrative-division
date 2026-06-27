@@ -4,7 +4,7 @@
 
 | 类型 | 包 | 路径 | 为什么 |
 |---|---|---|---|
-| 代码包 | `@cndiv/core` · `data-protocol` · `cli` · `crawler` · `extractor` | **changesets 自动（CI）** | `dist` 由 CI `pnpm build` 重建 |
+| 代码包 | `@cndiv/core` · `data-protocol` · `cli` · `crawler` · `extractor` · `reader` | **changesets 自动（CI）** | `dist` 由 CI `pnpm build` 重建 |
 | 数据包 | `@cndiv/source-2023` · `source-history` · `source-postal` | **本地 `npm publish`** | CSV 源数据（NBS 冷母本 / `legacy/data`）不在 git、CI 无法重建 |
 
 > ⚠️ 数据包被 `.changeset/config.json` 的 `ignore: ["@cndiv/source-20*"]` 排除版本管理；
@@ -26,7 +26,7 @@
 1. 开发时，每个面向消费者的改动加 changeset：`pnpm changeset`（选包 + bump 级别 + 写 changelog）。
 2. **push 到 `master`** → `release.yml` 自动建 **"Version Packages" PR**（聚合 changeset、bump 版本、生成 `CHANGELOG.md`）。
 3. **合并该 PR** → workflow 自动 `pnpm release`（`pnpm build && changeset publish`）发到 npm。
-4. 首发依赖顺序由 pnpm 按 workspace 拓扑自动处理（`core → data-protocol → cli/crawler/extractor`）。
+4. 首发依赖顺序由 pnpm 按 workspace 拓扑自动处理（`core → data-protocol → cli/crawler/extractor/reader`）。
 
 > 也可本地一次性首发：`pnpm changeset version && pnpm release`（需先 `npm login`）。
 

@@ -62,7 +62,7 @@ crawler ─→ patches/<YYYY>/*.json ─(apply-patch)→ cache.db ─(backfill)�
 
 ## 查询注水后的数据
 
-> ⚠️ **本仓库未提供封装查询 API**。`cndiv` 只负责把数据注水进 `cache.db`，消费者请用 [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) + 原生 SQL 直查 `divisions` 表。
+`cndiv` 只负责把数据注水进 `cache.db`。查询推荐用 [`@cndiv/reader`](../reader)——薄封装 better-sqlite3、自动屏蔽复合主键与市辖区占位层两个坑（`openCache().findByCode(code, year)` / `getChildren(..., { skipPlaceholder: true })`）。也可自带 [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) + 原生 SQL 直查 `divisions` 表（reader 即此封装）：
 
 `divisions` 表结构（来自 `@cndiv/data-protocol` 的 `DATABASE_SCHEMA`）：
 
