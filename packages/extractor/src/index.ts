@@ -8,6 +8,7 @@ export * from './types.js';
 export * from './rules.js';
 export * from './resolve.js';
 export * from './llm.js';
+export * from './providers.js';
 
 import type { ChangeIntent, CodeResolver, ResolveResult } from './types.js';
 import { extractIntents } from './rules.js';
