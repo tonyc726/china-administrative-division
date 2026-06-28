@@ -17,7 +17,7 @@
 1. **npm org `@cndiv`** —— 在 npmjs.com 创建 organization（scope 包归属）。
 2. **GitHub repo secret `NPM_TOKEN`** —— npmjs.com → Access Tokens → 生成 **Automation** token，加到 repo Settings → Secrets。
 3. **本地 `npm login`** —— 数据包本地发布需要。
-4. 确认本机 **Node 24 LTS**（`nvm use` 读 `.nvmrc`）。
+4. 确认本机 **Node 22 LTS**（`nvm use` 读 `.nvmrc`）。
 
 ---
 
@@ -82,6 +82,6 @@ cndiv hydrate --year=history   # @cndiv/source-history
 - [x] 代码包 `files: ["dist"]` 已设（不泄漏 `src/test`）—— 已 `npm pack --dry-run` 验证
 - [x] 各包含 README（npm 页面说明）
 - [ ] 数据包 CSV 已**重新生成**，`manifest.json` 的 SHA-512 与 CSV 实际一致
-- [ ] `better-sqlite3` prebuilt 覆盖消费者平台（Node 24 darwin/linux/win）
+- [ ] `better-sqlite3` prebuilt 覆盖消费者平台（Node 22 darwin/linux/win）
 - [ ] npm org `@cndiv` 已建、`NPM_TOKEN`（Automation）有效
 - [ ] 版本号符合预期（`pnpm changeset status` 复查 release plan）
