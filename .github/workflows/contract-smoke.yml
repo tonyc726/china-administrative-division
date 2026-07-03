@@ -1,0 +1,44 @@
+name: Contract Smoke (dmfw/xzqh)
+
+# 契约漂移哨兵：政府接口无 SLA、路径/结构会变（已实锤 dmfw 资源下载页路径漂移）。
+# 每周活体请求 dmfw getList 与 xzqh 索引，断言字段结构，漂移即红。
+#
+# ⚠️ GitHub runner 位于海外，访问中国政府接口(dmfw/xzqh.mca.gov.cn)可能超时——
+#    此时 smoke test 内置的网络容错会「软跳过」而非报红（见 contract.smoke.test.ts）。
+#    因此本 workflow 变绿不等于契约无恙，只有变红才是明确的漂移信号。
+#    需确定性验证时，在能访问政府网的环境用 `NETWORK_SMOKE=1 pnpm --filter @cndiv/crawler test` 本地跑。
+# ⚠️ GitHub 对 60 天无提交活动的仓库会自动禁用 scheduled workflow；休眠后需手动重启或 workflow_dispatch。
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # 每周一 02:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build crawler (需要 dist 供 smoke import)
+        run: pnpm --filter @cndiv/crawler build
+
+      - name: Run contract smoke
+        env:
+          NETWORK_SMOKE: '1'
+        run: pnpm --filter @cndiv/crawler test
