@@ -93,4 +93,30 @@ describe('diffToPatch', () => {
     // 显式要求比对 level5 时，缺失村级才会产出 remove（证明排除是「默认 levels」策略而非不可覆盖的硬禁止）
     expect(patch.operations.find((o) => o.op === 'remove' && o.code === '110101001001')).toBeTruthy();
   });
+
+  // T3.1：dmfw 用 name 后缀「（撤销）」标注已撤销单位（保留原码）
+  it('识别 name「（撤销）」后缀为 remove 候选，不误判为 update', () => {
+    const base: Division[] = [...baseline, d('110101001000', '双河乡', 4, '110101000000')];
+    const current: Division[] = [...baseline, d('110101001000', '双河乡（撤销）', 4, '110101000000')];
+    const { patch, revokedBySuffix } = diffToPatch(base, current, { author: 'test' });
+
+    expect(revokedBySuffix).toBe(1);
+    const op = patch.operations.find((o) => o.code === '110101001000');
+    expect(op?.op).toBe('remove');
+    if (op && op.op === 'remove') {
+      expect(op.reason).toContain('双河乡'); // 剥离后缀后的真名
+    }
+    // 不得产出「改名成撤销名」的 update
+    expect(patch.operations.find((o) => o.op === 'update' && o.code === '110101001000')).toBeUndefined();
+    expect(validatePatch(patch).success).toBe(true);
+  });
+
+  it('（撤销）节点在基线不存在时：计数但不产 op（不 remove 幽灵码）', () => {
+    const base: Division[] = [...baseline];
+    const current: Division[] = [...baseline, d('110101002000', '幽灵乡（撤销）', 4, '110101000000')];
+    const { patch, revokedBySuffix } = diffToPatch(base, current, { author: 'test' });
+
+    expect(revokedBySuffix).toBe(1);
+    expect(patch.operations.find((o) => o.code === '110101002000')).toBeUndefined();
+  });
 });

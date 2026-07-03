@@ -7,6 +7,9 @@
 import type { Division } from '@cndiv/core';
 import type { Patch, Operation } from '@cndiv/data-protocol';
 
+/** dmfw 以 name 全角后缀「（撤销）」标注已撤销单位并保留原码；差分据此产出 remove 候选 */
+export const REVOKED_SUFFIX = '（撤销）';
+
 export interface DiffOptions {
   author: string;
   source_url?: string;
@@ -19,6 +22,8 @@ export interface DiffResult {
   patch: Patch;
   /** 因 name 为空被跳过的节点数（dmfw 偶发 null name，无法产出合法 add/update） */
   skippedEmptyName: number;
+  /** dmfw name 含「（撤销）」后缀被识别为 remove 候选的节点数（含基线未命中、未实际产 op 的） */
+  revokedBySuffix: number;
 }
 
 /**
@@ -42,9 +47,21 @@ export function diffToPatch(
 
   const operations: Operation[] = [];
   let skippedEmptyName = 0;
+  let revokedBySuffix = 0;
 
   // 新增 / 变更
   for (const [code, d] of cur) {
+    // T3.1：dmfw 以 name 后缀「（撤销）」标注已撤销单位（保留原码）。识别为 remove 候选，
+    // 而非误判为「改名成撤销名」的 update。仅对基线现存 code 产 remove（撤销的是既有记录）；
+    // remove 受 run.ts 的 --removes 控制，默认抑制、人工复核（该后缀全国一致性未验证）。
+    if (d.name && d.name.includes(REVOKED_SUFFIX)) {
+      revokedBySuffix++;
+      if (base.has(code)) {
+        const realName = d.name.replace(REVOKED_SUFFIX, '').trim();
+        operations.push({ op: 'remove', code, reason: `dmfw 标注撤销：${realName}` });
+      }
+      continue;
+    }
     const prev = base.get(code);
     if (!prev) {
       // FMEA：dmfw 某些节点 name 可能为 null（crawlAll 兜底为 ''），无法产出合法 add
@@ -95,5 +112,6 @@ export function diffToPatch(
       operations,
     },
     skippedEmptyName,
+    revokedBySuffix,
   };
 }

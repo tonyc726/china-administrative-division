@@ -86,17 +86,19 @@ async function main(): Promise<void> {
   let totalOps = 0;
   let suppressedRemoves = 0;
   let skippedEmptyNames = 0;
+  let revokedBySuffixTotal = 0;
   let rejected = 0;
   for (const pp of provinces) {
     const cur = divisions.filter((d) => d.code.startsWith(pp));
     const base = baseline.filter((d) => d.code.startsWith(pp));
-    const { patch, skippedEmptyName } = diffToPatch(base, cur, {
+    const { patch, skippedEmptyName, revokedBySuffix } = diffToPatch(base, cur, {
       author,
       source_url: 'https://dmfw.mca.gov.cn/',
       apply_after: '2023-baseline',
       levels,
     });
     skippedEmptyNames += skippedEmptyName;
+    revokedBySuffixTotal += revokedBySuffix;
 
     let ops: Operation[] = patch.operations;
     if (!emitRemoves) {
@@ -131,6 +133,12 @@ async function main(): Promise<void> {
   if (skippedEmptyNames > 0) {
     console.log(
       `ℹ️  跳过 ${skippedEmptyNames} 个空名节点（dmfw name=null，无法产出合法 add/update）`
+    );
+  }
+  if (revokedBySuffixTotal > 0) {
+    console.log(
+      `ℹ️  dmfw 标注「（撤销）」节点 ${revokedBySuffixTotal} 个 → 已产 remove 候选` +
+        `（受 --removes 控制，默认抑制供人工复核；该后缀全国一致性未验证）`
     );
   }
   if (rejected > 0) {
