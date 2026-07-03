@@ -84,7 +84,7 @@ importers:
         specifier: workspace:*
         version: link:../data-protocol
       '@cndiv/extractor':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../extractor
       cheerio:
         specifier: ^1.2.0

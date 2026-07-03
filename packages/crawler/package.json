@@ -7,7 +7,8 @@
   "types": "dist/index.d.ts",
   "bin": {
     "cndiv-crawl": "dist/run.js",
-    "cndiv-postal": "dist/run-ip138.js"
+    "cndiv-postal": "dist/run-ip138.js",
+    "cndiv-xzqh": "dist/run-xzqh.js"
   },
   "exports": {
     ".": {
@@ -21,13 +22,15 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch",
+    "test": "vitest run",
     "crawl": "tsx src/run.ts",
-    "crawl:postal": "tsx src/run-ip138.ts"
+    "crawl:postal": "tsx src/run-ip138.ts",
+    "crawl:xzqh": "tsx src/run-xzqh.ts"
   },
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
-    "@cndiv/extractor": "workspace:^",
+    "@cndiv/extractor": "workspace:*",
     "cheerio": "^1.2.0",
     "got": "^15.0.6",
     "iconv-lite": "^0.7.2"

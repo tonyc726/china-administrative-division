@@ -14,6 +14,8 @@ export * from './diff.js';
 export * from './crawl-all.js';
 export * from './cache.js';
 export * from './baseline.js';
+// xzqh 县级以上变更事件流（权威增量触发源，喂 @cndiv/extractor）
+export * from './xzqh.js';
 // ip138 邮编/区号采集（产出 @cndiv/source-postal）
 export * from './ip138.js';
 export * from './postal.js';

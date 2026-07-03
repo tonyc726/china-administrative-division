@@ -51,8 +51,8 @@ async function main(): Promise<void> {
     maxLevel,
     concurrency,
     cacheDir,
-    onWave: (lvl, fr, total) =>
-      console.log(`  level ${lvl}: 展开 ${fr} 节点 → 累计 ${total} 条`),
+    onWave: (wave, fr, total) =>
+      console.log(`  波次 ${wave}（每波抓 2 层）: 展开 ${fr} 节点 → 累计 ${total} 条`),
   });
   console.log(
     `抓取完成：${divisions.length} 条（网络 ${fetched} / 缓存 ${cached}），失败 ${failures.length}`
