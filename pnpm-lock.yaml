@@ -83,12 +83,18 @@ importers:
       '@cndiv/data-protocol':
         specifier: workspace:*
         version: link:../data-protocol
+      '@cndiv/extractor':
+        specifier: workspace:^
+        version: link:../extractor
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
       got:
         specifier: ^15.0.6
         version: 15.0.6
+      iconv-lite:
+        specifier: ^0.7.2
+        version: 0.7.2
 
   packages/data-protocol:
     dependencies:
