@@ -9,20 +9,30 @@ import type { DmfwNode } from './dmfw.js';
 export class FsCache {
   constructor(private readonly dir: string) {}
 
-  private file(code: string): string {
-    return path.join(this.dir, `${code || 'root'}.json`);
+  /**
+   * 缓存文件名带 maxLevel 后缀：maxLevel=1 与 maxLevel=2 抓取的子树结构不同
+   * （前者 children 为空、后者含孙节点），必须隔离以免不同步长的缓存串味。
+   */
+  private file(code: string, maxLevel: number): string {
+    return path.join(this.dir, `${code || 'root'}@${maxLevel}.json`);
   }
 
-  async get(code: string): Promise<DmfwNode[] | null> {
+  async get(code: string, maxLevel: number): Promise<DmfwNode[] | null> {
     try {
-      return JSON.parse(await readFile(this.file(code), 'utf-8')) as DmfwNode[];
+      return JSON.parse(
+        await readFile(this.file(code, maxLevel), 'utf-8')
+      ) as DmfwNode[];
     } catch {
       return null;
     }
   }
 
-  async set(code: string, children: DmfwNode[]): Promise<void> {
+  async set(
+    code: string,
+    maxLevel: number,
+    children: DmfwNode[]
+  ): Promise<void> {
     await mkdir(this.dir, { recursive: true });
-    await writeFile(this.file(code), JSON.stringify(children));
+    await writeFile(this.file(code, maxLevel), JSON.stringify(children));
   }
 }

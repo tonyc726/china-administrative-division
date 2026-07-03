@@ -35,14 +35,25 @@ export class DmfwError extends Error {
   }
 }
 
+/** getList 单次请求支持的 maxLevel 上限（实测 3 会被截断回 2） */
+export const DMFW_MAX_LEVEL = 2;
+
 /**
- * 拉取某节点的直接子节点（maxLevel=1）。带超时与重试；失败抛 DmfwError。
- * code 为空字符串时返回省级。
+ * 拉取某节点的子树（默认 maxLevel=1 只取直接子节点，向后兼容）。
+ *
+ * - maxLevel=1：返回的 DmfwNode[] 中每项 children 为空数组。
+ * - maxLevel=2：返回的每个直接子节点携带其嵌套 children（孙节点），
+ *   即一次请求覆盖两层，供 crawlAll 步长=2 的 BFS 展平。
+ *
+ * 带超时与重试；失败抛 DmfwError。code 为空字符串时返回省级。
  */
-export async function fetchChildren(code: string): Promise<DmfwNode[]> {
+export async function fetchChildren(
+  code: string,
+  maxLevel = 1
+): Promise<DmfwNode[]> {
   try {
     const res = await got(DMFW_GETLIST, {
-      searchParams: { code, maxLevel: 1 },
+      searchParams: { code, maxLevel },
       headers: { 'User-Agent': UA, Referer: 'https://dmfw.mca.gov.cn/' },
       timeout: { request: 20000 },
       retry: { limit: 3, methods: ['GET'] },
