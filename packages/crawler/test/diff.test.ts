@@ -56,14 +56,41 @@ describe('diffToPatch', () => {
     expect(validatePatch(patch).success).toBe(true); // 非空且合法（空名节点已被剔除）
   });
 
-  it('村级(level5)默认超出比对范围：基线村缺失不误判为 remove', () => {
+  // T2.2：level5 村级已冻结于 NBS 2023，永久不参与增量差分（官方无活源，见 docs/spike-village-level5.md）。
+  // 固化不变量：无论 add/update/remove 三个方向，默认 levels 都不得对 level5 产出任何操作。
+  it('村级(level5)默认超出比对范围：add/update/remove 三方向均不产出 level5 op', () => {
+    const baseWithVillage: Division[] = [
+      ...baseline,
+      d('110101001001', '多福巷社区居委会', 5, '110101000000'), // 基线有、当前无 → 不得 remove
+      d('110101001002', '银闸社区居委会', 5, '110101000000'), // 基线有、当前改名 → 不得 update
+    ];
+    const current: Division[] = [
+      ...baseline,
+      d('110118000000', '密云区', 3, '110000000000'), // level3 add：反证 1-4 差分仍工作
+      d('110101001002', '银闸社区居委会(改名)', 5, '110101000000'), // update 方向
+      d('110101001003', '新设社区居委会', 5, '110101000000'), // 基线无、当前有 → 不得 add
+    ];
+    const { patch } = diffToPatch(baseWithVillage, current, { author: 'test' });
+
+    // 任何 level5 码都不应出现在 operations 里（add/update/remove 三方向全封）
+    const level5Codes = ['110101001001', '110101001002', '110101001003'];
+    for (const code of level5Codes) {
+      expect(patch.operations.find((o) => o.code === code)).toBeUndefined();
+    }
+    // 反证：level 1-4 正常差分——仅密云区 level3 add，无任何 level5 噪声
+    expect(patch.operations).toHaveLength(1);
+    expect(patch.operations[0]).toMatchObject({ op: 'add', code: '110118000000', level: 3 });
+    expect(validatePatch(patch).success).toBe(true);
+  });
+
+  it('显式传入 levels=[5] 时才比对村级（冻结是默认策略，非硬编码禁止）', () => {
     const baseWithVillage: Division[] = [
       ...baseline,
       d('110101001001', '某社区居委会', 5, '110101000000'),
     ];
-    const current: Division[] = [...baseline]; // 当前快照无村级（dmfw 不覆盖）
-    const { patch } = diffToPatch(baseWithVillage, current, { author: 'test' });
-
-    expect(patch.operations.find((o) => o.code === '110101001001')).toBeUndefined();
+    const current: Division[] = [...baseline]; // 村级缺失
+    const { patch } = diffToPatch(baseWithVillage, current, { author: 'test', levels: [5] });
+    // 显式要求比对 level5 时，缺失村级才会产出 remove（证明排除是「默认 levels」策略而非不可覆盖的硬禁止）
+    expect(patch.operations.find((o) => o.op === 'remove' && o.code === '110101001001')).toBeTruthy();
   });
 });

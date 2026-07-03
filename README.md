@@ -140,6 +140,8 @@ if (!r.success) throw new Error(r.error); // success 为 true 时 r.data 是规�
 
 PR 会由 CI（`validate-patches.yml`）用 `validatePatch` 自动校验。本地校验：`node scripts/validate-patches.mjs`。
 
+> 维护者采集运维（年度全量校准 + 日常 xzqh 事件增量、产物合并、level 5 村级冻结边界）见 [`docs/采集运维手册.md`](./docs/采集运维手册.md)。
+
 ## 开发
 
 ```bash
