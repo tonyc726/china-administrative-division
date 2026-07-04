@@ -7,7 +7,8 @@
     "data"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "keywords": [
     "china",
@@ -22,5 +23,10 @@
     "granularity": "county",
     "note": "邮编/区号为近静态参考数据，按需重抓；ip138 结构可能变动，解析器以 @cndiv/crawler 现网实现为准",
     "build": "pnpm --filter @cndiv/crawler exec tsx src/run-ip138.ts --out=packages/source-postal/data"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/source-postal"
   }
 }

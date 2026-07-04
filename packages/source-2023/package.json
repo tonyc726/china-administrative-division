@@ -7,7 +7,8 @@
     "data"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "keywords": [
     "china",
@@ -21,5 +22,10 @@
     "source": "NBS",
     "levels": 5,
     "build": "pnpm --filter @cndiv/cli build-source --input=<NBS.2023.sqlite> --year=2023 --output=packages/source-2023/data/divisions.csv"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/source-2023"
   }
 }

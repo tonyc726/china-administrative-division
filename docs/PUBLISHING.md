@@ -7,17 +7,23 @@
 | 代码包 | `@cndiv/core` · `data-protocol` · `cli` · `crawler` · `extractor` · `reader` | **changesets 自动（CI）** | `dist` 由 CI `pnpm build` 重建 |
 | 数据包 | `@cndiv/source-2023` · `source-history` · `source-postal` | **本地 `npm publish`** | CSV 源数据（NBS 冷母本 / `legacy/data`）不在 git、CI 无法重建 |
 
-> ⚠️ 数据包被 `.changeset/config.json` 的 `ignore: ["@cndiv/source-20*"]` 排除版本管理；
-> `source-history` / `source-postal` 走 changesets 版本但**仍需本地 publish**（changesets/action 在 CI 跑，CI 无 CSV）。
+> ⚠️ 数据包被 `.changeset/config.json` 的 `ignore: ["@cndiv/source-*"]` **完全排除出 changesets**（版本与发布均手动管理）；
+> CI 的 changesets/action 不会碰任何 `source-*`——避免 CI 无 CSV 时发出缺数据的坏包。
 
 ---
 
 ## 前置（一次性）
 
-1. **npm org `@cndiv`** —— 在 npmjs.com 创建 organization（scope 包归属）。
+1. **npm org `@cndiv`** —— 在 npmjs.com 创建 organization（scope 包归属）。已确认官方 npm 上 `@cndiv/*` 均未占用。
 2. **GitHub repo secret `NPM_TOKEN`** —— npmjs.com → Access Tokens → 生成 **Automation** token，加到 repo Settings → Secrets。
-3. **本地 `npm login`** —— 数据包本地发布需要。
-4. 确认本机 **Node 22 LTS**（`nvm use` 读 `.nvmrc`）。
+3. **GitHub Actions 允许创建 PR** —— repo Settings → Actions → General → Workflow permissions → 勾选 **"Allow GitHub Actions to create and approve pull requests"**。否则 changesets/action 开 "Version Packages" PR 会因权限被拒。
+4. **把 v2 合并进 `master`** —— `release.yml` 只在 push `master` 时触发；master 仍是 v1 时自动发布不会启动。
+5. **本地 `npm login`** —— 数据包本地发布需要。
+6. 确认本机 **Node 22 LTS**（`nvm use` 读 `.nvmrc`）。
+
+> ⚠️ **本机 registry 是淘宝镜像（只读）**：全局 `~/.npmrc` 设了 `registry=https://registry.npmmirror.com`，直接 `npm publish` 会失败。本仓库各包已在 `package.json` 的 `publishConfig.registry` 钉死 `https://registry.npmjs.org/`，故 `npm publish` / `changeset publish` 会走官方源、不受镜像影响。CI 侧由 `release.yml` 的 `setup-node registry-url` 保证。
+>
+> 🔒 **安全**：`~/.npmrc` 若存过明文 `_authToken`，务必用 Automation token 且定期轮换；token 一旦外泄立即在 npmjs.com Revoke。
 
 ---
 

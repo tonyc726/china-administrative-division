@@ -50,5 +50,14 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.11.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/crawler"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
