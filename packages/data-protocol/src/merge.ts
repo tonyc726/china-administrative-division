@@ -14,10 +14,10 @@
  * 管线来源不写进 schema（避免改两个 producer），由调用方（CLI）按文件名/author 启发式判定后显式传入。
  */
 import { PATCH_OPERATION, validatePatch, type Operation, type Patch } from './schemas/patch.js';
-import { CONFIDENCE_LEVELS } from './schemas/patch.js';
+import { CONFIDENCE_LEVELS, type SourcePipeline } from './schemas/patch.js';
 
-/** 采集管线来源。优先级默认 xzqh > community > dmfw。 */
-export type Pipeline = 'xzqh' | 'community' | 'dmfw';
+/** 采集管线来源（与 patch meta.source_pipeline 同一真相源）。优先级默认 xzqh > community > dmfw。 */
+export type Pipeline = SourcePipeline;
 
 /** 一个待合并输入：一份 patch + 其管线来源标签（由调用方判定）。 */
 export interface MergeInput {

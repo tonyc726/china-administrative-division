@@ -62,13 +62,13 @@ export async function mergePatchesCommand(
       process.exitCode = 1;
       return;
     }
-    const pipeline = classifyPipeline(
-      path.basename(file),
-      check.data.meta.author
-    );
+    // 优先用生产者盖的 source_pipeline（单一真相源）；老 patch 无则回退文件名/author 启发式。
+    const stamped = check.data.meta.source_pipeline;
+    const pipeline =
+      stamped ?? classifyPipeline(path.basename(file), check.data.meta.author);
     inputs.push({ patch: check.data, pipeline, origin: path.basename(file) });
     console.log(
-      `  载入 ${path.basename(file)} → 管线 ${pipeline}（${check.data.operations.length} ops）`
+      `  载入 ${path.basename(file)} → 管线 ${pipeline}（${stamped ? '戳' : '启发式'}，${check.data.operations.length} ops）`
     );
   }
 

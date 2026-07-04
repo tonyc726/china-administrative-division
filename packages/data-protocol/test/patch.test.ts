@@ -38,4 +38,23 @@ describe('validatePatch — 复用 core 枚举的 nativeEnum 约束 (M2)', () =>
   it('拒绝非法 update status', () => {
     expect(validatePatch(patch({ op: 'update', code: '110000000000', status: 'zombie' })).success).toBe(false);
   });
+
+  it('接受合法 source_pipeline 戳（xzqh/community/dmfw）', () => {
+    for (const p of ['xzqh', 'community', 'dmfw']) {
+      const res = validatePatch({
+        meta: { author: 't', source_pipeline: p },
+        operations: [{ op: 'remove', code: '110000000000' }],
+      });
+      expect(res.success).toBe(true);
+    }
+  });
+
+  it('拒绝非法 source_pipeline 值', () => {
+    expect(
+      validatePatch({
+        meta: { author: 't', source_pipeline: 'wikipedia' },
+        operations: [{ op: 'remove', code: '110000000000' }],
+      }).success,
+    ).toBe(false);
+  });
 });

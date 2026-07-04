@@ -16,6 +16,18 @@ export const CONFIDENCE_LEVELS = {
   LOW: 'low' as const, // Community submission or inferred
 } as const;
 
+/**
+ * 采集管线来源。合并去重（mergePatches）按此定冲突优先级 `xzqh > community > dmfw`。
+ * 由生产者（run/run-xzqh）自盖，作单一真相源；老 patch 缺省时 merge 回退文件名/author 启发式。
+ */
+export const SOURCE_PIPELINE = {
+  XZQH: 'xzqh' as const, // 事件流：带批复机关+日期，权威度最高
+  COMMUNITY: 'community' as const, // 社区提交：人工核证，居中
+  DMFW: 'dmfw' as const, // 全量差分：推断，最低
+} as const;
+export type SourcePipeline =
+  (typeof SOURCE_PIPELINE)[keyof typeof SOURCE_PIPELINE];
+
 /** Patch metadata */
 export const PatchMetaSchema = z.object({
   /** Patch author (GitHub username or ID) */
@@ -26,6 +38,8 @@ export const PatchMetaSchema = z.object({
   evidence_confidence: z.nativeEnum(CONFIDENCE_LEVELS).default('medium'),
   /** Baseline version this patch applies to */
   apply_after: z.string().default('2023-baseline'),
+  /** 采集管线来源（供 merge 定优先级；缺省时按文件名/author 启发式回退） */
+  source_pipeline: z.nativeEnum(SOURCE_PIPELINE).optional(),
   /** Timestamp of patch creation */
   created_at: z.string().datetime().optional(),
   /** Additional notes */

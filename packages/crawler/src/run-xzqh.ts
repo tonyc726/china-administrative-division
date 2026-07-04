@@ -176,6 +176,7 @@ async function main(): Promise<void> {
         source_url: `http://xzqh.mca.gov.cn/description?dcpid=${year}`,
         evidence_confidence: 'high',
         apply_after: '2023-baseline',
+        source_pipeline: 'xzqh', // 管线戳：merge 优先级最高（事件流权威）
         created_at: new Date().toISOString(),
         notes: `xzqh ${year} 县级以上行政区划变更`,
       },

@@ -135,6 +135,7 @@ async function main(): Promise<void> {
     if (ops.length === 0) continue;
 
     patch.operations = ops;
+    patch.meta.source_pipeline = 'dmfw'; // 管线戳：供 merge 定优先级（单一真相源）
 
     // 写盘前守门：用 data-protocol schema 校验，拒绝任何非法 patch（防脏数据落进 patches/）
     const check = validatePatch(patch);
