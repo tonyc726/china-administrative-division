@@ -1,0 +1,67 @@
+name: Docs Site
+
+# 文档站构建 + 部署到 GitHub Pages。
+# 站点内容经 @include 引用 packages/*/README.md 与 docs/*.md，故这些路径变更也触发重建。
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs-site/**'
+      - 'packages/*/README.md'
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# GitHub Pages 部署所需权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只保留最新一次部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs-site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # lastUpdated 需要完整 git 历史
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # docs-site 独立于 monorepo workspace，--ignore-workspace 隔离依赖树
+      - run: pnpm install --ignore-workspace
+
+      - name: Build (GitHub Pages base)
+        env:
+          DOCS_BASE: /china-administrative-division/
+        run: pnpm build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

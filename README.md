@@ -1,7 +1,10 @@
 # China Administrative Division · 中国行政区划数据基础设施
 
+[![Docs](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E6%96%87%E6%A1%A3-cndiv-brightgreen?logo=vuedotjs)](https://tonyc726.github.io/china-administrative-division/)
 [![Validate Patches](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml/badge.svg)](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
+> 📖 **在线文档**：<https://tonyc726.github.io/china-administrative-division/> —— 快速上手、包 API 参考、数据下载与采集运维，一站可查。
 
 中华人民共和国行政区划代码的历史数据库与可持续更新基础设施。提供 **GB2260 国标**（省/市/县，1980–2023）与 **NBS 统计用区划代码**（省/市/县/乡/村五级，2009–2023）的历年快照。
 
