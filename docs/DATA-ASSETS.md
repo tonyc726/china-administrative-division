@@ -57,7 +57,7 @@
 | `NBS.2012.sqlite` | 61.5MB | `45404aebf989f14dfcef1a075f5efe9bf1222953175114cca39cf7a272e0fa08` |
 | `NBS.2013.sqlite` | 61.5MB | `6acfad61c77696956504976b80079e1d1299f0109f8153ce4521eb75e1e79dfd` |
 | `NBS.2014.sqlite` | 59.2MB | `757b5961c9622c54ffc904aa7e9edc0772ae4577de91fe01d5c353f3f645e9aa` |
-| `NBS.2015.sqlite` | **0B (损坏)** | — |
+| `NBS.2015.sqlite` | 59.0MB | `9b3b1ede7c41bb2072040f1566c161aad1ab25aebb207c1a779b2a3546406f83` ⟵ 已重建，见 §八 |
 | `NBS.2016.sqlite` | 59.4MB | `2737e30e712a9ef9c6613d0b31d1a48165cda2c0e593f39e05e5df289b7aa6f6` |
 | `NBS.2017.sqlite` | 60.0MB | `20cdf6f88cb3fbd1aae6135e2027dab8fcf14485ace6f465121b65e5cfb1b056` |
 | `NBS.2018.sqlite` | 59.5MB | `90c56b1b4a49b0a96570c52313402811d98d797e1df63b0a07aa55496e0fbc2c` |
@@ -100,17 +100,21 @@
 
 | 类别 | 数量 | 体量 |
 |---|---|---|
-| NBS SQLite | 15 (含 1 个 0B 损坏) | 832M |
+| NBS SQLite | 15 (全部有效，NBS.2015 已重建) | 891M |
 | GB2260 SQLite | 44 | 8.6M |
 | stats.gov.cn 原始 JSON | 19 | 2.2G |
 | 备份目录总计 | — | 3.9G |
 
-## 五、已知数据质量问题（实测）
+## 五、已知数据质量问题（实测）与处置
 
-- `NBS.2015.sqlite` = 0 字节损坏；原始 `data/stats.gov.cn/2015.json` 存在(在)，可重新生成。
-- `NBS.2022/2023.sqlite` 存在但**无对应原始 JSON**（止于 2021），溯源链缺失。
-- README 称「NBS village 含台港澳」**实测为假**（71/81/82 前缀记录为 0）。
-- categoryCodes 城乡分类码仅 2009-2014。
+| # | 问题 | 状态 | 处置 |
+|---|---|---|---|
+| 1 | `NBS.2015.sqlite` = 0 字节损坏 | ✅ 已修复 | 由幸存的 `data/stats.gov.cn/2015.json` 经 `scripts/rebuild-nbs-sqlite.ts` 忠实重建（schema 与兄弟库逐字一致，`integrity_check=ok`）。详见 §八。 |
+| 2 | `NBS.2022/2023.sqlite` 无对应原始 JSON（`stats.gov.cn/*.json` 止于 2021），溯源链缺失 | ✅ 已闭合 | 确认原始年度 JSON 止于 2021；2022/2023 sqlite 为直采成品、无中间 JSON。已由 `scripts/export-nbs-json.ts` 反导出 `data/stats.gov.cn/derived/{2022,2023}.json`（往返重建村数与源一致：619,503 / 620,573），闭合 sqlite↔JSON 往返。**派生声明**：反导出产物非独立源采集、无 `categoryCode`，溯源仍以 sqlite 为准（见 `derived/README.md`）。 |
+| 3 | 数据字典称「NBS village 含台港澳」 | ✅ 已证伪并订正 | 硬核验：`NBS.2023.sqlite` village 表 71/81/82 前缀 **0 条**（省级亦无）。NBS 五级全量**完全不含台港澳**。已订正 `SQLITE_DATA_README.md` 两处误述（L154/L255）。注：GB2260 历史自 2013 起收录台港澳省级（710000/810000/820000），是另一数据源，勿混。 |
+| 4 | categoryCodes 城乡分类码覆盖 | ✅ 已厘清 | 独立 `categoryCodes.*.json` 文件仅 2009–2014（6 个）；但城乡分类码在**年度嵌套 JSON 内联** `categoryCode` 字段中覆盖 2009–2021（实测 2016/2020/2021 均含）。**NBS sqlite 成品未保留城乡分类码列**（village 表无 categoryCode）。已在数据字典厘清。 |
+
+> **重建 NBS.2015 的口径说明**：幸存 `2015.json` 遍历得 省31/市346/县3172/乡40480/村667519，去重入库后 **省31/市346/县3138/乡39959/村667519**。低于本文旧版 NBS 逐年表记录的 2015 口径（县3218/乡41127/村673804）——原始 sqlite 已丢失无从比对，此为**唯一可用源的忠实结果**，不追旧数、不臆造完整性。
 
 ## 六、可复现性证明（build-source 确定性）
 
@@ -136,17 +140,25 @@ tsx src/scripts/build-source.ts \
 
 ## 七、完整性校验与备份（runbook）
 
-- **可机检校验文件**：`docs/cold-master.sha256`（58 项 = NBS 14 + GB2260 44；`NBS.2015.sqlite`
-  因 0 字节损坏已排除）。
+- **可机检校验文件**：`docs/cold-master.sha256`（59 项 = NBS 15 + GB2260 44；`NBS.2015.sqlite`
+  已重建并纳入校验）。
 - **校验某副本完整性**：`scripts/verify-cold-master.sh <资产目录>`（内部 `shasum -a 256 -c`，
   检测丢失/位腐）。
 - **创建/刷新异地副本**：`scripts/backup-cold-master.sh <源目录> <目标目录>`（rsync + 自动校验）。
 - 🔴 **P0 提醒**：冷母本目前**仅维护者本地单点持有**。务必至少执行一次异地副本（外置盘 / 对象存储），
   否则一次磁盘故障即永久丢失（上游 stats.gov.cn 已死，不可再生）。源数据包发布到 npm（M4）后将获得第二重持久化。
 
-## 八、NBS.2015 修复路径（已知可行，暂缓执行）
+## 八、NBS.2015 重建记录（✅ 已完成）
 
-`NBS.2015.sqlite` 0 字节损坏，但原始 `2015.json`（119.2MB，见 §二）**完好存在** ⟹ 可重建。
-重建需要把旧 `legacy/scripts/utils/exportSqlite.js`（Sequelize，JSON→5 表 sqlite）**移植为
-better-sqlite3 TS**。按 Occam 当前暂缓（其余 14 年 sqlite 成品齐全，2015 非阻塞）；待真正需要
-2015 数据或做全量年份数据包时，与该移植一并执行。
+`NBS.2015.sqlite` 曾 0 字节损坏，已由幸存的 `data/stats.gov.cn/2015.json`（119.2MB，见 §二）重建：
+
+```bash
+bun scripts/rebuild-nbs-sqlite.ts \
+  <冷母本>/data/stats.gov.cn/2015.json <冷母本>/NBS.2015.sqlite
+# 产物: 省31 市346 县3138 乡39959 村667519；integrity_check=ok；59.0MB
+```
+
+- **脚本** `scripts/rebuild-nbs-sqlite.ts`（Bun 内置 `bun:sqlite`，零外部依赖）取代了旧 `legacy/scripts/utils/exportSqlite.js`（Sequelize），并修正其一处不一致：兄弟库 village 表**无 `categoryCode` 列**，脚本据实对齐。
+- **schema 保真**：`diff` 与 `NBS.2023.sqlite .schema` 逐字一致（含外键与列顺序）。
+- **口径**：见 §五末尾说明（幸存 JSON 口径略小于旧记录，为唯一可用源的忠实结果）。
+- **待办**：将重建后的 `NBS.2015.sqlite` 与更新后的 `docs/cold-master.sha256` 一并同步进 GitHub Release（`data-snapshot-2023`）。
