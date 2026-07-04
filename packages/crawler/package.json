@@ -31,6 +31,7 @@
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
     "@cndiv/extractor": "workspace:*",
+    "@cndiv/reader": "workspace:^",
     "cheerio": "^1.2.0",
     "got": "^15.0.6",
     "iconv-lite": "^0.7.2"
@@ -42,5 +43,9 @@
     "crawler",
     "mca"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1"
+  }
 }

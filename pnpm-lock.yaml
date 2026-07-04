@@ -86,6 +86,9 @@ importers:
       '@cndiv/extractor':
         specifier: workspace:*
         version: link:../extractor
+      '@cndiv/reader':
+        specifier: workspace:^
+        version: link:../reader
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
@@ -95,6 +98,13 @@ importers:
       iconv-lite:
         specifier: ^0.7.2
         version: 0.7.2
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.11.1
+        version: 12.11.1
 
   packages/data-protocol:
     dependencies:
@@ -2486,7 +2496,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 22.20.0
+      '@types/node': 24.13.2
 
   '@types/chai@5.2.3':
     dependencies:
