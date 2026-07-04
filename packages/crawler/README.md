@@ -140,6 +140,8 @@ fetchAllPostal(options?: FetchAllOptions): Promise<PostalRecord[]>
 
 ## 示例
 
+> 归一化 + 结构性门禁的可跑示例（无需网络/基线文件）：`npx tsx packages/crawler/examples/verify-patch.ts`
+
 ```ts
 import { crawlAll, loadBaselineCsv, diffToPatch } from '@cndiv/crawler';
 
