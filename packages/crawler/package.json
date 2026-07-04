@@ -8,7 +8,8 @@
   "bin": {
     "cndiv-crawl": "dist/run.js",
     "cndiv-postal": "dist/run-ip138.js",
-    "cndiv-xzqh": "dist/run-xzqh.js"
+    "cndiv-xzqh": "dist/run-xzqh.js",
+    "cndiv-prov-township": "dist/run-prov-township.js"
   },
   "exports": {
     ".": {
