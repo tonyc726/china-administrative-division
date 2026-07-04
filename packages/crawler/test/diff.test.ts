@@ -119,4 +119,71 @@ describe('diffToPatch', () => {
     expect(revokedBySuffix).toBe(1);
     expect(patch.operations.find((o) => o.code === '110101002000')).toBeUndefined();
   });
+
+  // 层级建模归一化（全国首跑暴露的根本障碍）：NBS 占位层 ↔ dmfw 扁平不得产假 move/假 remove。
+  describe('dmfw(扁平) ↔ NBS(占位层) 归一化', () => {
+    // NBS 基线：直辖市经「市辖区」占位层，东城区 parent=110100 而非 110000
+    const nbsBaseline: Division[] = [
+      d('110000000000', '北京市', 1, null),
+      d('110100000000', '市辖区', 2, '110000000000'), // 结构性占位层
+      d('110101000000', '东城区', 3, '110100000000'),
+      d('110102000000', '西城区', 3, '110100000000'),
+      d('410000000000', '河南省', 1, null),
+      d('419000000000', '省直辖县级行政区划', 2, '410000000000'), // 结构性占位层
+      d('419001000000', '济源市', 3, '419000000000'),
+    ];
+
+    it('直辖市区/省直管市扁平直挂：归一化后零 move（此前 48+5 假 move 的根因）', () => {
+      // dmfw 扁平快照：东城/西城直挂北京、济源直挂河南、无占位层节点
+      const dmfwFlat: Division[] = [
+        d('110000000000', '北京市', 1, null),
+        d('110101000000', '东城区', 3, '110000000000'),
+        d('110102000000', '西城区', 3, '110000000000'),
+        d('410000000000', '河南省', 1, null),
+        d('419001000000', '济源市', 3, '410000000000'),
+      ];
+      const { patch } = diffToPatch(nbsBaseline, dmfwFlat, { author: 'test' });
+
+      // 核心不变量：无任何 move（父码差异全是建模差异，已被 canonicalizeParent 抹平）
+      expect(patch.operations.filter((o) => o.op === 'move')).toHaveLength(0);
+      // 且不因占位层缺席而误产 remove
+      expect(
+        patch.operations.filter((o) => o.op === 'remove' && ['110100000000', '419000000000'].includes(o.code))
+      ).toHaveLength(0);
+      // 无真实变更时整体应为空 patch
+      expect(patch.operations).toHaveLength(0);
+    });
+
+    it('真·新增直辖市区：dmfw 扁平父被归一化落到 NBS 占位层下（add.parent_code=占位码）', () => {
+      const dmfwFlat: Division[] = [
+        d('110000000000', '北京市', 1, null),
+        d('110101000000', '东城区', 3, '110000000000'),
+        d('110102000000', '西城区', 3, '110000000000'),
+        d('110118000000', '密云区', 3, '110000000000'), // dmfw 扁平上报父=北京
+      ];
+      const { patch } = diffToPatch(nbsBaseline, dmfwFlat, { author: 'test' });
+
+      const add = patch.operations.find((o) => o.op === 'add' && o.code === '110118000000');
+      expect(add).toBeTruthy();
+      // 关键：写入 NBS 存储时父码须是占位层 110100，而非 dmfw 扁平的 110000
+      if (add && add.op === 'add') expect(add.parent_code).toBe('110100000000');
+      expect(patch.operations.filter((o) => o.op === 'move')).toHaveLength(0);
+    });
+
+    it('占位层豁免独立于真实 remove：真实缺失节点仍产 remove', () => {
+      const dmfwFlat: Division[] = [
+        d('110000000000', '北京市', 1, null),
+        d('110101000000', '东城区', 3, '110000000000'),
+        // 西城区 110102 真实缺失 → 应 remove；占位层 110100/419000 缺席 → 不应 remove
+        d('410000000000', '河南省', 1, null),
+        d('419001000000', '济源市', 3, '410000000000'),
+      ];
+      const { patch } = diffToPatch(nbsBaseline, dmfwFlat, { author: 'test' });
+
+      const removes = patch.operations.filter((o) => o.op === 'remove').map((o) => o.code);
+      expect(removes).toContain('110102000000'); // 真实撤销照常产出
+      expect(removes).not.toContain('110100000000'); // 占位层豁免
+      expect(removes).not.toContain('419000000000');
+    });
+  });
 });

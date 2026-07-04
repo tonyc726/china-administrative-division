@@ -11,6 +11,8 @@
  */
 export * from './dmfw.js';
 export * from './diff.js';
+// 层级建模归一化：消解 dmfw(扁平) ↔ NBS(占位层) 差异，供差分与消费者统一口径
+export * from './normalize.js';
 export * from './crawl-all.js';
 export * from './cache.js';
 export * from './baseline.js';

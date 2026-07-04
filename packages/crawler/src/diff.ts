@@ -6,6 +6,7 @@
  */
 import type { Division } from '@cndiv/core';
 import type { Patch, Operation } from '@cndiv/data-protocol';
+import { canonicalizeParent, isPlaceholder } from './normalize.js';
 
 /** dmfw 以 name 全角后缀「（撤销）」标注已撤销单位并保留原码；差分据此产出 remove 候选 */
 export const REVOKED_SUFFIX = '（撤销）';
@@ -38,11 +39,12 @@ export function diffToPatch(
   const levels = options.levels ?? [1, 2, 3, 4];
   const inScope = (d: Division): boolean => levels.includes(d.level);
 
+  // 归一化父码：以码结构派生父统一 dmfw(扁平)/NBS(占位层) 口径，消除 48+5 假 move（见 normalize.ts）
   const base = new Map<string, Division>(
-    baseline.filter(inScope).map((d) => [d.code, d])
+    baseline.filter(inScope).map((d) => [d.code, canonicalizeParent(d)])
   );
   const cur = new Map<string, Division>(
-    current.filter(inScope).map((d) => [d.code, d])
+    current.filter(inScope).map((d) => [d.code, canonicalizeParent(d)])
   );
 
   const operations: Operation[] = [];
@@ -91,14 +93,15 @@ export function diffToPatch(
   }
 
   // 撤销（基线有、当前无）
-  for (const code of base.keys()) {
-    if (!cur.has(code)) {
-      operations.push({
-        op: 'remove',
-        code,
-        reason: 'not present in current dmfw snapshot',
-      });
-    }
+  for (const [code, bd] of base) {
+    if (cur.has(code)) continue;
+    // 结构性占位层（市辖区 / 省直辖县级行政区划）dmfw 永不返回，不得误判为真实撤销
+    if (isPlaceholder(bd)) continue;
+    operations.push({
+      op: 'remove',
+      code,
+      reason: 'not present in current dmfw snapshot',
+    });
   }
 
   return {
