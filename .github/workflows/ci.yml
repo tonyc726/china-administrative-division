@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master, 'refactor/**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (tsc -b, project references)
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Validate patch files (schema)
+        run: pnpm validate-patches
+
+      # 结构性门禁：码/层级/父级自洽 + 对 2023 baseline 引用完整性（完全离线、确定性，无网络）。
+      # 仅读官方源(baseline CSV)，零合规风险；商业地图交叉校验(cross)不在 CI 跑（见 verify.ts）。
+      - name: Verify patches (structural gate)
+        run: node packages/crawler/dist/run-verify.js --mode=structural --patch=patches --baseline=packages/source-2023/data/divisions.csv

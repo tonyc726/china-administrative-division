@@ -1,0 +1,16 @@
+# Netlify 部署配置。
+# 在 Netlify 站点设置里将 "Base directory" 设为 docs-site，Netlify 会 cd 到此目录后读取本文件。
+[build]
+  command = "pnpm install --ignore-workspace && pnpm build"
+  publish = ".vitepress/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # base 为根路径，无需 DOCS_BASE。
+
+# VitePress cleanUrls：无扩展名路径回退到 .html
+[[redirects]]
+  from = "/*"
+  to = "/:splat.html"
+  status = 200
+  force = false

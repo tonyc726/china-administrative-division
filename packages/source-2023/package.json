@@ -1,0 +1,31 @@
+{
+  "name": "@cndiv/source-2023",
+  "version": "2023.0.0",
+  "description": "China administrative division data snapshot for year 2023 (NBS five-level: province/city/county/township/village)",
+  "license": "MIT",
+  "files": [
+    "data"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "china",
+    "administrative-division",
+    "行政区划",
+    "2023",
+    "NBS"
+  ],
+  "cndiv": {
+    "year": 2023,
+    "source": "NBS",
+    "levels": 5,
+    "build": "pnpm --filter @cndiv/cli build-source --input=<NBS.2023.sqlite> --year=2023 --output=packages/source-2023/data/divisions.csv"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/source-2023"
+  }
+}

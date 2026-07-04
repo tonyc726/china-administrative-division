@@ -1,0 +1,32 @@
+{
+  "name": "@cndiv/source-history",
+  "version": "0.2.0",
+  "description": "China administrative division history (GB/T 2260, 1980–2021), year-versioned by composite (code, year)",
+  "license": "MIT",
+  "files": [
+    "data"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "china",
+    "administrative-division",
+    "行政区划",
+    "GB2260",
+    "history"
+  ],
+  "cndiv": {
+    "source": "GB2260",
+    "years": "1980-2021",
+    "levels": "1-3 (省/市/县)",
+    "note": "由 legacy/data/GB2260/*.json.gz 经 cndiv migrate 固化；多年份单 CSV(逐行 year)，hydrate 尊重逐行 year。注意：2021 为源头部分快照(仅 21 条变更流水，非全量区划)，1980-2020 为完整年份",
+    "build": "pnpm --filter @cndiv/cli build && cndiv migrate --input=legacy/data/GB2260 --output=dist/source-history.db --csv=packages/source-history/data/divisions.csv"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/source-history"
+  }
+}

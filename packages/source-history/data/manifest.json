@@ -1,0 +1,13 @@
+{
+  "source": "GB2260",
+  "format": "csv",
+  "file": "divisions.csv",
+  "rows": 131356,
+  "levels": 3,
+  "years": 42,
+  "year_min": 1980,
+  "year_max": 2021,
+  "bytes": 9172442,
+  "sha512": "21691e950fd527dc6ed7d228d5335107f24bc90f0e0b77adf50fd573ff22c8e431a6dee6851edd30db1fda825e9c0a11df2a2d5ec27c82156248a96e81aad2e8",
+  "generator": "@cndiv/cli migrate --csv"
+}

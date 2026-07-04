@@ -1,0 +1,63 @@
+{
+  "name": "@cndiv/crawler",
+  "version": "1.0.1",
+  "description": "后统计局时代增量采集引擎：对接国家地名信息库(dmfw)抓取并差分产出 Patch",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "cndiv-crawl": "dist/run.js",
+    "cndiv-postal": "dist/run-ip138.js",
+    "cndiv-xzqh": "dist/run-xzqh.js",
+    "cndiv-prov-township": "dist/run-prov-township.js",
+    "cndiv-verify": "dist/run-verify.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
+    "test": "vitest run",
+    "crawl": "tsx src/run.ts",
+    "crawl:postal": "tsx src/run-ip138.ts",
+    "crawl:xzqh": "tsx src/run-xzqh.ts",
+    "verify": "tsx src/run-verify.ts"
+  },
+  "dependencies": {
+    "@cndiv/core": "workspace:*",
+    "@cndiv/data-protocol": "workspace:*",
+    "@cndiv/extractor": "workspace:*",
+    "@cndiv/reader": "workspace:^",
+    "cheerio": "^1.2.0",
+    "got": "^15.0.6",
+    "iconv-lite": "^0.7.2"
+  },
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "crawler",
+    "mca"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/crawler"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

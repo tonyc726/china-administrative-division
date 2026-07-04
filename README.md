@@ -1,155 +1,172 @@
-# 中华人民共和国行政区划代码
+# China Administrative Division · 中国行政区划数据基础设施
 
-[![Build Status](https://travis-ci.org/tonyc726/china-administrative-division.svg?style=flat-square&branch=master)](https://travis-ci.org/tonyc726/china-administrative-division)
-[![tested with jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)](https://github.com/tonyc726/china-administrative-division)
+[![Docs](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E6%96%87%E6%A1%A3-cndiv-brightgreen?logo=vuedotjs)](https://tonyc726.github.io/china-administrative-division/)
+[![Validate Patches](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml/badge.svg)](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-> 本项目提供 2 个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
+> 📖 **在线文档**：<https://tonyc726.github.io/china-administrative-division/> —— 快速上手、包 API 参考、数据下载与采集运维，一站可查。
 
-## 特殊说明
+中华人民共和国行政区划代码的历史数据库与可持续更新基础设施。提供 **GB2260 国标**（省/市/县，1980–2023）与 **NBS 统计用区划代码**（省/市/县/乡/村五级，2009–2023）的历年快照。
 
-由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2020`的数据全部存在`pageCacheDB/stats.gov.cn`中，如需文件请运行`npm run stats-gov:crawler`自行导出或者提交 issue。
+## 背景：为什么是 v2
 
-## 现状简介
+原数据源国家统计局 `stats.gov.cn`（统计用区划代码和城乡划分代码）自 **2024 年起停止公开发布**、**2026 年起统一转向「国家地名信息库」**（dmfw.mca.gov.cn），全量五级数据已无官方活源。
 
-截至 2022 年，中华人民共和国各级行政区划统计数量如下：
-
-- [省级行政区**34**个](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E4%B8%80%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)，其中包括：[**4**个直辖市](https://zh.wikipedia.org/wiki/%E7%9B%B4%E8%BE%96%E5%B8%82)，[**23**个省](<https://zh.wikipedia.org/wiki/%E7%9C%81_(%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83)>)，[**5**个自治区](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%B2%BB%E5%8C%BA)，[**2**个特别行政区](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%88%AB%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [地级行政区**333**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [县级行政区**2846**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-
-各级层次架构，可以用以下图来概括：
-![中华人民共和国行政区划架构图](./docs/images/System_of_China_administrative_division.png)
-
-地级行政区划（不含不在管辖范围内的台湾）图例依次表示：地级市、地区、自治州、副地级行政区、盟、直辖市/特别行政区、副省级行政区：
-![地级行政区划](<./docs/images/China_Prefectural-level_divisions_(PRC_claim)_min.png>)
-
-## 编码规则
-
-> 具体可以参考[《民政统计代码编制规则》](http://www.mca.gov.cn/article/sj/tjbz/a/201507/20150700854848.shtml)
-
-《中华人民共和国行政区划代码》国家标准中定义县及县以上使用 6 位数字标识，代码从左至右的含义是：
-
-- 第一、二位表示省级行政单位（省、自治区、直辖市、特别行政区），其中第一位代表[大区](https://zh.wikipedia.org/wiki/Category:%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81)；
-- 第三、四位表示地级行政单位（地级市、地区、自治州、盟及省级单位直属县级单位的汇总码）；
-- 第五、六位表示县级行政单位（县、自治县、市辖区、县级市、旗、自治旗、林区、特区）；
-
-另外，《民政统计代码编制规则》中定义了 12 位的编码，分为 3 段，用于统计到最基层的居委会，具体规则如下：
+因此 v2 架构从"镜像一个源"转为**"2023 基线快照 + 社区 Patch 增量 + 多源合成"**，并把数据与代码彻底解耦：
 
 ```
-□□□□□□ ----- □□□ ----- □□□
-  ↑           ↑         ↑
-第一段       第二段     第三段
+构建期(维护者)                     分发                用户运行期
+历史源/dmfw/镜像 → 合成 → SQLite → NPM @cndiv/source-YYYY → cndiv hydrate → ~/.cndiv/cache.db
+                                  + GitHub Release 归档        + patches/*.json  → cndiv apply-patch
 ```
 
-- 第一段为 **6 位数字**，表示县及县以上的行政区划，使用《中华人民共和国行政区划代码》国家标准；
-- 第二段为 **3 位数字**，按照国家标准《县以下行政区划代码编制规则》编制，其规则如下：
-  - 第二段的第一位数字为类别标识，以“0”表示街道，“1”表示镇，“2 和 3”表示乡，“4 和 5”表示政企合一的单位；
-  - 第二段的第二位、第三位数字为该代码段中各行政区划的顺序号；
-- 第三段 **3 位数字**，标识居民委员会和村民委员会的代码
+- **用户侧零爬虫**：只从 NPM 拉取数据包注水到本地 SQLite。
+- **大数据不进 git**：仓库历史曾因 GB 级 SQLite 膨胀并被迫 `git-filter-repo` 清理；现以 `.gitignore`（内容型规则）+ pre-commit 钩子杜绝复发。数据走 NPM / GitHub Release 分发。
 
-## 使用说明
+## Monorepo 结构
 
-### 系统依赖
+> 本表为目录结构的**权威来源**（以实际 `packages/` 现状为准）；`docs/` 内的设计稿仅为历史方案，结构以本表为准。
 
-- Linux/MAC
-- Node.js > `v12.*`
-- npm > `v6.*` 或者 yarn
+| 包 | 职责 |
+|---|---|
+| [`@cndiv/core`](./packages/core) | 领域模型（5 级区划）与区划码校验（`validateCode` / `getLevelFromCode` / `getParentCode`，码结构 2+2+2+3+3） |
+| [`@cndiv/data-protocol`](./packages/data-protocol) | 唯一真相源：SQLite `DATABASE_SCHEMA`（复合主键 `code,year`）+ 基于 Zod 的 Patch 协议（`validatePatch`）+ 邮编/区号契约（`PostalRecordSchema`） |
+| [`@cndiv/cli`](./packages/cli) | `cndiv` 命令行：`hydrate` / `apply-patch` / `migrate` / `export` / `backfill`（库 API 与 bin 入口分离，import 零副作用） |
+| [`@cndiv/crawler`](./packages/crawler) | 增量采集：① dmfw 逐层 BFS + 并发限流 + 断点续爬，差分产出 Patch（`validatePatch` 守门、空名过滤；覆盖 level 1–4，无村级；`canonicalizeParent` 归一化占位层，消解 dmfw 扁平↔NBS 假 move）；② `cndiv-postal` 抓 ip138 邮编/区号；③ `cndiv-verify` patch 结构性门禁（码/层级/父级自洽 + baseline 引用完整性，离线确定性、CI 已接入；商业地图交叉校验 `cross` 为合规桩不落库，见 [`docs/patch-校验与交叉校验.md`](./docs/patch-校验与交叉校验.md)） |
+| [`@cndiv/extractor`](./packages/extractor) | NLP 变更提取器：行政区划变更公告 → 结构化 Patch 操作（规则法兜底 + 可插拔 LLM，Tool Use 失败兜底；产物经 `validatePatch` 守门） |
+| [`@cndiv/reader`](./packages/reader) | cache.db 最小**只读查询 API**：`openCache` / `findByCode` / `getChildren` / `getDescendants`（薄封装 better-sqlite3，屏蔽复合主键 `(code,year)` 与市辖区占位层两个坑） |
+| [`@cndiv/source-<year>`](./packages/source-2023) | 区划数据包：某年份 `divisions.csv` + `manifest.json`（SHA-512），由 `cndiv hydrate --year=<YYYY>` 注水 |
+| [`@cndiv/source-history`](./packages/source-history) | GB2260 历史数据包（1980–2021，逐行 `year` 版本化，131356 条 / 42 年），由 `cndiv hydrate --year=history` 注水 |
+| [`@cndiv/source-postal`](./packages/source-postal) | 邮编/区号数据包：`postal.csv`（县级，源自 ip138）+ `manifest.json` |
+| [`legacy/`](./legacy) | v1 旧版爬虫 **已退役墓碑** 🪦（移出 workspace；价值已全部迁入 v2——见 [`legacy/README`](./legacy/README.md)：历史→`source-history`、ip138→`crawler`、仅留 JSON→SQLite 生产链备查） |
 
-### 爬取数据
+## 数据获取
+
+### 方式一：CLI 注水（推荐）
 
 ```bash
-npm ci
+npm i -g @cndiv/cli      # 或 pnpm add -g
 
-npm run start
+cndiv hydrate --year=2023     # 下载 @cndiv/source-2023 → ~/.cndiv/cache.db
+cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
+cndiv export --year=2023 --output=divisions-2023.csv
 ```
 
-## 数据说明
+> ⚠️ 参数使用 `--key=value` 连写形式（如 `--year=2023`）。
 
-> 由于`GB/T 2260`未包含**香港**、**澳门**、**台湾**的行政区划数据，所以分别借鉴`ISO3166-2:HK`、`ISO3166-2:MO`、`ISO3166-2:TW`进行数据补全，但是请注意：**这些数据中的行政区划代码并非官方标准**，请谨慎使用。
+### 方式二：直接下载历史快照
 
-数据以数据源作为分类，按照发布的年份作为单独文件，分别以一维数组的方式存储在`data`的二级目录下。
+完整历年数据（GB2260 1980–2023、NBS 2009–2023 五级 SQLite + 原始 JSON）见 GitHub Release
+[`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)。
+逐文件 SHA-256 完整性清单见 [`docs/DATA-ASSETS.md`](./docs/DATA-ASSETS.md)，数据字典见 Release 内 `SQLITE_DATA_README.md`。
 
-```
-data
-├── GB2260
-│   ├── 1980.json
-│   ├── 1981.json
-│   ├── 1982.json
-│   ├── 1983.json
-│   ├── 1984.json
-│   ├── 1985.json
-│   ├── 1986.json
-│   ├── 1987.json
-│   ├── 1988.json
-│   ├── 1989.json
-│   ├── 1990.json
-│   ├── 1991.json
-│   ├── 1992.json
-│   ├── 1993.json
-│   ├── 1994.json
-│   ├── 1995.json
-│   ├── 1996.json
-│   ├── 1997.json
-│   ├── 1998.json
-│   ├── 1999.json
-│   ├── 2000.json
-│   ├── 2001.json
-│   ├── 2002.json
-│   ├── 2003.json
-│   ├── 2004.json
-│   ├── 2005.json
-│   ├── 2006.json
-│   ├── 2007.json
-│   ├── 2008.json
-│   ├── 2009.json
-│   ├── 2010.json
-│   ├── 2011.json
-│   ├── 2012.json
-│   ├── 2013.json
-│   ├── 2014.json
-│   ├── 2015.json
-│   ├── 2016.json
-│   ├── 2017.json
-│   ├── 2018.json
-│   ├── 2019.json
-│   ├── 2020.json
-│   └── 2021.json
-├── ISO3166-2
-│   ├── HK.json
-│   ├── MO.json
-│   └── TW.json
-└── stats.gov.cn
-    ├── 2009.json
-    ├── 2010.json
-    ├── 2011.json
-    ├── 2012.json
-    ├── 2013.json
-    ├── 2014.json
-    ├── 2015.json
-    ├── 2016.json
-    ├── 2017.json
-    ├── 2018.json
-    ├── 2019.json
-    ├── 2020.json
-    └── 2021.json
+```bash
+# 校验并解压
+shasum -a 256 -c SHA256SUMS.txt
+tar -xzf nbs-sqlite-2009-2023.tar.gz
+sqlite3 NBS.2023.sqlite "SELECT count(*) FROM village;"   # → 620573
 ```
 
-## 参考链接
+## 在代码中使用
 
-- [国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)
-- [民政部 - 中华人民共和国行政区划代码](http://www.mca.gov.cn/article/sj/xzqh)
-- [维基百科 - 中华人民共和国行政区划](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92)
-- [维基百科 - 中华人民共和国行政区划代码](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81)
-- [统计上使用的县以下行政区划代码编制规则](http://www.mca.gov.cn/article/sj/xzqh/1980/201507/20150715854849.shtml)
-- [民政统计代码编制规则](http://www.mca.gov.cn/article/sj/xzqh/1980/201507/20150715854848.shtml)
-- [网友资源 - ISO3166-2](http://www.zxinc.org/gb2260-latest.htm)
+四个面向消费者的代码包，按需安装：
 
-## License
+| 我想… | 用 | 入口 |
+|---|---|---|
+| 校验/解析 12 位区划码（判级、取父码、补零） | [`@cndiv/core`](./packages/core) | 纯函数零依赖 |
+| 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](./packages/data-protocol) | `validatePatch` / `DATABASE_SCHEMA` |
+| 命令行注水、应用 patch、导出 | [`@cndiv/cli`](./packages/cli) | `cndiv` 命令（见上「数据获取」） |
+| 在 JS 里查询注水后的区划数据 | [`@cndiv/reader`](./packages/reader) | `openCache().findByCode(...)` |
 
-Copyright © 2017-present. This source code is licensed under the MIT license found in the
-[LICENSE](./LICENSE) file.
+### 码工具（`@cndiv/core`，纯函数）
 
----
+```ts
+import { validateCode, getLevelFromCode, getParentCode, DIVISION_LEVEL } from '@cndiv/core';
 
-Made by Tony ([blog](https://itony.net))
+validateCode('310115000000');                          // true（结构 + 省码白名单，不保证真实存在）
+getLevelFromCode('310115000000');                      // 3 (COUNTY)
+getParentCode('310115000000', DIVISION_LEVEL.COUNTY);  // '310100000000'
+```
+
+> 16 个导出全清单与坑（无「码→名」反查、`normalizeCode` 不校验省码、`getParentCode` 需先判级等）见 [`@cndiv/core` README](./packages/core)。可跑示例：`npx tsx packages/core/examples/code-tools.ts`。
+
+### 查询注水后的数据
+
+`cndiv hydrate` 把数据落到 `~/.cndiv/cache.db`（标准 SQLite）。用 [`@cndiv/reader`](./packages/reader) 查询——它薄封装 `better-sqlite3`、只读打开，并自动屏蔽两个坑：**复合主键 `(code, year)`**（所有查询强制 `year`）与**直辖市「市辖区」占位层**（`skipPlaceholder` 穿透到真实区县）。
+
+```ts
+import { openCache } from '@cndiv/reader';
+
+const cn = openCache(); // 默认 ~/.cndiv/cache.db，只读
+cn.findByCode('110101000000', 2023); // → Division（东城区）
+cn.getChildren('110000000000', 2023, { skipPlaceholder: true }); // → [东城区, 西城区]
+cn.getDescendants('110000000000', 2023); // 递归全部后代
+cn.close();
+```
+
+> 也可不用 reader、自带 `better-sqlite3` 直接写 SQL（reader 即此封装）——底层范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
+
+### 校验 Patch（`@cndiv/data-protocol`）
+
+```ts
+import { validatePatch } from '@cndiv/data-protocol';
+const r = validatePatch(JSON.parse(patchJson));
+if (!r.success) throw new Error(r.error); // success 为 true 时 r.data 是规范化后的 Patch
+```
+
+> 可跑示例：`npx tsx packages/data-protocol/examples/validate-patch.ts`。
+
+## 数据模型
+
+12 位统计用区划代码结构 **2+2+2+3+3**（省/市/县/乡镇街道/村居委会）：
+
+```
+11      01      01      001       001
+省(2)   市(2)   县(2)   乡镇(3)   村(3)
+```
+
+存储为扁平邻接表 `divisions(code, name, level, parent_code, year, status, source_type, confidence_score)`，复合主键 `(code, year)` 支持同一区划码跨年份版本化。来源置信度分 4 档：`official_nbs > mca_decree > community > shadow_map`。
+
+## 贡献 Patch
+
+行政区划变更（撤县设区、更名、新设社区等）以 JSON Patch 提交到 `patches/<YYYY>/`：
+
+```jsonc
+{
+  "meta": { "author": "...", "source_url": "...", "evidence_confidence": "high", "apply_after": "2023-baseline" },
+  "operations": [
+    { "op": "add", "code": "310115001002", "name": "新设立社区居委会", "level": 5, "parent_code": "310115001000" },
+    { "op": "update", "code": "310115102000", "status": "deprecated", "note": "撤销合并" }
+  ]
+}
+```
+
+PR 会由 CI（`validate-patches.yml`）用 `validatePatch` 自动校验。本地校验：`node scripts/validate-patches.mjs`。
+
+> 维护者采集运维（年度全量校准 + 日常 xzqh 事件增量、产物合并、level 5 村级冻结边界）见 [`docs/采集运维手册.md`](./docs/采集运维手册.md)。
+
+## 开发
+
+```bash
+pnpm install         # 自动启用 .githooks（pre-commit 拦大文件/数据库）
+pnpm build           # tsc -b 增量构建全部包
+pnpm typecheck && pnpm lint && pnpm test && pnpm validate-patches   # 本地复刻 CI 门禁
+```
+
+### 发版（changesets 多包治理）
+
+```bash
+pnpm changeset           # 为本次改动登记版本意图（选包 + major/minor/patch）
+pnpm version-packages    # 消费 changeset：bump 版本 + 写 CHANGELOG
+pnpm release             # build + changeset publish 到 npm
+```
+
+> 数据包 `@cndiv/source-*` 按数据年份独立版本化，已在 changesets `ignore`，不随代码包 bump。
+> 数据闭环：`crawler` 抓取 → `patches/<YYYY>/` → `apply-patch`（克隆到目标年）→ `backfill` 导回 `source-<year>/divisions.csv` → 重建数据包。
+
+## 数据来源与许可
+
+数据来源于公开政府网站（国家统计局、民政部国家地名信息库），仅供学习与研究使用。代码以 [MIT](./LICENSE) 许可。
+
+- 国家地名信息库（增量主源）：https://dmfw.mca.gov.cn
+- 历史五级镜像参考：[modood/Administrative-divisions-of-China](https://github.com/modood/Administrative-divisions-of-China)（WTFPL）

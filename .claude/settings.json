@@ -1,0 +1,50 @@
+{
+  "env": { "NODE_ENV": "development" },
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Read(.env.production)",
+      "Read(.env.*.local)",
+      "Write(.env.*)",
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test -d node_modules || echo 'WARNING: 依赖未安装，请先运行 pnpm install'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$(git branch --show-current)\" != \"main\" ] && [ \"$(git branch --show-current)\" != \"master\" ] || { echo '{\"block\": true, \"message\": \"禁止直接修改主分支，请先 git checkout -b feat/xxx\"}' >&2; exit 2; }",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | xargs -I{} sh -c 'test -x node_modules/.bin/prettier && case \"{}\" in *.ts|*.tsx|*.vue|*.js|*.jsx) node_modules/.bin/prettier --write \"{}\" 2>/dev/null ;; esac || true'",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

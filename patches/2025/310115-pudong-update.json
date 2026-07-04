@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "author": "example_contributor",
+    "source_url": "http://minhang.gov.cn/announcement/123.pdf",
+    "evidence_confidence": "high",
+    "apply_after": "2023-baseline",
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "notes": "协议结构演示样例：码均取自 2023 baseline 真实存在的浦东新区·陆家嘴街道（可过 structural 门禁）"
+  },
+  "operations": [
+    {
+      "op": "add",
+      "code": "310115005999",
+      "name": "新设立社区居委会",
+      "level": 5,
+      "parent_code": "310115005000"
+    },
+    {
+      "op": "update",
+      "code": "310115005059",
+      "status": "deprecated",
+      "note": "撤销合并（松林居委会，示例）"
+    }
+  ]
+}
