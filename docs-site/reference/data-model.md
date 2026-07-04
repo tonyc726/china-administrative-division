@@ -17,6 +17,8 @@
 
 码工具（判级、取父码、补零）见 [`@cndiv/core`](/reference/core)。
 
+<LevelScaleChart />
+
 ## 存储范式：扁平邻接表
 
 存储为扁平邻接表，复合主键 `(code, year)` 支持同一区划码跨年份版本化：

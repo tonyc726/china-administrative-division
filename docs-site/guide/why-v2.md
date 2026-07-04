@@ -26,7 +26,7 @@ v1 的做法是「镜像一个源」——直接爬 `stats.gov.cn` 并固化。�
 
 | 层 | 来源 | 角色 |
 |---|---|---|
-| 基线 | NBS 2023 五级全量（冷母本 SQLite） | 不可变基准，村级 620,573 条冻结 |
+| 基线 | NBS 2023 五级全量（冷母本 SQLite） | 不可变基准，村级 620,572 条冻结 |
 | 增量主源 | 国家地名信息库 dmfw（79 号令年更 + xzqh 事件流） | `@cndiv/crawler` 逐层 BFS 差分产出 Patch |
 | 参考镜像 | [modood/Administrative-divisions-of-China](https://github.com/modood/Administrative-divisions-of-China)（WTFPL）等 | 交叉校验、历史补全 |
 
@@ -36,6 +36,14 @@ v1 的做法是「镜像一个源」——直接爬 `stats.gov.cn` 并固化。�
 crawler 抓取 → patches/<YYYY>/ → apply-patch（克隆到目标年）
              → backfill 导回 source-<year>/divisions.csv → 重建数据包
 ```
+
+## 为什么必须版本化：总数稳定，结构在变
+
+外界常以为「行政区划一直在扩张」，真实数据恰恰相反——县级总数四十年几乎不动，真正频繁的是**结构性调整**（撤县设区、县改市），它不改变总量却改变了每个码的归属与语义。
+
+<HistoryTrendChart />
+
+这正是 v2 用复合主键 `(code, year)` 逐年版本化、而非只存一版全量的根因：只有把「同一个码在不同年份的不同含义」都留存，才能回答时点查询。
 
 ## 与旧库的差异化
 

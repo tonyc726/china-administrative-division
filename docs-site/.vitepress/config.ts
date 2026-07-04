@@ -61,7 +61,13 @@ export default defineConfig({
     nav: [
       { text: '指南', link: '/guide/why-v2' },
       { text: '包参考', link: '/reference/core' },
-      { text: '数据下载', link: '/data/snapshots' },
+      {
+        text: '数据',
+        items: [
+          { text: '历年区划变化（交互）', link: '/data/history' },
+          { text: '历年快照与下载', link: '/data/snapshots' },
+        ],
+      },
       { text: '运维/架构', link: '/ops/architecture' },
       {
         text: 'v2.0.0',
@@ -106,6 +112,7 @@ export default defineConfig({
           text: '数据模型',
           items: [
             { text: '区划码结构与数据模型', link: '/reference/data-model' },
+            { text: 'SQLite 数据字典', link: '/reference/data-dictionary' },
             { text: '发布指南（npm）', link: '/reference/publishing' },
           ],
         },
@@ -114,6 +121,7 @@ export default defineConfig({
         {
           text: '数据资产',
           items: [
+            { text: '历年区划变化（交互）', link: '/data/history' },
             { text: '历年快照与下载', link: '/data/snapshots' },
           ],
         },
