@@ -60,7 +60,11 @@ export function diffToPatch(
       revokedBySuffix++;
       if (base.has(code)) {
         const realName = d.name.replace(REVOKED_SUFFIX, '').trim();
-        operations.push({ op: 'remove', code, reason: `dmfw 标注撤销：${realName}` });
+        operations.push({
+          op: 'remove',
+          code,
+          reason: `dmfw 标注撤销：${realName}`,
+        });
       }
       continue;
     }

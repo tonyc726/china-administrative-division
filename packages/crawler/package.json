@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/crawler",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "后统计局时代增量采集引擎：对接国家地名信息库(dmfw)抓取并差分产出 Patch",
   "type": "module",
   "main": "dist/index.js",

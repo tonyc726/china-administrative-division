@@ -14,7 +14,9 @@ import { Database } from 'bun:sqlite';
 
 const [input, output] = process.argv.slice(2);
 if (!input || !output) {
-  console.error('用法: bun scripts/export-nbs-json.ts <input.sqlite> <output.json>');
+  console.error(
+    '用法: bun scripts/export-nbs-json.ts <input.sqlite> <output.json>'
+  );
   process.exit(1);
 }
 
@@ -31,11 +33,21 @@ const bucket = (rows: Row[]) => {
   return m;
 };
 
-const provinces = db.query('SELECT code,name FROM province ORDER BY code').all() as { code: string; name: string }[];
-const cities = bucket(db.query('SELECT code,name,provinceCode AS parent FROM city').all() as Row[]);
-const areas = bucket(db.query('SELECT code,name,cityCode AS parent FROM area').all() as Row[]);
-const streets = bucket(db.query('SELECT code,name,areaCode AS parent FROM street').all() as Row[]);
-const villages = bucket(db.query('SELECT code,name,streetCode AS parent FROM village').all() as Row[]);
+const provinces = db
+  .query('SELECT code,name FROM province ORDER BY code')
+  .all() as { code: string; name: string }[];
+const cities = bucket(
+  db.query('SELECT code,name,provinceCode AS parent FROM city').all() as Row[]
+);
+const areas = bucket(
+  db.query('SELECT code,name,cityCode AS parent FROM area').all() as Row[]
+);
+const streets = bucket(
+  db.query('SELECT code,name,areaCode AS parent FROM street').all() as Row[]
+);
+const villages = bucket(
+  db.query('SELECT code,name,streetCode AS parent FROM village').all() as Row[]
+);
 db.close();
 
 const tree = provinces.map((P) => ({
@@ -60,5 +72,10 @@ const tree = provinces.map((P) => ({
 }));
 
 await Bun.write(output, JSON.stringify(tree, null, 2));
-const n = { p: provinces.length, v: [...villages.values()].reduce((s, a) => s + a.length, 0) };
-console.log(`✅ 派生导出 ${output} — 省=${n.p} 村=${n.v}（sqlite 反导出，无 categoryCode）`);
+const n = {
+  p: provinces.length,
+  v: [...villages.values()].reduce((s, a) => s + a.length, 0),
+};
+console.log(
+  `✅ 派生导出 ${output} — 省=${n.p} 村=${n.v}（sqlite 反导出，无 categoryCode）`
+);

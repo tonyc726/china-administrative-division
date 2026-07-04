@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/extractor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "从行政区划变更公告(自然语言)抽取结构化 Patch 操作：规则法兜底 + 可插拔 LLM",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch"

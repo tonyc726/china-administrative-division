@@ -13,7 +13,12 @@
  * 设计（Occam）：冲突按 code 整组取舍，不做字段级合并（正交 op 连带丢弃的风险由报告显式列出）；
  * 管线来源不写进 schema（避免改两个 producer），由调用方（CLI）按文件名/author 启发式判定后显式传入。
  */
-import { PATCH_OPERATION, validatePatch, type Operation, type Patch } from './schemas/patch.js';
+import {
+  PATCH_OPERATION,
+  validatePatch,
+  type Operation,
+  type Patch,
+} from './schemas/patch.js';
 import { CONFIDENCE_LEVELS, type SourcePipeline } from './schemas/patch.js';
 
 /** 采集管线来源（与 patch meta.source_pipeline 同一真相源）。优先级默认 xzqh > community > dmfw。 */
@@ -80,7 +85,9 @@ const CONFIDENCE_RANK: Record<string, number> = {
 /** 稳定序列化一个 op 作为去重键（键按字典序，值原样）。 */
 function opKey(op: Operation): string {
   const keys = Object.keys(op).sort();
-  return JSON.stringify(keys.map((k) => [k, (op as Record<string, unknown>)[k]]));
+  return JSON.stringify(
+    keys.map((k) => [k, (op as Record<string, unknown>)[k]])
+  );
 }
 
 interface Tagged {
@@ -213,7 +220,11 @@ export function mergePatches(
     conflicts,
     deduped,
     empty: kept.length === 0,
-    stats: { inputs: inputs.length, totalOps: tagged.length, keptOps: kept.length },
+    stats: {
+      inputs: inputs.length,
+      totalOps: tagged.length,
+      keptOps: kept.length,
+    },
   };
 }
 

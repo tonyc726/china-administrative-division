@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/reader",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Minimal read-only query API over the hydrated cache.db (China administrative divisions)",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch"
@@ -24,6 +26,12 @@
     "@cndiv/data-protocol": "workspace:*",
     "@types/better-sqlite3": "^7.6.13"
   },
-  "keywords": ["china", "administrative", "division", "sqlite", "query"],
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "sqlite",
+    "query"
+  ],
   "license": "MIT"
 }

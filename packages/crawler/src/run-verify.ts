@@ -131,13 +131,17 @@ async function runStructural(): Promise<number> {
 function runCross(): number {
   // 合规桩：绝不发起网络/接入 CI，仅打印红线说明。调用 verifyCross 触发其抛错以坐实"未实现"。
   console.log('—— cross 交叉校验（商业地图源）——');
-  console.log('该模式为本地维护者手动、只读、产物不落库的一致性校验，未实现且不接入 CI。');
+  console.log(
+    '该模式为本地维护者手动、只读、产物不落库的一致性校验，未实现且不接入 CI。'
+  );
   try {
     verifyCross();
   } catch (e) {
     console.log(`原因：${(e as Error).message}`);
   }
-  console.log('如需实现，见 docs/patch-校验与交叉校验.md 的合规边界与落地形态。');
+  console.log(
+    '如需实现，见 docs/patch-校验与交叉校验.md 的合规边界与落地形态。'
+  );
   return 0; // 非门禁：不阻断，但明确未执行任何实质校验
 }
 

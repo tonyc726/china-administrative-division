@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/node_modules/**',
       'legacy/**',
       'docs/**',
+      'docs-site/**', // 独立工具链(--ignore-workspace)+ VitePress cache 产物，根 eslint 不扫
       '**/*.tsbuildinfo',
     ],
   },

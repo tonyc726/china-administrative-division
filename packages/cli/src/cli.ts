@@ -142,7 +142,9 @@ async function main() {
     case 'merge-patches':
     case 'merge': {
       const dir = args.find((a) => a.startsWith('--dir='))?.split('=')[1];
-      const filesArg = args.find((a) => a.startsWith('--files='))?.split('=')[1];
+      const filesArg = args
+        .find((a) => a.startsWith('--files='))
+        ?.split('=')[1];
       const out = args.find((a) => a.startsWith('--out='))?.split('=')[1];
       const priorityArg = args
         .find((a) => a.startsWith('--priority='))

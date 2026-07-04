@@ -48,7 +48,9 @@ export async function mergePatchesCommand(
       .sort();
   }
   if (files.length === 0) {
-    console.error('Error: 无输入 patch（--dir=<目录> 或 --files=a.json,b.json）');
+    console.error(
+      'Error: 无输入 patch（--dir=<目录> 或 --files=a.json,b.json）'
+    );
     process.exitCode = 1;
     return;
   }

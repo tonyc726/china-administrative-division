@@ -45,7 +45,9 @@ export function buildCacheResolver(opts?: {
     if (years.length === 0) throw new Error('cache.db 无任何年份快照');
     const year = opts?.snapshotYear ?? Math.max(...years);
     if (!years.includes(year)) {
-      throw new Error(`快照年 ${year} 不在 cache.db（可用: ${years.join(',')}）`);
+      throw new Error(
+        `快照年 ${year} 不在 cache.db（可用: ${years.join(',')}）`
+      );
     }
 
     const index = new Map<string, Set<string>>();

@@ -10,7 +10,12 @@
  *   的非确定性丢子树。浅层（全国根）无条件多抓取 UNION；内部节点仅在「相对基线收缩」
  *   时才重抓。不传 stabilize/baseline 时行为与单抓完全一致（向后兼容）。
  */
-import { fetchChildren, unionChildren, DMFW_MAX_LEVEL, type DmfwNode } from './dmfw.js';
+import {
+  fetchChildren,
+  unionChildren,
+  DMFW_MAX_LEVEL,
+  type DmfwNode,
+} from './dmfw.js';
 import { FsCache } from './cache.js';
 import { SOURCE_TYPE, type Division, type DivisionLevel } from '@cndiv/core';
 
@@ -268,7 +273,10 @@ export async function crawlAll(
 
     const results = await mapPool(batch, concurrency, async (it) => {
       try {
-        return { code: it.code, children: await fetchStable(it.code, it.level) };
+        return {
+          code: it.code,
+          children: await fetchStable(it.code, it.level),
+        };
       } catch {
         failures.push(it.code);
         return { code: it.code, children: [] as DmfwNode[] };

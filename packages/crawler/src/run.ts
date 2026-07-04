@@ -63,16 +63,21 @@ async function main(): Promise<void> {
   console.log(
     `抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}${stabilizeOn ? ', 稳定化=on' : ''}）...`
   );
-  const { divisions, failures, fetched, cached, jitter } = await crawlAll(root, {
-    year,
-    maxLevel,
-    concurrency,
-    cacheDir,
-    stabilize: stabilizeOn ? { criticalMaxLevel: 0 } : undefined,
-    baseline: crawlBaseline,
-    onWave: (wave, fr, total) =>
-      console.log(`  波次 ${wave}（每波抓 2 层）: 展开 ${fr} 节点 → 累计 ${total} 条`),
-  });
+  const { divisions, failures, fetched, cached, jitter } = await crawlAll(
+    root,
+    {
+      year,
+      maxLevel,
+      concurrency,
+      cacheDir,
+      stabilize: stabilizeOn ? { criticalMaxLevel: 0 } : undefined,
+      baseline: crawlBaseline,
+      onWave: (wave, fr, total) =>
+        console.log(
+          `  波次 ${wave}（每波抓 2 层）: 展开 ${fr} 节点 → 累计 ${total} 条`
+        ),
+    }
+  );
   console.log(
     `抓取完成：${divisions.length} 条（网络 ${fetched} / 缓存 ${cached}），失败 ${failures.length}`
   );
@@ -117,12 +122,16 @@ async function main(): Promise<void> {
   for (const pp of provinces) {
     const cur = divisions.filter((d) => d.code.startsWith(pp));
     const base = baseline.filter((d) => d.code.startsWith(pp));
-    const { patch, skippedEmptyName, revokedBySuffix } = diffToPatch(base, cur, {
-      author,
-      source_url: 'https://dmfw.mca.gov.cn/',
-      apply_after: '2023-baseline',
-      levels,
-    });
+    const { patch, skippedEmptyName, revokedBySuffix } = diffToPatch(
+      base,
+      cur,
+      {
+        author,
+        source_url: 'https://dmfw.mca.gov.cn/',
+        apply_after: '2023-baseline',
+        levels,
+      }
+    );
     skippedEmptyNames += skippedEmptyName;
     revokedBySuffixTotal += revokedBySuffix;
 

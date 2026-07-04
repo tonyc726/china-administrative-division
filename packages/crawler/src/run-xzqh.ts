@@ -57,7 +57,9 @@ async function buildResolver(baselinePath?: string): Promise<{
   try {
     content = await readFile(baselinePath, 'utf-8');
   } catch {
-    console.warn(`⚠ 基线不可读（${baselinePath}），退回占位 resolver，全部落 unresolved`);
+    console.warn(
+      `⚠ 基线不可读（${baselinePath}），退回占位 resolver，全部落 unresolved`
+    );
     return { resolve: () => null, size: 0 };
   }
   const index = new Map<string, string>();
@@ -132,16 +134,19 @@ async function main(): Promise<void> {
     }
     console.log(`解析出 ${changes.length} 条变更事件：`);
     for (const c of changes) {
-      console.log(`  · [${c.date ?? '日期缺'}] ${c.org ?? '机关缺'} — ${c.text}`);
+      console.log(
+        `  · [${c.date ?? '日期缺'}] ${c.org ?? '机关缺'} — ${c.text}`
+      );
     }
 
     const operations: Operation[] = [];
     let unresolvedCount = 0;
     for (const change of changes) {
-      const { operations: ops, unresolved, via } = await extractPatch(
-        change.text,
-        { resolve: handle.resolve }
-      );
+      const {
+        operations: ops,
+        unresolved,
+        via,
+      } = await extractPatch(change.text, { resolve: handle.resolve });
       operations.push(...ops);
       unresolvedCount += unresolved.length;
       for (const u of unresolved) {
@@ -193,7 +198,11 @@ async function main(): Promise<void> {
     const outPath = get('out');
     if (outPath) {
       await mkdir(path.dirname(outPath), { recursive: true });
-      await writeFile(outPath, JSON.stringify(validated.data, null, 2), 'utf-8');
+      await writeFile(
+        outPath,
+        JSON.stringify(validated.data, null, 2),
+        'utf-8'
+      );
       console.log(`已写出：${outPath}`);
     } else {
       console.log(JSON.stringify(validated.data, null, 2));

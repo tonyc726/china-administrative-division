@@ -31,7 +31,9 @@ const get = (k: string): string | undefined =>
   args.find((a) => a.startsWith(`--${k}=`))?.split('=')[1];
 
 function printRegistry(): void {
-  console.log('省级民政厅乡级代码 · 半年度监控注册表（79 号令第十六条第二款）：\n');
+  console.log(
+    '省级民政厅乡级代码 · 半年度监控注册表（79 号令第十六条第二款）：\n'
+  );
   for (const s of PROVINCE_TOWNSHIP_REGISTRY) {
     const flag =
       s.status === 'confirmed' ? '✅' : s.status === 'candidate' ? '🟡' : '⛔';
@@ -40,7 +42,9 @@ function printRegistry(): void {
     if (s.latestUrl) console.log(`   最新: ${s.latestUrl}`);
     console.log(`   备注: ${s.note}\n`);
   }
-  console.log('轮询节律：每年 2 月/8 月对各省 columnUrl 内容差分（各留 1 月缓冲）。');
+  console.log(
+    '轮询节律：每年 2 月/8 月对各省 columnUrl 内容差分（各留 1 月缓冲）。'
+  );
 }
 
 async function main(): Promise<void> {
@@ -72,7 +76,9 @@ async function main(): Promise<void> {
   const html = readFileSync(file, 'utf-8');
   const rows = parseTownshipHtmlTable(html);
   const current = townshipRowsToDivisions(rows, year, provinceCode);
-  console.log(`解析乡级：${rows.length} 行 → 归一 ${current.length} 条（省内 level4）`);
+  console.log(
+    `解析乡级：${rows.length} 行 → 归一 ${current.length} 条（省内 level4）`
+  );
   if (current.length === 0) {
     console.error('✗ 未解析到任何乡级码（检查 HTML 表格式 / 省码前缀）');
     process.exit(1);
@@ -90,7 +96,9 @@ async function main(): Promise<void> {
     baseline = db
       .getByLevel(4, snap)
       .filter((d) => d.code.startsWith(provinceCode));
-    console.log(`基线：cache.db 快照 ${snap} 的 ${provinceCode} 省 level4 共 ${baseline.length} 条`);
+    console.log(
+      `基线：cache.db 快照 ${snap} 的 ${provinceCode} 省 level4 共 ${baseline.length} 条`
+    );
   } finally {
     db.close();
   }
@@ -109,7 +117,9 @@ async function main(): Promise<void> {
 
   console.log(
     `\ndiff：${safe.length} 个安全 op（add/update/move）` +
-      (suppressedRemoves ? `，抑制 ${suppressedRemoves} 个 remove（口径差异，供人工复核）` : '') +
+      (suppressedRemoves
+        ? `，抑制 ${suppressedRemoves} 个 remove（口径差异，供人工复核）`
+        : '') +
       (skippedEmptyName ? `，跳过 ${skippedEmptyName} 空名` : '')
   );
 

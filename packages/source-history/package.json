@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/source-history",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "China administrative division history (GB/T 2260, 1980–2021), year-versioned by composite (code, year)",
   "license": "MIT",
   "files": [

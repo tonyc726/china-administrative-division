@@ -174,7 +174,9 @@ export function parseChanges(html: string): ChangeEntry[] {
  * 抓取某年（或 dcpid，二者相等）的变更事件列表。
  * 空结果（该年无发布，如 2022）返回 []，不抛错。
  */
-export async function fetchChanges(yearOrDcpid: number): Promise<ChangeEntry[]> {
+export async function fetchChanges(
+  yearOrDcpid: number
+): Promise<ChangeEntry[]> {
   const html = await fetchDecoded(descriptionUrl(yearOrDcpid));
   return parseChanges(html);
 }

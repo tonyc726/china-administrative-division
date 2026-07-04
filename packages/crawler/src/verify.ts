@@ -95,7 +95,9 @@ export function verifyStructural(
 
   for (const op of ops) {
     if (!validateCode(op.code)) {
-      errors.push(err(op.code, 'CODE_INVALID', `非法区划码（结构或省码白名单不通过）`));
+      errors.push(
+        err(op.code, 'CODE_INVALID', `非法区划码（结构或省码白名单不通过）`)
+      );
       // 码非法则后续码结构派生（getLevelFromCode/getParentCode）无意义，跳过该 op 的其余规则
       continue;
     }
@@ -105,7 +107,11 @@ export function verifyStructural(
         const structLevel = getLevelFromCode(op.code);
         if (structLevel !== op.level) {
           errors.push(
-            err(op.code, 'ADD_LEVEL_MISMATCH', `level=${op.level} 与码结构派生 level=${structLevel} 不符`)
+            err(
+              op.code,
+              'ADD_LEVEL_MISMATCH',
+              `level=${op.level} 与码结构派生 level=${structLevel} 不符`
+            )
           );
         }
         const structParent = getParentCode(op.code, op.level);
@@ -120,11 +126,25 @@ export function verifyStructural(
           );
         }
         if (refCheck && baseline!.has(op.code)) {
-          errors.push(err(op.code, 'ADD_DUPLICATE', `add 的码已存在于 baseline（重复新增）`));
+          errors.push(
+            err(
+              op.code,
+              'ADD_DUPLICATE',
+              `add 的码已存在于 baseline（重复新增）`
+            )
+          );
         }
-        if (refCheck && op.parent_code !== null && !knownParent(op.parent_code)) {
+        if (
+          refCheck &&
+          op.parent_code !== null &&
+          !knownParent(op.parent_code)
+        ) {
           warnings.push(
-            warn(op.code, 'ADD_PARENT_MISSING', `父码 ${op.parent_code} 不在 baseline 也未在本 patch 新增（悬挂父）`)
+            warn(
+              op.code,
+              'ADD_PARENT_MISSING',
+              `父码 ${op.parent_code} 不在 baseline 也未在本 patch 新增（悬挂父）`
+            )
           );
         }
         break;
@@ -133,19 +153,45 @@ export function verifyStructural(
       case 'update':
       case 'remove': {
         if (refCheck && !knownParent(op.code)) {
-          errors.push(err(op.code, 'TARGET_MISSING', `${op.op} 目标码不存在于 baseline 且非本 patch 新增`));
+          errors.push(
+            err(
+              op.code,
+              'TARGET_MISSING',
+              `${op.op} 目标码不存在于 baseline 且非本 patch 新增`
+            )
+          );
         }
         if (op.op === 'update' && op.new_parent !== undefined) {
-          checkNewParent(op.code, op.new_parent, refCheck, knownParent, errors, warnings);
+          checkNewParent(
+            op.code,
+            op.new_parent,
+            refCheck,
+            knownParent,
+            errors,
+            warnings
+          );
         }
         break;
       }
 
       case 'move': {
         if (refCheck && !knownParent(op.code)) {
-          errors.push(err(op.code, 'TARGET_MISSING', `move 目标码不存在于 baseline 且非本 patch 新增`));
+          errors.push(
+            err(
+              op.code,
+              'TARGET_MISSING',
+              `move 目标码不存在于 baseline 且非本 patch 新增`
+            )
+          );
         }
-        checkNewParent(op.code, op.new_parent, refCheck, knownParent, errors, warnings);
+        checkNewParent(
+          op.code,
+          op.new_parent,
+          refCheck,
+          knownParent,
+          errors,
+          warnings
+        );
         break;
       }
     }
@@ -155,9 +201,21 @@ export function verifyStructural(
   for (const [code, kinds] of opsByCode) {
     if (kinds.length < 2) continue;
     if (kinds.includes('add') && kinds.includes('remove')) {
-      errors.push(err(code, 'DUP_OP_CONFLICT', `同一码在本 patch 内既 add 又 remove（自相矛盾）`));
+      errors.push(
+        err(
+          code,
+          'DUP_OP_CONFLICT',
+          `同一码在本 patch 内既 add 又 remove（自相矛盾）`
+        )
+      );
     } else {
-      warnings.push(warn(code, 'DUP_OP', `同一码在本 patch 内出现 ${kinds.length} 次（${kinds.join('/')}）`));
+      warnings.push(
+        warn(
+          code,
+          'DUP_OP',
+          `同一码在本 patch 内出现 ${kinds.length} 次（${kinds.join('/')}）`
+        )
+      );
     }
   }
 
@@ -177,11 +235,19 @@ function checkNewParent(
     return;
   }
   if (!validateCode(newParent)) {
-    errors.push(err(code, 'NEWPARENT_INVALID', `new_parent=${newParent} 非合法区划码`));
+    errors.push(
+      err(code, 'NEWPARENT_INVALID', `new_parent=${newParent} 非合法区划码`)
+    );
     return;
   }
   if (refCheck && !knownParent(newParent)) {
-    warnings.push(warn(code, 'NEWPARENT_MISSING', `new_parent ${newParent} 不在 baseline 也未在本 patch 新增（悬挂父）`));
+    warnings.push(
+      warn(
+        code,
+        'NEWPARENT_MISSING',
+        `new_parent ${newParent} 不在 baseline 也未在本 patch 新增（悬挂父）`
+      )
+    );
   }
 }
 

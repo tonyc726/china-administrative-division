@@ -18,15 +18,36 @@ import { Database } from 'bun:sqlite';
 
 const [input, output] = process.argv.slice(2);
 if (!input || !output) {
-  console.error('用法: bun scripts/rebuild-nbs-sqlite.ts <input.json> <output.sqlite>');
+  console.error(
+    '用法: bun scripts/rebuild-nbs-sqlite.ts <input.json> <output.sqlite>'
+  );
   process.exit(1);
 }
 
-interface Village { name: string; code: string }
-interface Town { name: string; code: string; villages?: Village[] }
-interface County { name: string; code: string; towns?: Town[] }
-interface City { name: string; code: string; counties?: County[] }
-interface Province { name: string; code: string; cities?: City[] }
+interface Village {
+  name: string;
+  code: string;
+}
+interface Town {
+  name: string;
+  code: string;
+  villages?: Village[];
+}
+interface County {
+  name: string;
+  code: string;
+  towns?: Town[];
+}
+interface City {
+  name: string;
+  code: string;
+  counties?: County[];
+}
+interface Province {
+  name: string;
+  code: string;
+  cities?: City[];
+}
 
 const data = (await Bun.file(input).json()) as Province[];
 
@@ -43,28 +64,43 @@ CREATE TABLE \`village\` (\`code\` VARCHAR(255) PRIMARY KEY, \`name\` VARCHAR(25
 `);
 
 // INSERT OR IGNORE == Sequelize ignoreDuplicates
-const insP = db.query('INSERT OR IGNORE INTO province (code,name) VALUES (?,?)');
-const insC = db.query('INSERT OR IGNORE INTO city (code,name,provinceCode) VALUES (?,?,?)');
-const insA = db.query('INSERT OR IGNORE INTO area (code,name,cityCode,provinceCode) VALUES (?,?,?,?)');
-const insS = db.query('INSERT OR IGNORE INTO street (code,name,areaCode,provinceCode,cityCode) VALUES (?,?,?,?,?)');
-const insV = db.query('INSERT OR IGNORE INTO village (code,name,streetCode,provinceCode,cityCode,areaCode) VALUES (?,?,?,?,?,?)');
+const insP = db.query(
+  'INSERT OR IGNORE INTO province (code,name) VALUES (?,?)'
+);
+const insC = db.query(
+  'INSERT OR IGNORE INTO city (code,name,provinceCode) VALUES (?,?,?)'
+);
+const insA = db.query(
+  'INSERT OR IGNORE INTO area (code,name,cityCode,provinceCode) VALUES (?,?,?,?)'
+);
+const insS = db.query(
+  'INSERT OR IGNORE INTO street (code,name,areaCode,provinceCode,cityCode) VALUES (?,?,?,?,?)'
+);
+const insV = db.query(
+  'INSERT OR IGNORE INTO village (code,name,streetCode,provinceCode,cityCode,areaCode) VALUES (?,?,?,?,?,?)'
+);
 
 const n = { p: 0, c: 0, a: 0, s: 0, v: 0 };
 const build = db.transaction(() => {
   for (const P of data) {
     const pc = P.code.slice(0, 2);
-    insP.run(pc, P.name); n.p++;
+    insP.run(pc, P.name);
+    n.p++;
     for (const C of P.cities ?? []) {
       const cc = C.code.slice(0, 4);
-      insC.run(cc, C.name, pc); n.c++;
+      insC.run(cc, C.name, pc);
+      n.c++;
       for (const A of C.counties ?? []) {
         const ac = A.code.slice(0, 6);
-        insA.run(ac, A.name, cc, pc); n.a++;
+        insA.run(ac, A.name, cc, pc);
+        n.a++;
         for (const S of A.towns ?? []) {
           const sc = S.code.slice(0, 9);
-          insS.run(sc, S.name, ac, pc, cc); n.s++;
+          insS.run(sc, S.name, ac, pc, cc);
+          n.s++;
           for (const V of S.villages ?? []) {
-            insV.run(V.code, V.name, sc, pc, cc, ac); n.v++;
+            insV.run(V.code, V.name, sc, pc, cc, ac);
+            n.v++;
           }
         }
       }
