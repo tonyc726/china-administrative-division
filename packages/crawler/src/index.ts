@@ -13,6 +13,8 @@ export * from './dmfw.js';
 export * from './diff.js';
 // 层级建模归一化：消解 dmfw(扁平) ↔ NBS(占位层) 差异，供差分与消费者统一口径
 export * from './normalize.js';
+// patch 校验：structural 结构性门禁（离线确定性）+ cross 交叉校验桩（合规红线）
+export * from './verify.js';
 export * from './crawl-all.js';
 export * from './cache.js';
 export * from './baseline.js';
