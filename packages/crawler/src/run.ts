@@ -15,7 +15,7 @@
  */
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { crawlAll } from './crawl-all.js';
+import { crawlAll, buildBaseline } from './crawl-all.js';
 import { diffToPatch } from './diff.js';
 import { loadBaselineCsv } from './baseline.js';
 import type { Division } from '@cndiv/core';
@@ -35,22 +35,41 @@ async function main(): Promise<void> {
   const cacheDir = get('cache') ?? `.cache/crawler-${year}`;
   const author = get('author') ?? 'dmfw-crawler';
   const emitRemoves = (get('removes') ?? 'off') === 'on';
+  const stabilizeOn = (get('stabilize') ?? 'off') === 'on';
 
   if (!baselinePath) {
     console.error(
-      'Usage: run --year=<YYYY> --baseline=<divisions.csv> [--root=<code>] [--out=<dir>] [--concurrency=6] [--maxLevel=4] [--cache=<dir>] [--removes=on]'
+      'Usage: run --year=<YYYY> --baseline=<divisions.csv> [--root=<code>] [--out=<dir>] [--concurrency=6] [--maxLevel=4] [--cache=<dir>] [--removes=on] [--stabilize=on]'
     );
     process.exit(1);
   }
 
+  const prefix = root ? root.slice(0, 2) : '';
+
+  // 基线提前加载：既供差分，也在 --stabilize 时构建 crawl 基线（检测抖动收缩）。
+  console.log(`加载基线: ${baselinePath}`);
+  const allBaseline = await loadBaselineCsv(baselinePath);
+
+  // 抖动稳定化(2.1)：--stabilize=on 时对全国根多抓 UNION，并用基线（仅 level≤maxLevel，
+  // 排除 dmfw 不覆盖的 level5，否则乡镇会被永久误判收缩）检测内部节点收缩后重抓。
+  const crawlBaseline = stabilizeOn
+    ? buildBaseline(
+        allBaseline.filter(
+          (d) => d.code.startsWith(prefix) && d.level <= maxLevel
+        )
+      )
+    : undefined;
+
   console.log(
-    `抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}）...`
+    `抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}${stabilizeOn ? ', 稳定化=on' : ''}）...`
   );
-  const { divisions, failures, fetched, cached } = await crawlAll(root, {
+  const { divisions, failures, fetched, cached, jitter } = await crawlAll(root, {
     year,
     maxLevel,
     concurrency,
     cacheDir,
+    stabilize: stabilizeOn ? { criticalMaxLevel: 0 } : undefined,
+    baseline: crawlBaseline,
     onWave: (wave, fr, total) =>
       console.log(`  波次 ${wave}（每波抓 2 层）: 展开 ${fr} 节点 → 累计 ${total} 条`),
   });
@@ -62,12 +81,19 @@ async function main(): Promise<void> {
       `  失败节点(可重跑续爬): ${failures.slice(0, 10).join(', ')}${failures.length > 10 ? ' …' : ''}`
     );
   }
+  if (jitter.length > 0) {
+    const recovered = jitter.reduce((s, j) => s + Math.max(0, j.recovered), 0);
+    console.log(
+      `ℹ️  抖动稳定化：${jitter.length} 个节点触发多抓，UNION 恢复 ${recovered} 个被截断子节点`
+    );
+    for (const u of jitter.filter((j) => j.rootUndersized)) {
+      console.warn(
+        `  ⚠️ 根 "${u.code || '全国'}" 省级数量异常偏少(${u.counts.at(-1)})，疑似系统性截断，请人工复核`
+      );
+    }
+  }
 
-  console.log(`加载基线: ${baselinePath}`);
-  const allBaseline = await loadBaselineCsv(baselinePath);
-
-  // 自动对齐差分范围：按抓取根的省前缀 + 实际抓到的层级，避免误判（如 dmfw 无村级 → 不删基线村级）
-  const prefix = root ? root.slice(0, 2) : '';
+  // 差分范围对齐：按抓取根的省前缀 + 实际抓到的层级，避免误判（如 dmfw 无村级 → 不删基线村级）
   const levels = [...new Set(divisions.map((d) => d.level))].sort(
     (a, b) => a - b
   );

@@ -64,5 +64,33 @@ export async function fetchChildren(
   }
 }
 
+/**
+ * 同一 code 两次抓取结果按 child.code 取并集，递归合并孙层。
+ *
+ * dmfw 存在非确定性抖动（HTTP 200 但 children 被截断/间歇丢子树），got 的 retry
+ * 对此无感。稳定化策略是「同一节点多抓、取 UNION」补齐被截断的子树。
+ * 性质：幂等（union(a,a)=a）、可交换（union(a,b)=union(b,a)）；name 取先非空者。
+ * 注意：仅用于合并「同一次运行的多次 live 抓取」，不注入任何基线节点（防幽灵复活）。
+ */
+export function unionChildren(a: DmfwNode[], b: DmfwNode[]): DmfwNode[] {
+  const m = new Map<string, DmfwNode>();
+  for (const list of [a, b]) {
+    for (const n of list) {
+      const e = m.get(n.code);
+      m.set(
+        n.code,
+        e
+          ? {
+              ...e,
+              name: e.name ?? n.name,
+              children: unionChildren(e.children, n.children),
+            }
+          : n
+      );
+    }
+  }
+  return [...m.values()];
+}
+
 // 注：全量抓取请用 crawl-all.ts 的 crawlAll（逐层 BFS + 并发池 + 断点续爬）。
 // 早期串行 crawl() 已废弃删除，fetchChildren 是两者共享的唯一抓取原语。
