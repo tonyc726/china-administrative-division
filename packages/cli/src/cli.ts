@@ -14,6 +14,8 @@ import { realpathSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { hydrate, exportFromCache } from './hydrate.js';
 import { applyPatch } from './apply-patch.js';
+import { mergePatchesCommand } from './merge-patches.js';
+import type { Pipeline } from '@cndiv/data-protocol';
 
 // CLI argument parsing
 const args = process.argv.slice(2);
@@ -137,6 +139,35 @@ async function main() {
       break;
     }
 
+    case 'merge-patches':
+    case 'merge': {
+      const dir = args.find((a) => a.startsWith('--dir='))?.split('=')[1];
+      const filesArg = args.find((a) => a.startsWith('--files='))?.split('=')[1];
+      const out = args.find((a) => a.startsWith('--out='))?.split('=')[1];
+      const priorityArg = args
+        .find((a) => a.startsWith('--priority='))
+        ?.split('=')[1];
+      const priority = priorityArg
+        ? (priorityArg.split(',') as Pipeline[])
+        : undefined;
+
+      if (!dir && !filesArg) {
+        console.error('Error: --dir 或 --files 至少一个');
+        console.error(
+          'Usage: cndiv merge-patches --dir=<raw目录> --out=<成品.json> [--priority=xzqh,community,dmfw]'
+        );
+        process.exit(1);
+      }
+
+      await mergePatchesCommand({
+        dir,
+        files: filesArg ? filesArg.split(',') : undefined,
+        out,
+        priority,
+      });
+      break;
+    }
+
     case 'version':
     case '--version':
     case '-v': {
@@ -161,6 +192,7 @@ Commands:
   migrate --input=<dir>       Migrate legacy GB2260 JSON data to SQLite (复合主键 code,year)
   export --year=<YYYY>        Export data to CSV format
   apply-patch --patch=<file>  Apply a community patch to the database (按 apply_after 克隆到目标年)
+  merge-patches --dir=<dir>   合并多管线 patch 去重 (冲突键=code, 优先级 xzqh>community>dmfw, 冲突落 sidecar)
   backfill --year=<YYYY>      回灌：把已 apply 的某年份导出回 source-<year> CSV，合上闭环
   version                     Show version information
   help                        Show this help message
@@ -172,6 +204,7 @@ Examples:
   cndiv migrate --input=./legacy/data/GB2260 --output=./dist/source-history.db
   cndiv export --year=2023 --output=./2023.csv
   cndiv apply-patch --patch=patches/2025/310115-pudong-update.json
+  cndiv merge-patches --dir=raw/2026 --out=patches/2026/2026.merged.json
   cndiv backfill --year=2025 --output=packages/source-2025/data/divisions.csv
 
 For more information, visit:
