@@ -670,3 +670,6 @@ xcuserdata/
 
 # 放行：tsconfig.base.json 被上面的 merge 残留规则 *.BASE.* 在大小写不敏感文件系统下误伤
 !tsconfig.base.json
+
+# Playwright MCP 运行时产物（非项目代码）
+.playwright-mcp/
