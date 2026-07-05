@@ -26,6 +26,7 @@ export default defineConfig({
   metaChunk: true,
 
   head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
     ['meta', { name: 'keywords', content: '中国行政区划,行政区划代码,GB2260,统计用区划代码,NBS,城乡划分代码,国家地名信息库,dmfw,邮编,区号,SQLite,行政区划历史数据' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: '中国行政区划数据基础设施 · @cndiv' }],
@@ -42,7 +43,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: undefined,
+    logo: '/logo.svg',
     outline: { level: [2, 3], label: '本页目录' },
     search: {
       provider: 'local',

@@ -1,0 +1,14 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cndiv">
+  <!-- 带浅色底板,保证在深色浏览器标签栏也清晰 -->
+  <rect x="0" y="0" width="120" height="120" rx="24" fill="#f7f8fa"/>
+  <rect x="12"   y="12"   width="45"  height="45"  rx="4" fill="#1c3a5c"/>
+  <rect x="63"   y="12"   width="45"  height="45"  rx="4" fill="#2f5a8a"/>
+  <rect x="12"   y="63"   width="45"  height="45"  rx="4" fill="#5a8cc2"/>
+  <rect x="63"   y="63"   width="21"  height="21"  rx="3" fill="#93b8dd"/>
+  <rect x="87"   y="63"   width="21"  height="21"  rx="3" fill="#93b8dd"/>
+  <rect x="63"   y="87"   width="21"  height="21"  rx="3" fill="#93b8dd"/>
+  <rect x="87"   y="87"   width="9.5" height="9.5" rx="2" fill="#c6402f"/>
+  <rect x="98.5" y="87"   width="9.5" height="9.5" rx="2" fill="#c6402f"/>
+  <rect x="87"   y="98.5" width="9.5" height="9.5" rx="2" fill="#c6402f"/>
+  <rect x="98.5" y="98.5" width="9.5" height="9.5" rx="2" fill="#c6402f"/>
+</svg>
