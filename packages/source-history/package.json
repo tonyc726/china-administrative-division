@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/source-history",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "China administrative division history (GB/T 2260, 1980–2021), year-versioned by composite (code, year)",
   "license": "MIT",
   "files": [
@@ -28,5 +28,8 @@
     "type": "git",
     "url": "git+https://github.com/tonyc726/china-administrative-division.git",
     "directory": "packages/source-history"
+  },
+  "scripts": {
+    "prepublishOnly": "node -e \"const s=require('fs').statSync('data/divisions.csv').size;if(s<1e6){console.error('✋ divisions.csv 缺失或过小('+s+'B)——拒绝发布空数据包(CI 无 CSV 源，须本地发布)');process.exit(1)}\""
   }
 }
