@@ -5,6 +5,9 @@ hero:
   name: 中国行政区划数据基础设施
   text: 后统计局时代的可持续更新方案
   tagline: GB2260 国标（省/市/县，1980–2023）＋ NBS 统计用区划代码五级（省/市/县/乡/村，2009–2023）历年快照。2023 基线 ＋ 社区 Patch 增量 ＋ 多源合成，数据与代码彻底解耦。
+  image:
+    src: /logo.svg
+    alt: cndiv —— 行政区划逐级细分标识
   actions:
     - theme: brand
       text: 快速上手
