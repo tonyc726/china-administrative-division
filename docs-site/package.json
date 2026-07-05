@@ -1,0 +1,15 @@
+{
+  "name": "@cndiv/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Documentation site for @cndiv (China administrative division infrastructure). Standalone — installed with --ignore-workspace so VitePress deps do not touch the monorepo lockfile.",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

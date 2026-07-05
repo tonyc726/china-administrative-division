@@ -1,0 +1,12 @@
+{
+  "year": 2023,
+  "source": "NBS",
+  "format": "csv",
+  "file": "divisions.csv",
+  "rows": 665271,
+  "levels": 5,
+  "bytes": 52711715,
+  "sha512": "2715f2ced2d208af533ea62c0106ef901bf695c83691ff8a6463d4c21ae6d1396e4b9e8d275b42a45bb043016b34bd96272add2c32f116cf4df8ab3ed205f658",
+  "placeholders_skipped": 5,
+  "generator": "@cndiv/cli build-source"
+}

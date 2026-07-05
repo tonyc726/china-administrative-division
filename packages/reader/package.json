@@ -1,0 +1,46 @@
+{
+  "name": "@cndiv/reader",
+  "version": "0.2.0",
+  "description": "Minimal read-only query API over the hydrated cache.db (China administrative divisions)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
+  },
+  "dependencies": {
+    "@cndiv/core": "workspace:*",
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "@cndiv/data-protocol": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13"
+  },
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "sqlite",
+    "query"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/reader"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -632,5 +632,44 @@ xcuserdata/
 
 # End of https://www.toptal.com/developers/gitignore/api/git,svn,vim,node,linux,macos,xcode,eclipse,windows,sublimetext,tortoisegit,intellij+all,python
 
-data
-pageCacheDB
+# ─────────────────────────────────────────────────────────────
+# 数据资产与缓存：绝不进 git
+#   本仓库历史曾因 GB 级 SQLite / LevelDB 缓存进库膨胀，已用 git-filter-repo 清理。
+#   下列规则按「内容类型」兜底，不再依赖「目录名恰好叫 data」这种脆弱约定。
+#   行政区划数据请走 NPM(@cndiv/source-YYYY) / GitHub Release 分发。
+# ─────────────────────────────────────────────────────────────
+
+# 大体积数据库 / 数据快照（任何位置）
+*.sqlite
+*.sqlite3
+*.db
+*.ldb
+*.mdb
+
+# 数据快照压缩态（如需纳管个别小文件，用 `!path/to/file.gz` 显式放行）
+*.gz
+
+# legacy 旧工程：保留 scripts/README/package.json 等参考代码，仅排除其数据与缓存
+/legacy/data/
+/legacy/database/
+/legacy/pageCacheDB/
+/legacy/logs/
+/legacy/node_modules/
+
+# v1 遗留的顶层缓存/数据目录
+/pageCacheDB/
+/database/
+
+# source-* 数据包的生成产物：CSV(~50MB)由 build-source 从 SQLite 生成，不进 git；
+# 仅保留 manifest.json（SHA-512 完整性锚点，确定性可复现，~400B）入库
+/packages/source-*/data/*
+!/packages/source-*/data/manifest.json
+# 例外：source-postal 的 postal.csv 体积小(~100KB)且源自 ip138 活站(不可靠复现)，入库保存
+!/packages/source-postal/data/postal.csv
+/packages/source-*/*.tgz
+
+# 放行：tsconfig.base.json 被上面的 merge 残留规则 *.BASE.* 在大小写不敏感文件系统下误伤
+!tsconfig.base.json
+
+# Playwright MCP 运行时产物（非项目代码）
+.playwright-mcp/

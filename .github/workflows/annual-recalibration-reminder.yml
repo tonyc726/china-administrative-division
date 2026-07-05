@@ -1,0 +1,68 @@
+name: Annual Recalibration Reminder
+
+# 对齐《行政区划代码管理办法》(民政部令第79号) 第十六条：
+# 国务院民政部门每年 1 月经国家地名信息库(dmfw)发布截至上年末全国各级行政区划代码。
+# 本 workflow 于每年 1 月中旬自动开 issue，提醒维护者执行年度全量校准(见 docs/采集运维手册.md §3)。
+#
+# ⚠️ GitHub 对 60 天无提交活动的仓库会自动禁用 scheduled workflow；长期休眠后需手动重新启用，
+#    或用下方 workflow_dispatch 手动触发。
+
+on:
+  schedule:
+    # 每年 1 月 15 日 01:00 UTC（约北京时间 09:00）；法定 1 月发布后留出缓冲
+    - cron: '0 1 15 1 *'
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  open-reminder-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open annual recalibration issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const year = new Date().getUTCFullYear();
+            const title = `[采集] ${year} 年度全量校准（对齐 dmfw 1 月发布）`;
+
+            // 幂等：同名 issue 已存在则不重复开
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'recalibration',
+            });
+            if (existing.data.some((i) => i.title === title)) {
+              core.info(`Issue "${title}" 已存在，跳过。`);
+              return;
+            }
+
+            const body = [
+              `## ${year} 年度全量校准`,
+              '',
+              '《行政区划代码管理办法》(民政部令第79号) 规定民政部每年 1 月经国家地名信息库发布截至上年末全国各级行政区划代码。请执行年度全量校准。',
+              '',
+              '### 步骤（详见 `docs/采集运维手册.md` §1、§3）',
+              '',
+              `- [ ] **先人工确认 dmfw 数据现势日期**：抽查任一节点，确认已更新至 ${year - 1}-12-31，再触发全量`,
+              '- [ ] 全国全量 BFS 差分：',
+              '  ```bash',
+              `  pnpm --filter @cndiv/crawler crawl --year=${year} --baseline=packages/source-2023/data/divisions.csv`,
+              '  ```',
+              '- [ ] 比对总条数量级，确认无系统性丢失；failures 节点重跑补齐',
+              '- [ ] 产出 patch 经 `pnpm validate-patches` 守门',
+              '- [ ] 与日常 xzqh 事件流产物按 §4 合并去重',
+              '',
+              '> 自动创建：`annual-recalibration-reminder.yml`',
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['recalibration'],
+            });
+            core.info(`已创建 issue: ${title}`);

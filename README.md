@@ -1,155 +1,74 @@
-# 中华人民共和国行政区划代码
+<p align="center">
+  <img src="./docs-site/public/logo.svg" width="88" height="88" alt="cndiv logo">
+</p>
 
-[![Build Status](https://travis-ci.org/tonyc726/china-administrative-division.svg?style=flat-square&branch=master)](https://travis-ci.org/tonyc726/china-administrative-division)
-[![tested with jest](https://img.shields.io/badge/tested_with-jest-99424f.svg)](https://github.com/facebook/jest)
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=flat-square)](https://github.com/tonyc726/china-administrative-division)
+# China Administrative Division · 中国行政区划数据基础设施
 
-> 本项目提供 2 个爬虫用于爬取**国家统计局**及**民政部**公布的数据，相对而言**民政部**公布的数据更加符合`GB/T 2260`的标准。
+[![Docs](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E6%96%87%E6%A1%A3-cndiv-brightgreen?logo=vuedotjs)](https://tonyc726.github.io/china-administrative-division/)
+[![Validate Patches](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml/badge.svg)](https://github.com/tonyc726/china-administrative-division/actions/workflows/validate-patches.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-## 特殊说明
+**中华人民共和国行政区划代码的历史数据库,以及一套持续更新它的基础设施。**
 
-由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2020`的数据全部存在`pageCacheDB/stats.gov.cn`中，如需文件请运行`npm run stats-gov:crawler`自行导出或者提交 issue。
+- **GB2260 国标** —— 省 / 市 / 县三级,1980–2023
+- **NBS 统计用区划代码** —— 省 / 市 / 县 / 乡 / 村五级,2009–2023
 
-## 现状简介
+原数据源国家统计局 `stats.gov.cn` 自 2024 年起停更、2026 年转向国家地名信息库。v2 因此改为 **「2023 基线快照 + 社区 Patch 增量 + 多源合成」**,数据与代码彻底解耦、用户侧零爬虫。
 
-截至 2022 年，中华人民共和国各级行政区划统计数量如下：
-
-- [省级行政区**34**个](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E4%B8%80%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)，其中包括：[**4**个直辖市](https://zh.wikipedia.org/wiki/%E7%9B%B4%E8%BE%96%E5%B8%82)，[**23**个省](<https://zh.wikipedia.org/wiki/%E7%9C%81_(%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83)>)，[**5**个自治区](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%B2%BB%E5%8C%BA)，[**2**个特别行政区](https://zh.wikipedia.org/wiki/%E7%89%B9%E5%88%AB%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [地级行政区**333**个](https://zh.wikipedia.org/wiki/%E5%9C%B0%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-- [县级行政区**2846**个](https://zh.wikipedia.org/wiki/%E5%8E%BF%E7%BA%A7%E8%A1%8C%E6%94%BF%E5%8C%BA)
-
-各级层次架构，可以用以下图来概括：
-![中华人民共和国行政区划架构图](./docs/images/System_of_China_administrative_division.png)
-
-地级行政区划（不含不在管辖范围内的台湾）图例依次表示：地级市、地区、自治州、副地级行政区、盟、直辖市/特别行政区、副省级行政区：
-![地级行政区划](<./docs/images/China_Prefectural-level_divisions_(PRC_claim)_min.png>)
-
-## 编码规则
-
-> 具体可以参考[《民政统计代码编制规则》](http://www.mca.gov.cn/article/sj/tjbz/a/201507/20150700854848.shtml)
-
-《中华人民共和国行政区划代码》国家标准中定义县及县以上使用 6 位数字标识，代码从左至右的含义是：
-
-- 第一、二位表示省级行政单位（省、自治区、直辖市、特别行政区），其中第一位代表[大区](https://zh.wikipedia.org/wiki/Category:%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81)；
-- 第三、四位表示地级行政单位（地级市、地区、自治州、盟及省级单位直属县级单位的汇总码）；
-- 第五、六位表示县级行政单位（县、自治县、市辖区、县级市、旗、自治旗、林区、特区）；
-
-另外，《民政统计代码编制规则》中定义了 12 位的编码，分为 3 段，用于统计到最基层的居委会，具体规则如下：
-
-```
-□□□□□□ ----- □□□ ----- □□□
-  ↑           ↑         ↑
-第一段       第二段     第三段
-```
-
-- 第一段为 **6 位数字**，表示县及县以上的行政区划，使用《中华人民共和国行政区划代码》国家标准；
-- 第二段为 **3 位数字**，按照国家标准《县以下行政区划代码编制规则》编制，其规则如下：
-  - 第二段的第一位数字为类别标识，以“0”表示街道，“1”表示镇，“2 和 3”表示乡，“4 和 5”表示政企合一的单位；
-  - 第二段的第二位、第三位数字为该代码段中各行政区划的顺序号；
-- 第三段 **3 位数字**，标识居民委员会和村民委员会的代码
-
-## 使用说明
-
-### 系统依赖
-
-- Linux/MAC
-- Node.js > `v12.*`
-- npm > `v6.*` 或者 yarn
-
-### 爬取数据
+## 快速上手
 
 ```bash
-npm ci
+npm i -g @cndiv/cli
 
-npm run start
+cndiv hydrate --year=2023                    # 下载 2023 全量数据 → 本地 ~/.cndiv/cache.db(标准 SQLite)
+cndiv export --year=2023 --output=out.csv    # 导出 CSV
 ```
 
-## 数据说明
+在代码里查询(`@cndiv/reader` 只读封装 `better-sqlite3`):
 
-> 由于`GB/T 2260`未包含**香港**、**澳门**、**台湾**的行政区划数据，所以分别借鉴`ISO3166-2:HK`、`ISO3166-2:MO`、`ISO3166-2:TW`进行数据补全，但是请注意：**这些数据中的行政区划代码并非官方标准**，请谨慎使用。
+```ts
+import { openCache } from '@cndiv/reader';
 
-数据以数据源作为分类，按照发布的年份作为单独文件，分别以一维数组的方式存储在`data`的二级目录下。
-
-```
-data
-├── GB2260
-│   ├── 1980.json
-│   ├── 1981.json
-│   ├── 1982.json
-│   ├── 1983.json
-│   ├── 1984.json
-│   ├── 1985.json
-│   ├── 1986.json
-│   ├── 1987.json
-│   ├── 1988.json
-│   ├── 1989.json
-│   ├── 1990.json
-│   ├── 1991.json
-│   ├── 1992.json
-│   ├── 1993.json
-│   ├── 1994.json
-│   ├── 1995.json
-│   ├── 1996.json
-│   ├── 1997.json
-│   ├── 1998.json
-│   ├── 1999.json
-│   ├── 2000.json
-│   ├── 2001.json
-│   ├── 2002.json
-│   ├── 2003.json
-│   ├── 2004.json
-│   ├── 2005.json
-│   ├── 2006.json
-│   ├── 2007.json
-│   ├── 2008.json
-│   ├── 2009.json
-│   ├── 2010.json
-│   ├── 2011.json
-│   ├── 2012.json
-│   ├── 2013.json
-│   ├── 2014.json
-│   ├── 2015.json
-│   ├── 2016.json
-│   ├── 2017.json
-│   ├── 2018.json
-│   ├── 2019.json
-│   ├── 2020.json
-│   └── 2021.json
-├── ISO3166-2
-│   ├── HK.json
-│   ├── MO.json
-│   └── TW.json
-└── stats.gov.cn
-    ├── 2009.json
-    ├── 2010.json
-    ├── 2011.json
-    ├── 2012.json
-    ├── 2013.json
-    ├── 2014.json
-    ├── 2015.json
-    ├── 2016.json
-    ├── 2017.json
-    ├── 2018.json
-    ├── 2019.json
-    ├── 2020.json
-    └── 2021.json
+const cn = openCache();
+cn.findByCode('110101000000', 2023);                              // → 东城区
+cn.getChildren('110000000000', 2023, { skipPlaceholder: true });  // → [东城区, 西城区, …]
+cn.close();
 ```
 
-## 参考链接
+> 不想用 CLI?完整历年数据(五级 SQLite + 原始 JSON)见 GitHub Release
+> [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)。
 
-- [国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)
-- [民政部 - 中华人民共和国行政区划代码](http://www.mca.gov.cn/article/sj/xzqh)
-- [维基百科 - 中华人民共和国行政区划](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92)
-- [维基百科 - 中华人民共和国行政区划代码](https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85%B1%E5%92%8C%E5%9B%BD%E8%A1%8C%E6%94%BF%E5%8C%BA%E5%88%92%E4%BB%A3%E7%A0%81)
-- [统计上使用的县以下行政区划代码编制规则](http://www.mca.gov.cn/article/sj/xzqh/1980/201507/20150715854849.shtml)
-- [民政统计代码编制规则](http://www.mca.gov.cn/article/sj/xzqh/1980/201507/20150715854848.shtml)
-- [网友资源 - ISO3166-2](http://www.zxinc.org/gb2260-latest.htm)
+## 装哪个包
 
-## License
+大多数使用者只需下面一个。**完整 API、示例与已知坑请看[在线文档](https://tonyc726.github.io/china-administrative-division/)。**
 
-Copyright © 2017-present. This source code is licensed under the MIT license found in the
-[LICENSE](./LICENSE) file.
+| 我想做什么 | 用这个包 |
+|---|---|
+| 校验 / 解析 12 位区划码(判级、取父码、补零) | [`@cndiv/core`](./packages/core) —— 纯函数、零依赖 |
+| 在代码里查询注水后的数据 | [`@cndiv/reader`](./packages/reader) |
+| 命令行:注水、应用 patch、导出 | [`@cndiv/cli`](./packages/cli) |
+| 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](./packages/data-protocol) |
 
----
+> 维护侧包(采集 `@cndiv/crawler`、公告抽取 `@cndiv/extractor`)与数据包(`@cndiv/source-*`)见文档站「包参考」。
 
-Made by Tony ([blog](https://itony.net))
+## 贡献 Patch
+
+行政区划变更(撤县设区、更名、新设社区等)以 JSON Patch 提交到 `patches/<YYYY>/`,PR 由 CI 自动校验。
+提交格式与本地校验见 [贡献指南](https://tonyc726.github.io/china-administrative-division/guide/contributing-patch)。
+
+## 开发
+
+```bash
+pnpm install         # 自动启用 .githooks(pre-commit 拦大文件 / 数据库)
+pnpm build           # tsc -b 增量构建全部包
+pnpm typecheck && pnpm lint && pnpm test && pnpm validate-patches   # 本地复刻 CI 门禁
+```
+
+架构设计、采集运维、发版流程见[在线文档](https://tonyc726.github.io/china-administrative-division/)。
+
+## 数据来源与许可
+
+数据来源于公开政府网站(国家统计局、民政部国家地名信息库),仅供学习与研究使用。代码以 [MIT](./LICENSE) 许可。
+
+- 国家地名信息库(增量主源):<https://dmfw.mca.gov.cn>
+- 历史五级镜像参考:[modood/Administrative-divisions-of-China](https://github.com/modood/Administrative-divisions-of-China)(WTFPL)

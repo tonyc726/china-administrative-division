@@ -1,0 +1,57 @@
+name: Release
+
+# 代码包（@cndiv/core·data-protocol·cli·crawler·extractor）自动发布。
+# 数据包（@cndiv/source-*）被 changesets ignore，不在此发布——其 CSV 源数据
+# （NBS 冷母本 / legacy/data）不在 CI，无法重建，须本地发布，见 docs/PUBLISHING.md。
+
+on:
+  push:
+    branches: [master]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write # 允许 changesets/action 推 "Version Packages" PR
+  pull-requests: write
+  id-token: write # npm provenance（可选）
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js (LTS 22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 发布前门禁：构建 + 测试必须绿，杜绝发布坏包
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      # 有 changeset 时建/更新 "Version Packages" PR；该 PR 合并后本步骤改为执行
+      # publish（pnpm release = pnpm build && changeset publish），只发代码包。
+      - name: Create Release PR or Publish to npm
+        uses: changesets/action@v1
+        with:
+          publish: pnpm release
+          version: pnpm version-packages
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

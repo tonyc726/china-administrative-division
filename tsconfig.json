@@ -1,0 +1,12 @@
+{
+  "//": "Solution 文件：仅用于 `tsc -b` 按 project references 依赖图增量构建全仓，不含任何 files。",
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/data-protocol" },
+    { "path": "packages/crawler" },
+    { "path": "packages/cli" },
+    { "path": "packages/extractor" },
+    { "path": "packages/reader" }
+  ]
+}

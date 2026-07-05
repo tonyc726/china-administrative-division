@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# ──────────────────────────────────────────────────────────────────────────
+# pre-commit：阻止大文件 / 数据库快照误提交进 git
+#   本仓库历史曾因 GB 级 SQLite / 缓存进库膨胀，被迫 git-filter-repo 重写历史。
+#   启用方式：git config core.hooksPath .githooks
+#   （pnpm install 时由根 package.json 的 prepare 脚本自动配置）
+# ──────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+MAX_BYTES=$((5 * 1024 * 1024)) # 5MB 阈值
+blocked=0
+
+while IFS= read -r -d '' file; do
+  [ -f "$file" ] || continue
+
+  size=$(wc -c <"$file" | tr -d ' ')
+  if [ "$size" -gt "$MAX_BYTES" ]; then
+    printf '  ✗ %s (%sMB > 5MB)\n' "$file" "$((size / 1024 / 1024))" >&2
+    blocked=1
+  fi
+
+  case "$file" in
+  *.sqlite | *.sqlite3 | *.db | *.ldb | *.mdb)
+    printf '  ✗ %s (数据库文件不应进 git)\n' "$file" >&2
+    blocked=1
+    ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACM -z)
+
+if [ "$blocked" -ne 0 ]; then
+  cat >&2 <<'EOF'
+
+✋ pre-commit 拦截：检测到大文件或数据库快照。
+   行政区划数据(SQLite/大 JSON)请勿提交进 git——历史曾因此膨胀到 GB 级并被迫 filter-repo 清理。
+   正确做法：作为 @cndiv/source-YYYY 发到 NPM，或走 GitHub Release 附件 / 私有 OSS。
+   确需强制提交：git commit --no-verify（请三思）。
+EOF
+  exit 1
+fi
+exit 0

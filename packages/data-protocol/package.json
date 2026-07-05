@@ -1,0 +1,42 @@
+{
+  "name": "@cndiv/data-protocol",
+  "version": "1.0.0",
+  "description": "Protocol definitions for patches, schemas and data validation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
+  },
+  "dependencies": {
+    "@cndiv/core": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "keywords": [
+    "china",
+    "administrative",
+    "division",
+    "protocol",
+    "schema"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tonyc726/china-administrative-division.git",
+    "directory": "packages/data-protocol"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
