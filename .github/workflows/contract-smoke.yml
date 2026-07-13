@@ -3,9 +3,9 @@ name: Contract Smoke (dmfw/xzqh)
 # 契约漂移哨兵：政府接口无 SLA、路径/结构会变（已实锤 dmfw 资源下载页路径漂移）。
 # 每周活体请求 dmfw getList 与 xzqh 索引，断言字段结构，漂移即红。
 #
-# ⚠️ GitHub runner 位于海外，访问中国政府接口(dmfw/xzqh.mca.gov.cn)可能超时——
-#    此时 smoke test 内置的网络容错会「软跳过」而非报红（见 contract.smoke.test.ts）。
-#    因此本 workflow 变绿不等于契约无恙，只有变红才是明确的漂移信号。
+# ⚠️ GitHub runner 位于海外，访问中国政府接口(dmfw/xzqh.mca.gov.cn)常 DNS 失败/超时——
+#    此时 smoke test 的前置探针会判定主机不可达并 skip 用例，而非报红（见 contract.smoke.test.ts）。
+#    因此本 workflow 变绿不等于契约无恙（可能是全 skip），只有变红才是明确的漂移信号。
 #    需确定性验证时，在能访问政府网的环境用 `NETWORK_SMOKE=1 pnpm --filter @cndiv/crawler test` 本地跑。
 # ⚠️ GitHub 对 60 天无提交活动的仓库会自动禁用 scheduled workflow；休眠后需手动重启或 workflow_dispatch。
 
