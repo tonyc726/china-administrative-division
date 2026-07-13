@@ -1,5 +1,29 @@
 @import 'tailwindcss';
 
+/**
+ * 人文档案风色板 —— 参照 Anthropic 的设计语言：
+ * 暖纸底、墨色文字、赤陶橙点缀、衬线标题、编辑排版。
+ * 这是一个关于地方志与家乡记忆的站点，不是仪表盘。
+ */
+@theme {
+  --color-paper: #faf9f5; /* 主纸面 */
+  --color-paper-2: #f2ede1; /* 交替底 / 卡片 */
+  --color-paper-3: #e9e2d0; /* 深纸 / hover */
+  --color-line: #e2dbc8; /* 分隔线 */
+  --color-line-2: #cfc5ab; /* 强边框 */
+  --color-ink: #26241e; /* 主墨 */
+  --color-ink-2: #57534a; /* 次墨 */
+  --color-ink-3: #8a8474; /* 弱墨 / 注释 */
+  --color-clay: #bc5738; /* 赤陶橙 —— 唯一的强调色 */
+  --color-clay-2: #9e4526; /* 赤陶橙 hover/深 */
+  --color-pine: #2f6d68; /* 墨松绿 —— 曲线第二色 */
+  --color-gold: #a8894e; /* 暗金 —— 口径标注/第三色 */
+
+  --font-display:
+    Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC',
+    serif;
+}
+
 /* 曲线入场：从左到右画出，强化「时间流逝」的叙事 */
 @keyframes draw {
   from {
@@ -12,5 +36,5 @@
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
+  color-scheme: light;
 }

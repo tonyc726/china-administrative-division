@@ -2,11 +2,13 @@
  * 中英双轨文案。
  *
  * 两套叙事共存但调性不同：
- * - zh：情感钩子（家乡/村庄），投公众号、小红书
+ * - zh：地方志/名册的书卷语气，投公众号、小红书（家乡与记忆）
  * - en：技术侦探故事（官方源已死，我重建了管线），投 HN / Product Hunt / GitHub
  *
  * 不引 i18next —— 两种语言、几十条文案，一个字典足矣（Occam's Razor）。
  */
+import type { LineageEvent } from './types';
+
 export type Lang = 'zh' | 'en';
 
 interface Copy {
@@ -38,20 +40,22 @@ interface Copy {
   pickVillage: string;
   backToSearch: string;
 
+  /** 县级谱系 → 一句人文叙述；events 为空返回 null（不显示，不编造） */
+  lineageStory: (events: LineageEvent[], sinceMin: number) => string | null;
+  lineageLabel: string;
+
   cardTitle: string;
   cardCode: string;
-  cardChain: string;
   download: string;
   copyCode: string;
   copied: string;
 
   statsTitle: string;
+  statsLead: string;
   levelNames: string[];
 
   devTitle: string;
   devLead: string;
-  devInstall: string;
-  devDocs: string;
   devRepo: string;
 
   sourceNote: string;
@@ -60,48 +64,61 @@ interface Copy {
 
 const zh: Copy = {
   brand: '中国行政区划时光机',
-  tagline: '40 年，641 个县消失了',
+  tagline: '四十年，641 个县从名册上消失',
   heroKicker: '1980 → 2020',
   heroNumber: (n) => `${n}`,
-  heroSuffix: '个县，消失了',
+  heroSuffix: '个县，从名册上消失',
   heroLead: (lost, district, city) =>
-    `40 年间，${lost} 个「县」从中国的行政区划表上消失了。它们并没有不见——${district} 个变成了「区」，${city} 个变成了「市」。这是城市化在行政编码上留下的印记。`,
-  heroNote: '数据来自国家统计局与民政部公开数据，逐年比对得出。',
+    `四十年间，${lost} 个「县」从中国的行政区划名册上消失了。它们并没有真的不见——${district} 个改作了「区」，${city} 个改作了「市」。城市化的四十年，就这样一笔一笔，写进了名册。`,
+  heroNote: '依据国家统计局与民政部公开名册，逐年比对得出。',
 
-  chartTitle: '县 · 区 · 市 的 42 年',
-  chartSub: (from, to) => `${from}–${to} 年，全国县级行政单位构成变化`,
+  chartTitle: '县、区、市的四十年',
+  chartSub: (from, to) => `${from}–${to}，全国县级行政单位的构成`,
   legendCounty: '县',
   legendDistrict: '区（市辖区）',
   legendCity: '市（县级市）',
   gapNote: (from, to) =>
-    `1980 年，「县」的数量是「区」的 ${from} 倍；到 2020 年，只剩 ${to} 倍。差距还在收窄。`,
+    `1980 年，「县」的数目是「区」的 ${from} 倍；到 2020 年，只剩 ${to} 倍。差距仍在收窄。`,
   caveatBadge: '口径变化',
 
-  explorerTitle: '找到你的村',
-  explorerSub: (v) => `${v} 个村级单位，五级下钻，找到你家那一个。`,
-  searchPlaceholder: '搜索省 / 市 / 县，例如：余姚',
-  searchHint: '先定位到县，再逐级找到你的乡镇和村',
-  noResult: '没有找到匹配的地名',
-  loading: '加载中…',
+  explorerTitle: '找到你的村庄',
+  explorerSub: (v) => `${v} 个村落与社区，沿五级名册逐级翻找，找到属于你的那一行。`,
+  searchPlaceholder: '搜索省、市或县，例如：余姚',
+  searchHint: '先找到县，再逐级翻到你的乡镇与村庄',
+  noResult: '名册里没有找到这个地名',
+  loading: '翻找中…',
   pickTown: '选择乡镇 / 街道',
   pickVillage: '选择村 / 社区',
-  backToSearch: '← 重新搜索',
+  backToSearch: '← 重新查找',
 
-  cardTitle: '你的坐标',
+  lineageStory: (events, sinceMin) => {
+    if (events.length === 0) return null;
+    const first = events[0];
+    if (!first) return null;
+    if (events.length === 1)
+      return `自 ${Math.max(first[0], sinceMin)} 年起，名册上一直记作「${first[1]}」，未曾更改。`;
+    const parts = [`${first[0]} 年的名册里，它记作「${first[1]}」`];
+    for (let i = 1; i < events.length; i++) {
+      const e = events[i];
+      if (e) parts.push(`${e[0]} 年起，改记为「${e[1]}」`);
+    }
+    return `${parts.join('；')}。`;
+  },
+  lineageLabel: '这个县的四十年',
+
+  cardTitle: '地名档案',
   cardCode: '区划代码',
-  cardChain: '完整链路',
-  download: '下载分享卡片',
+  download: '收下这张卡片',
   copyCode: '复制区划代码',
   copied: '已复制',
 
-  statsTitle: '2023 年全景',
+  statsTitle: '名册的全貌',
+  statsLead: '2023 年，这本名册一共记着 665,271 行。',
   levelNames: ['', '省级', '地级', '县级', '乡镇级', '村级'],
 
-  devTitle: '数据是开源的',
+  devTitle: '这本名册是开源的',
   devLead:
-    '本站的每一个数字都来自 npm 上的开源数据包。五级行政区划、42 年历史、邮编区号，全部可直接安装使用。',
-  devInstall: '安装数据包',
-  devDocs: '阅读文档',
+    '本站的每一个数字，都来自 npm 上公开的数据包：五级区划、四十年历史、邮编与区号，皆可直接安装取用。',
   devRepo: 'GitHub 仓库',
 
   sourceNote:
@@ -116,45 +133,58 @@ const en: Copy = {
   heroNumber: (n) => `${n}`,
   heroSuffix: 'counties vanished',
   heroLead: (lost, district, city) =>
-    `Over 40 years, ${lost} "counties" disappeared from China's administrative registry. They were not erased — ${district} became urban "districts" and ${city} became county-level "cities". This is what urbanization looks like, written in administrative codes.`,
-  heroNote: 'Derived by diffing official year-by-year records from 1980 to 2020.',
+    `Over forty years, ${lost} counties disappeared from China's administrative registry. They were not erased — ${district} became urban districts, ${city} became county-level cities. Four decades of urbanization, written line by line into the registry.`,
+  heroNote: 'Derived by diffing official year-by-year registries, 1980–2020.',
 
-  chartTitle: 'Counties vs. Districts, 42 years',
+  chartTitle: 'Counties, districts, cities: forty years',
   chartSub: (from, to) =>
     `Composition of China's county-level divisions, ${from}–${to}`,
   legendCounty: 'County (县)',
   legendDistrict: 'Urban district (区)',
   legendCity: 'County-level city (市)',
   gapNote: (from, to) =>
-    `In 1980 there were ${from}× as many counties as urban districts. By 2020, only ${to}×. The gap keeps closing.`,
+    `In 1980 counties outnumbered districts ${from} to one. By 2020, ${to} to one — and the gap keeps closing.`,
   caveatBadge: 'coding change',
 
   explorerTitle: 'Find your village',
   explorerSub: (v) =>
-    `${v} village-level divisions. Drill down five levels to the one you are looking for.`,
-  searchPlaceholder: 'Search a province / city / county',
-  searchHint: 'Find the county first, then drill into townships and villages',
-  noResult: 'No match found',
-  loading: 'Loading…',
+    `${v} villages and communities. Leaf through five levels of the registry to the line that is yours.`,
+  searchPlaceholder: 'Search a province, city or county',
+  searchHint: 'Find the county first, then leaf down to your township and village',
+  noResult: 'No such place in the registry',
+  loading: 'Leafing through…',
   pickTown: 'Pick a township',
   pickVillage: 'Pick a village',
   backToSearch: '← Search again',
 
-  cardTitle: 'Your coordinates',
+  lineageStory: (events, sinceMin) => {
+    if (events.length === 0) return null;
+    const first = events[0];
+    if (!first) return null;
+    if (events.length === 1)
+      return `Recorded as “${first[1]}” since ${Math.max(first[0], sinceMin)}, unchanged.`;
+    const parts = [`In the ${first[0]} registry it was “${first[1]}”`];
+    for (let i = 1; i < events.length; i++) {
+      const e = events[i];
+      if (e) parts.push(`from ${e[0]}, “${e[1]}”`);
+    }
+    return `${parts.join('; ')}.`;
+  },
+  lineageLabel: 'This county, over forty years',
+
+  cardTitle: 'Place Archive',
   cardCode: 'Division code',
-  cardChain: 'Full lineage',
-  download: 'Download share card',
+  download: 'Keep this card',
   copyCode: 'Copy division code',
   copied: 'Copied',
 
-  statsTitle: 'The 2023 snapshot',
+  statsTitle: 'The registry in full',
+  statsLead: 'In 2023, the registry held 665,271 lines.',
   levelNames: ['', 'Provinces', 'Prefectures', 'Counties', 'Townships', 'Villages'],
 
-  devTitle: 'The data is open source',
+  devTitle: 'The registry is open source',
   devLead:
-    "China's official statistics portal went dark — the pages that published this data now 404, frozen at 2023. So the whole pipeline was rebuilt: five levels, 42 years of history, shipped as npm packages you can install right now.",
-  devInstall: 'Install the data',
-  devDocs: 'Read the docs',
+    "China's official statistics portal went dark — the pages that published this data now 404, frozen at 2023. So the pipeline was rebuilt: five levels, forty years of history, shipped as npm packages you can install today.",
   devRepo: 'GitHub repo',
 
   sourceNote:

@@ -5,6 +5,7 @@ export type Kind = '县' | '区' | '市' | '旗' | '其他';
 export interface Milestone {
   year: number;
   label: string;
+  labelEn: string;
   note: string;
   /** real=真实行政变更；caveat=编码口径变化，必须如实标注，不可当作行政变更叙事 */
   kind: 'real' | 'caveat';
@@ -35,8 +36,14 @@ export interface Stats {
 /** tree.json：紧凑元组 [code, name, level, parentCode]，L1–L3 */
 export type TreeRow = [string, string, number, string];
 
-/** shards/<county>.json：[乡镇码, 乡镇名, [[村码, 村名], ...]] */
-export type Shard = [string, string, [string, string][]][];
+/** 县级变迁事件：[year, name]，仅变化点（如 [1980,'余姚县'],[1985,'余姚市']） */
+export type LineageEvent = [number, string];
+
+/** shards/<county>.json：h=该县 1980–2020 变迁谱系, t=乡镇与村 */
+export interface Shard {
+  h: LineageEvent[];
+  t: [string, string, [string, string][]][];
+}
 
 export interface Division {
   code: string;

@@ -4,7 +4,10 @@
  * 62 万村级单位不可能全量进浏览器，也不需要：
  * 用户的心智本来就是「先定位到县，再找乡镇和村」。
  * 所以搜索只索引 L1–L3（3348 条，132KB 全量在前端），
- * 选中县之后才按需 fetch 该县分片（平均 5.8KB）。
+ * 选中县之后才按需 fetch 该县分片（平均 6KB）。
+ *
+ * 分片里同时带着该县 1980–2020 的名称谱系（h）——
+ * 宏大叙事在这里落到个人身上：「1985 年起，余姚县改记为余姚市」。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Division, Shard, TreeRow } from '../types';
@@ -16,6 +19,8 @@ const BASE = import.meta.env.BASE_URL;
 interface Props {
   lang: Lang;
   villageCount: string;
+  /** 历史名册起始年（谱系文案「自 X 年起」的下限） */
+  historySince: number;
 }
 
 interface TreeIndex {
@@ -39,7 +44,7 @@ function buildIndex(rows: TreeRow[]): TreeIndex {
   return { byCode, childrenOf, all };
 }
 
-export function Explorer({ lang, villageCount }: Props): JSX.Element {
+export function Explorer({ lang, villageCount, historySince }: Props): JSX.Element {
   const t = COPY[lang];
   const [index, setIndex] = useState<TreeIndex | null>(null);
   const [query, setQuery] = useState('');
@@ -75,7 +80,7 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
     let alive = true;
     setLoadingShard(true);
     void fetch(`${BASE}data/shards/${county.code}.json`)
-      .then((r) => (r.ok ? (r.json() as Promise<Shard>) : []))
+      .then((r) => (r.ok ? (r.json() as Promise<Shard>) : { h: [], t: [] }))
       .then((s) => {
         if (alive) {
           setShard(s);
@@ -84,7 +89,7 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
       })
       .catch(() => {
         if (alive) {
-          setShard([]);
+          setShard({ h: [], t: [] });
           setLoadingShard(false);
         }
       });
@@ -120,7 +125,7 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
     if (!index || !current) return [];
     if (current.level < 3) return index.childrenOf.get(current.code) ?? [];
     if (current.level === 3) {
-      return (shard ?? []).map(([code, name]) => ({
+      return (shard?.t ?? []).map(([code, name]) => ({
         code,
         name,
         level: 4,
@@ -128,7 +133,7 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
       }));
     }
     if (current.level === 4) {
-      const town = (shard ?? []).find(([code]) => code === current.code);
+      const town = (shard?.t ?? []).find(([code]) => code === current.code);
       return (town?.[2] ?? []).map(([code, name]) => ({
         code,
         name,
@@ -140,13 +145,16 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
   }, [index, current, shard]);
 
   const isLeaf = current !== null && (current.level === 5 || options.length === 0);
+  const lineage = t.lineageStory(shard?.h ?? [], historySince);
 
   return (
     <section className="mx-auto w-full max-w-3xl">
-      <h2 className="text-2xl font-semibold text-zinc-100 sm:text-3xl">
+      <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
         {t.explorerTitle}
       </h2>
-      <p className="mt-1 text-sm text-zinc-500">{t.explorerSub(villageCount)}</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink-3">
+        {t.explorerSub(villageCount)}
+      </p>
 
       {path.length === 0 ? (
         <div className="mt-6">
@@ -155,17 +163,17 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-lg text-zinc-100 outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/60"
+            className="w-full rounded-lg border border-line-2 bg-paper px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
           />
-          <p className="mt-2 text-xs text-zinc-600">{t.searchHint}</p>
+          <p className="mt-2 text-xs text-ink-3">{t.searchHint}</p>
 
           {!index && query.length > 0 && (
-            <p className="mt-4 text-sm text-zinc-500">{t.loading}</p>
+            <p className="mt-4 text-sm text-ink-3">{t.loading}</p>
           )}
           {index && query.trim().length > 0 && results.length === 0 && (
-            <p className="mt-4 text-sm text-zinc-500">{t.noResult}</p>
+            <p className="mt-4 text-sm text-ink-3">{t.noResult}</p>
           )}
-          <ul className="mt-4 divide-y divide-zinc-900">
+          <ul className="mt-4 divide-y divide-line">
             {results.map((d) => {
               const chain = ancestorsOf(d);
               return (
@@ -173,16 +181,16 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
                   <button
                     type="button"
                     onClick={() => setPath(chain)}
-                    className="flex w-full items-baseline gap-3 py-3 text-left transition hover:bg-zinc-900/60"
+                    className="flex w-full items-baseline gap-3 px-1 py-3 text-left transition hover:bg-paper-2"
                   >
-                    <span className="text-zinc-100">{d.name}</span>
-                    <span className="truncate text-xs text-zinc-600">
+                    <span className="font-display text-ink">{d.name}</span>
+                    <span className="truncate text-xs text-ink-3">
                       {chain
                         .slice(0, -1)
                         .map((c) => c.name)
                         .join(' · ')}
                     </span>
-                    <span className="ml-auto shrink-0 font-mono text-xs text-zinc-700">
+                    <span className="ml-auto shrink-0 font-mono text-xs text-line-2">
                       {d.code}
                     </span>
                   </button>
@@ -201,17 +209,17 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
                 setPath([]);
                 setQuery('');
               }}
-              className="rounded px-2 py-1 text-cyan-400 transition hover:bg-zinc-900"
+              className="rounded px-2 py-1 text-clay transition hover:bg-paper-2"
             >
               {t.backToSearch}
             </button>
             {path.map((d, i) => (
               <span key={d.code} className="flex items-center">
-                <span className="text-zinc-700">/</span>
+                <span className="text-line-2">/</span>
                 <button
                   type="button"
                   onClick={() => setPath(path.slice(0, i + 1))}
-                  className="rounded px-2 py-1 text-zinc-300 transition hover:bg-zinc-900"
+                  className="rounded px-2 py-1 text-ink-2 transition hover:bg-paper-2"
                 >
                   {d.name}
                 </button>
@@ -219,11 +227,23 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
             ))}
           </nav>
 
-          {loadingShard && <p className="mt-6 text-sm text-zinc-500">{t.loading}</p>}
+          {/* 这个县的四十年：宏大叙事落到个人 —— 意图级的关键功能 */}
+          {!loadingShard && lineage && (
+            <aside className="mt-6 border-l-2 border-clay bg-paper-2 py-3 pl-4 pr-4">
+              <p className="text-xs uppercase tracking-widest text-clay">
+                {t.lineageLabel}
+              </p>
+              <p className="mt-1.5 font-display leading-relaxed text-ink-2">
+                {lineage}
+              </p>
+            </aside>
+          )}
+
+          {loadingShard && <p className="mt-6 text-sm text-ink-3">{t.loading}</p>}
 
           {!loadingShard && !isLeaf && (
             <>
-              <p className="mt-6 text-xs uppercase tracking-wider text-zinc-600">
+              <p className="mt-6 text-xs uppercase tracking-wider text-ink-3">
                 {current?.level === 3 ? t.pickTown : current?.level === 4 ? t.pickVillage : ''}
               </p>
               <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -232,7 +252,7 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
                     <button
                       type="button"
                       onClick={() => setPath([...path, d])}
-                      className="w-full truncate rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-left text-sm text-zinc-300 transition hover:border-cyan-500/50 hover:text-zinc-100"
+                      className="w-full truncate rounded-md border border-line bg-paper px-3 py-2 text-left text-sm text-ink-2 transition hover:border-clay hover:text-ink"
                       title={d.name}
                     >
                       {d.name}
@@ -244,7 +264,12 @@ export function Explorer({ lang, villageCount }: Props): JSX.Element {
           )}
 
           {!loadingShard && isLeaf && current && (
-            <ShareCard lang={lang} chain={path} leaf={current} />
+            <ShareCard
+              lang={lang}
+              chain={path}
+              leaf={current}
+              lineage={shard?.h ?? []}
+            />
           )}
         </div>
       )}
