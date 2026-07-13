@@ -39,10 +39,36 @@ export type TreeRow = [string, string, number, string];
 /** 县级变迁事件：[year, name]，仅变化点（如 [1980,'余姚县'],[1985,'余姚市']） */
 export type LineageEvent = [number, string];
 
+/** 村元组：[村码, 村名, 全国同名村数] —— 第三项即稀有度，随分片下发 */
+export type VillageRow = [string, string, number];
+
 /** shards/<county>.json：h=该县 1980–2020 变迁谱系, t=乡镇与村 */
 export interface Shard {
   h: LineageEvent[];
-  t: [string, string, [string, string][]][];
+  t: [string, string, VillageRow[]][];
+}
+
+/** names.json：62 万村名的统计 —— 站点第二、第三个叙事板块的数据源 */
+export interface Names {
+  totalVillages: number;
+  distinct: number;
+  uniqueOnes: number;
+  /** [名字, 数量, 是否时代词(1/0)]，TOP30 */
+  topNames: [string, number, number][];
+  era: {
+    words: string[];
+    total: number;
+    rank: [string, number][];
+  };
+  surnames: {
+    total: number;
+    rank: [string, number][];
+  };
+  marks: {
+    north: string[];
+    south: string[];
+    stats: Record<string, { total: number; provs: [string, number][] }>;
+  };
 }
 
 export interface Division {

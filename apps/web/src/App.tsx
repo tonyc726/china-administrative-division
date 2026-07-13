@@ -4,9 +4,11 @@
  * 寻根紧跟曲线：宏大叙事之后立刻让用户查自己的家乡，情绪不冷场。
  */
 import { useEffect, useState } from 'react';
-import type { Stats, Timeline as TimelineData } from './types';
+import type { Names, Stats, Timeline as TimelineData } from './types';
 import { COPY, type Lang } from './i18n';
 import { Timeline } from './components/Timeline';
+import { NameRings } from './components/NameRings';
+import { SouthNorth } from './components/SouthNorth';
 import { Explorer } from './components/Explorer';
 
 const BASE = import.meta.env.BASE_URL;
@@ -22,15 +24,18 @@ export function App(): JSX.Element {
   const [lang, setLang] = useState<Lang>(detectLang);
   const [timeline, setTimeline] = useState<TimelineData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [names, setNames] = useState<Names | null>(null);
 
   useEffect(() => {
     void Promise.all([
       fetch(`${BASE}data/timeline.json`).then((r) => r.json() as Promise<TimelineData>),
       fetch(`${BASE}data/stats.json`).then((r) => r.json() as Promise<Stats>),
+      fetch(`${BASE}data/names.json`).then((r) => r.json() as Promise<Names>),
     ])
-      .then(([tl, st]) => {
+      .then(([tl, st, nm]) => {
         setTimeline(tl);
         setStats(st);
+        setNames(nm);
       })
       .catch(() => {
         /* 静态资产缺失 → 保持骨架，不白屏 */
@@ -93,12 +98,20 @@ export function App(): JSX.Element {
         <p className="mt-4 text-sm text-ink-3">{t.heroNote}</p>
       </section>
 
-      {/* ---------- 曲线 ---------- */}
+      {/* ---------- 三个叙事：时间的、名字的、地理的 ---------- */}
       <section className="border-t border-line px-6 py-24">
         {timeline && <Timeline data={timeline} lang={lang} />}
       </section>
 
-      {/* ---------- 寻根（含县的四十年谱系）---------- */}
+      <section className="border-t border-line bg-paper-2/60 px-6 py-24">
+        {names && <NameRings data={names} lang={lang} />}
+      </section>
+
+      <section className="border-t border-line px-6 py-24">
+        {names && <SouthNorth data={names} lang={lang} />}
+      </section>
+
+      {/* ---------- 寻根（含县的四十年谱系 + 稀有度）---------- */}
       <section className="border-t border-line bg-paper-2/60 px-6 py-24">
         <Explorer
           lang={lang}

@@ -147,6 +147,15 @@ export function Explorer({ lang, villageCount, historySince }: Props): JSX.Eleme
   const isLeaf = current !== null && (current.level === 5 || options.length === 0);
   const lineage = t.lineageStory(shard?.h ?? [], historySince);
 
+  /** 末级若是村，取其全国同名数（分片第三项）——稀有度，裂变的引擎 */
+  const dup = useMemo((): number => {
+    if (!current || current.level !== 5 || !shard) return 0;
+    for (const [, , vs] of shard.t) {
+      for (const v of vs) if (v[0] === current.code) return v[2];
+    }
+    return 0;
+  }, [current, shard]);
+
   return (
     <section className="mx-auto w-full max-w-3xl">
       <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
@@ -264,12 +273,27 @@ export function Explorer({ lang, villageCount, historySince }: Props): JSX.Eleme
           )}
 
           {!loadingShard && isLeaf && current && (
-            <ShareCard
-              lang={lang}
-              chain={path}
-              leaf={current}
-              lineage={shard?.h ?? []}
-            />
+            <>
+              {dup > 0 && (
+                <p className="mt-6 flex items-baseline gap-2">
+                  <span className="text-xs uppercase tracking-widest text-ink-3">
+                    {t.rarityLabel}
+                  </span>
+                  <span
+                    className={`font-display text-lg ${dup === 1 ? 'text-clay' : 'text-ink-2'}`}
+                  >
+                    {dup === 1 ? t.rarityUnique : t.rarityShared(dup)}
+                  </span>
+                </p>
+              )}
+              <ShareCard
+                lang={lang}
+                chain={path}
+                leaf={current}
+                lineage={shard?.h ?? []}
+                dup={dup}
+              />
+            </>
           )}
         </div>
       )}

@@ -44,6 +44,27 @@ interface Copy {
   lineageStory: (events: LineageEvent[], sinceMin: number) => string | null;
   lineageLabel: string;
 
+  /** 村名的年轮 */
+  namesTitle: string;
+  namesSub: (era: number) => string;
+  namesLead: (topName: string, topCount: number, eraInTop: number) => string;
+  eraBadge: string;
+  eraDisclaimer: string;
+  surnameTitle: string;
+  surnameSub: (total: string) => string;
+
+  /** 南塘北屯 */
+  marksTitle: string;
+  marksSub: string;
+  marksNorth: string;
+  marksSouth: string;
+  marksLead: string;
+
+  /** 稀有度 */
+  rarityUnique: string;
+  rarityShared: (n: number) => string;
+  rarityLabel: string;
+
   cardTitle: string;
   cardCode: string;
   download: string;
@@ -105,6 +126,28 @@ const zh: Copy = {
     return `${parts.join('；')}。`;
   },
   lineageLabel: '这个县的四十年',
+
+  namesTitle: '村名的年轮',
+  namesSub: (era) =>
+    `全国 ${era.toLocaleString()} 个村庄，名字来自同一个年代的词汇表。`,
+  namesLead: (topName, topCount, eraInTop) =>
+    `中国最常见的村名不是「张家村」，是「${topName}」——全国有 ${topCount} 个。最常见的 20 个村名里，${eraInTop} 个诞生于集体化年代：和平、团结、幸福、胜利、红旗、向阳、东风……那一代人的理想，被写进门牌，挂到了今天。`,
+  eraBadge: '时代词',
+  eraDisclaimer:
+    '「时代词」是本站依据 1950–70 年代政治话语作出的归类，非官方定义；「太平」「兴隆」「花园」等传统地名一律未计入。',
+  surnameTitle: '姓氏的村庄',
+  surnameSub: (total) => `${total} 个村子以「某家」命名。你家的姓，有多少个村？`,
+
+  marksTitle: '南塘北屯',
+  marksSub: '村名的最后一个字，藏着它在南方还是北方',
+  marksNorth: '北方通名',
+  marksSouth: '南方通名',
+  marksLead:
+    '「庄」「屯」「营」「堡」扎堆在河北、山东、辽宁；「塘」「圩」「畈」「冲」几乎只见于湖南、湖北、安徽、江西。没有人规定过这条线，它是几百年农耕与聚落方式，自己长出来的。',
+
+  rarityUnique: '全国独一无二',
+  rarityShared: (n) => `全国还有 ${n - 1} 个同名村`,
+  rarityLabel: '重名',
 
   cardTitle: '地名档案',
   cardCode: '区划代码',
@@ -171,6 +214,29 @@ const en: Copy = {
     return `${parts.join('; ')}.`;
   },
   lineageLabel: 'This county, over forty years',
+
+  namesTitle: 'The rings of a name',
+  namesSub: (era) =>
+    `${era.toLocaleString()} villages share a vocabulary from one single era.`,
+  namesLead: (topName, topCount, eraInTop) =>
+    `The most common village name in China is not a family name — it is “${topName}” (和平, Peace): ${topCount} of them. Of the 20 most common village names, ${eraInTop} were born in the collectivization era: Peace, Unity, Happiness, Victory, Red Flag, Facing-the-Sun, East Wind… An entire generation's ideals, written onto door plates, still hanging there today.`,
+  eraBadge: 'era word',
+  eraDisclaimer:
+    '“Era words” is our own classification, based on 1950s–70s political vocabulary — not an official definition. Traditional names such as 太平 (Peace-and-Order), 兴隆 (Prosperity) and 花园 (Garden) are deliberately excluded.',
+  surnameTitle: 'Villages of a surname',
+  surnameSub: (total) =>
+    `${total} villages are named after a family. How many carry yours?`,
+
+  marksTitle: 'Ponds in the south, hamlets in the north',
+  marksSub: 'The last character of a village name tells you which half of China it sits in',
+  marksNorth: 'Northern suffixes',
+  marksSouth: 'Southern suffixes',
+  marksLead:
+    '庄 zhuāng, 屯 tún, 营 yíng, 堡 bǔ cluster in Hebei, Shandong and Liaoning; 塘 táng (pond), 圩 wéi (polder), 畈 fàn (paddy flat), 冲 chōng (valley) appear almost only in Hunan, Hubei, Anhui and Jiangxi. Nobody drew this line. Centuries of farming and settlement grew it.',
+
+  rarityUnique: 'The only one in China',
+  rarityShared: (n) => `${n - 1} other villages share this name`,
+  rarityLabel: 'Namesakes',
 
   cardTitle: 'Place Archive',
   cardCode: 'Division code',

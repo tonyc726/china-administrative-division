@@ -29,12 +29,20 @@ interface Props {
   leaf: Division;
   /** 所在县的 1980–2020 变迁事件；空则卡片不写变迁 */
   lineage: LineageEvent[];
+  /** 全国同名村数：1=独一无二。0 表示非村级/未知，卡片不显示 */
+  dup: number;
 }
 
-/** 12 位区划码分段显示：省2 市2 县2 乡3 村3 —— 让编码结构可读 */
-function segmentCode(code: string): string {
-  if (code.length !== 12) return code;
-  return `${code.slice(0, 2)} ${code.slice(2, 4)} ${code.slice(4, 6)} ${code.slice(6, 9)} ${code.slice(9, 12)}`;
+/** 12 位区划码的五段：省2 市2 县2 乡3 村3 */
+function codeSegments(code: string): string[] {
+  if (code.length !== 12) return [code];
+  return [
+    code.slice(0, 2),
+    code.slice(2, 4),
+    code.slice(4, 6),
+    code.slice(6, 9),
+    code.slice(9, 12),
+  ];
 }
 
 /** 变迁史压成卡片上的一行；无变迁返回 null */
@@ -53,6 +61,7 @@ function draw(
   chain: Division[],
   leaf: Division,
   lineage: LineageEvent[],
+  dup: number,
   lang: Lang
 ): void {
   const t = COPY[lang];
@@ -114,21 +123,43 @@ function draw(
   ctx.font = sans(17);
   ctx.fillText(t.cardCode, 72, 352);
 
-  ctx.fillStyle = CLAY;
+  // 区划码逐段绘制：下划线按每段的**实际文字宽度**画，与数字严格等宽对齐
   ctx.font = serif(58, '600');
-  ctx.fillText(segmentCode(leaf.code), 72, 418);
-
-  // 五级层级刻度：墨点表示编码的五段
-  const segWidths = [2, 2, 2, 3, 3];
-  let sx = 74;
-  segWidths.forEach((n, i) => {
-    const w = n * 24;
+  const segs = codeSegments(leaf.code);
+  const gap = ctx.measureText('0').width * 0.55;
+  let sx = 72;
+  const bounds: { x: number; w: number }[] = [];
+  for (const seg of segs) {
+    const w = ctx.measureText(seg).width;
+    ctx.fillStyle = CLAY;
+    ctx.fillText(seg, sx, 418);
+    bounds.push({ x: sx, w });
+    sx += w + gap;
+  }
+  // 每段正下方一条等长横线：已确定的层级用赤陶，未及的层级用淡边框
+  bounds.forEach((b, i) => {
     ctx.fillStyle = i < chain.length ? CLAY : BORDER;
-    ctx.globalAlpha = i < chain.length ? 0.9 - i * 0.12 : 0.6;
-    ctx.fillRect(sx, 440, w - 8, 5);
+    ctx.globalAlpha = i < chain.length ? 0.9 - i * 0.1 : 0.5;
+    ctx.fillRect(b.x, 434, b.w, 4);
     ctx.globalAlpha = 1;
-    sx += w + 8;
   });
+
+  // 稀有度徽章（右上）：独一无二 → 赤陶实心印章；有重名 → 淡框
+  if (dup > 0) {
+    const unique = dup === 1;
+    const label = unique ? t.rarityUnique : t.rarityShared(dup);
+    ctx.font = sans(20, '500');
+    const tw = ctx.measureText(label).width;
+    const bx = CARD_W - 72 - tw - 32;
+    const by = 150;
+    ctx.fillStyle = unique ? CLAY : 'transparent';
+    ctx.strokeStyle = unique ? CLAY : BORDER;
+    ctx.lineWidth = 1.5;
+    if (unique) ctx.fillRect(bx, by, tw + 32, 44);
+    else ctx.strokeRect(bx, by, tw + 32, 44);
+    ctx.fillStyle = unique ? PAPER : INK_SOFT;
+    ctx.fillText(label, bx + 16, by + 29);
+  }
 
   // 县的变迁史（有则写，无则留白——不编造）
   const story = lineageLine(lineage, lang);
@@ -154,15 +185,15 @@ function draw(
   ctx.fillText(SITE, CARD_W - 72 - ctx.measureText(SITE).width, CARD_H - 68);
 }
 
-export function ShareCard({ lang, chain, leaf, lineage }: Props): JSX.Element {
+export function ShareCard({ lang, chain, leaf, lineage, dup }: Props): JSX.Element {
   const t = COPY[lang];
   const ref = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const c = ref.current;
-    if (c) draw(c, chain, leaf, lineage, lang);
-  }, [chain, leaf, lineage, lang]);
+    if (c) draw(c, chain, leaf, lineage, dup, lang);
+  }, [chain, leaf, lineage, dup, lang]);
 
   const download = (): void => {
     const c = ref.current;

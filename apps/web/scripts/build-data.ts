@@ -219,6 +219,123 @@ async function main(): Promise<void> {
   const countyByCode = new Map<string, Row>();
   for (const r of snap) if (r.level === 3) countyByCode.set(r.code, r);
 
+  // ---------- 2.5 村名统计：62 万个村名是这个站最大的金矿 ----------
+  const provOf = new Map<string, string>();
+  for (const r of snap) if (r.level === 1) provOf.set(r.code.slice(0, 2), r.name);
+
+  /** 村名本体：反复剥离行政尾缀（「XX社区居民委员会」→「XX」），得到可比对的名字 */
+  const NAME_TAILS = [
+    '社区居民委员会',
+    '村民委员会',
+    '居民委员会',
+    '社区居委会',
+    '村委会',
+    '居委会',
+    '社区',
+    '村',
+  ];
+  function nameBody(name: string): string {
+    let s = name;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const tail of NAME_TAILS) {
+        if (s.length > tail.length && s.endsWith(tail)) {
+          s = s.slice(0, -tail.length);
+          changed = true;
+          break;
+        }
+      }
+    }
+    return s;
+  }
+
+  const villages = snap.filter((r) => r.level === 5);
+  const nameFreq = new Map<string, number>();
+  for (const v of villages) {
+    const b = nameBody(v.name);
+    if (b) nameFreq.set(b, (nameFreq.get(b) ?? 0) + 1);
+  }
+
+  /**
+   * 「时代词」词表：1950–70 年代集体化时期的政治话语。
+   * ⚠️ 这是**我们的归类**，非官方定义，页面须如实说明。
+   * 只收录语义明确属于该话语体系的词；「太平」「兴隆」「花园」「东山」等
+   * 传统地名/中性词一律不收 —— 宁可少算，不可扩大解释。
+   */
+  const ERA_WORDS = [
+    '团结', '和平', '胜利', '红星', '红旗', '前进', '光明', '幸福', '新华', '新民',
+    '向阳', '朝阳', '东风', '新建', '联合', '解放', '建设', '民主', '跃进', '先锋',
+    '曙光', '黎明', '星火', '卫星', '长征', '国庆', '建国', '富强', '振兴', '文明',
+    '自由', '光荣', '英雄', '战斗', '红光', '五星', '红卫', '工农', '互助', '合作',
+    '友谊', '爱国', '立新', '永丰', '丰收', '跃升', '奋斗', '前锋', '新生', '民生',
+  ];
+  const eraSet = new Set(ERA_WORDS);
+  let eraTotal = 0;
+  const eraRank: [string, number][] = [];
+  for (const w of ERA_WORDS) {
+    const c = nameFreq.get(w) ?? 0;
+    if (c > 0) {
+      eraTotal += c;
+      eraRank.push([w, c]);
+    }
+  }
+  eraRank.sort((a, b) => b[1] - a[1]);
+
+  const topNames = [...nameFreq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 30)
+    .map(([n, c]) => [n, c, eraSet.has(n) ? 1 : 0]);
+
+  // 姓氏村：本体形如「X家…」
+  const surnameFreq = new Map<string, number>();
+  for (const v of villages) {
+    const m = nameBody(v.name).match(/^([一-龥])家/);
+    if (m?.[1]) surnameFreq.set(m[1], (surnameFreq.get(m[1]) ?? 0) + 1);
+  }
+  const surnameTotal = [...surnameFreq.values()].reduce((a, b) => a + b, 0);
+  const surnames = [...surnameFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
+
+  /**
+   * 地名通名的南北分野：纯统计，不画地图（规避地图审核），用省份排名表达。
+   * north/south 的归属由数据自证（见产物里每个字的 top 省份），非先验断言。
+   */
+  const MARKS = {
+    north: ['庄', '屯', '营', '堡', '沟'],
+    south: ['塘', '圩', '畈', '冲', '垅'],
+  };
+  const markStats: Record<string, { total: number; provs: [string, number][] }> = {};
+  for (const mk of [...MARKS.north, ...MARKS.south]) {
+    const pm = new Map<string, number>();
+    let total = 0;
+    for (const v of villages) {
+      if (!nameBody(v.name).includes(mk)) continue;
+      total++;
+      const p = provOf.get(v.code.slice(0, 2)) ?? '?';
+      pm.set(p, (pm.get(p) ?? 0) + 1);
+    }
+    markStats[mk] = {
+      total,
+      provs: [...pm.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5),
+    };
+  }
+
+  const distinct = nameFreq.size;
+  const uniqueOnes = [...nameFreq.values()].filter((c) => c === 1).length;
+
+  await writeFile(
+    `${OUT}/names.json`,
+    JSON.stringify({
+      totalVillages: villages.length,
+      distinct,
+      uniqueOnes,
+      topNames,
+      era: { words: ERA_WORDS, total: eraTotal, rank: eraRank.slice(0, 20) },
+      surnames: { total: surnameTotal, rank: surnames },
+      marks: { north: MARKS.north, south: MARKS.south, stats: markStats },
+    })
+  );
+
   let shardCount = 0;
   let shardBytes = 0;
   let maxShard = 0;
@@ -228,10 +345,15 @@ async function main(): Promise<void> {
     const countyRow = countyByCode.get(county);
     const h = countyRow ? lineageOf(countyRow) : [];
     if (h.length > 0) lineageHit++;
+    // 村元组第三项 = 全国同名村数（重名数）。随分片下发，稀有度查询零额外请求。
     const t = towns.map((tw) => [
       tw.code,
       tw.name,
-      (villagesByTown.get(tw.code) ?? []).map((v) => [v.code, v.name]),
+      (villagesByTown.get(tw.code) ?? []).map((v) => [
+        v.code,
+        v.name,
+        nameFreq.get(nameBody(v.name)) ?? 1,
+      ]),
     ]);
     const json = JSON.stringify({ h, t });
     await writeFile(`${OUT}/shards/${county}.json`, json);
@@ -255,6 +377,9 @@ async function main(): Promise<void> {
   console.log(`  tree.json      ${kb(JSON.stringify(tree).length)}  (${tree.length} 节点, L1–L3)`);
   console.log(`  shards/        ${shardCount} 片, 合计 ${kb(shardBytes)}, 均 ${kb(shardBytes / shardCount)}, 最大 ${kb(maxShard)}`);
   console.log(`  谱系: ${lineageHit}/${shardCount} 个县接上 1980–2020 历史（歧义键 ${ambiguous.size} 个已放弃）`);
+  console.log(`  村名: ${distinct.toLocaleString()} 个不同名字, 独一无二 ${uniqueOnes.toLocaleString()} (${((uniqueOnes / distinct) * 100).toFixed(1)}%)`);
+  console.log(`  时代词: ${eraTotal.toLocaleString()} 个村 · 榜首「${eraRank[0]?.[0]}」${eraRank[0]?.[1]}`);
+  console.log(`  姓氏村: ${surnameTotal.toLocaleString()} 个 · 榜首「${surnames[0]?.[0]}家」${surnames[0]?.[1]}`);
   console.log(`  头条: 县 -${timeline.headline.countyLost} / 区 +${timeline.headline.districtGained} / 市 +${timeline.headline.cityGained}`);
   console.log(`  五级: ${Object.entries(levels).map(([l, n]) => `L${l}=${n.toLocaleString()}`).join(' ')}`);
 }
