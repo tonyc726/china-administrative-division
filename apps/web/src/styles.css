@@ -1,0 +1,16 @@
+@import 'tailwindcss';
+
+/* 曲线入场：从左到右画出，强化「时间流逝」的叙事 */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 4000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}

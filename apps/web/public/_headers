@@ -1,0 +1,7 @@
+# 静态数据资产：不可变，长缓存（分片文件名即区划码，内容变了会重新构建）
+/data/shards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
