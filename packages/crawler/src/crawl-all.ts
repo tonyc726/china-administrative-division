@@ -76,6 +76,15 @@ export interface CrawlAllResult {
   cached: number;
   /** 抖动事件（多抓恢复了子树、或 root 省级数量异常） */
   jitter: JitterEvent[];
+  /**
+   * 重试后仍返回空子树的节点（level < maxLevel），已排除瞬时抖动。
+   *
+   * 剩下两种可能，crawlAll 无从分辨、必须由调用方定性：
+   *   - **真叶子**：dmfw 不下钻香港/澳门，它们本来就没有子节点 —— 正常；
+   *   - **持续缺口**：dmfw 稳定地吐不出某市的市辖区 —— 差分会把这些政区误判为撤销。
+   * 调用方手里有基线，知道该节点本该不该有孩子；据此判定并决定是否中止。
+   */
+  emptyConfirmed: Array<{ code: string; level: number }>;
 }
 
 const delay = (ms: number): Promise<void> =>
@@ -163,11 +172,19 @@ export async function crawlAll(
   const divisions: Division[] = [];
   const failures: string[] = [];
   const jitter: JitterEvent[] = [];
+  /**
+   * 重试后**仍然**返回空子树的节点（level < maxLevel）。
+   * 已排除瞬时抖动，故要么是真叶子（dmfw 不下钻的港澳），要么是持续性缺口。
+   * 二者的分辨交给调用方——它手里有基线，知道这个节点本该不该有孩子。
+   */
+  const emptyConfirmed: Array<{ code: string; level: number }> = [];
   let fetched = 0;
   let cached = 0;
 
   // 单次请求跨度：步长=2。用 maxLevel=2 一次抓取根的「子+孙」两层。
   const span = DMFW_MAX_LEVEL;
+  /** 空子树的复抓次数：抖动重试即回，真叶子恒空。用行为区分二者 */
+  const EMPTY_RETRIES = 2;
   const anomalyAttempts = stabilize?.anomalyAttempts ?? 2;
   const minRootChildren = stabilize?.minRootChildren ?? 31;
 
@@ -240,7 +257,36 @@ export async function crawlAll(
         });
       }
     }
-    if (cache) await cache.set(code, span, union);
+    // ---- 空子树：抖动，还是真叶子？靠重试来区分，不靠白名单 ----
+    //
+    // dmfw 会以 HTTP 200 + 空 children 的形式抖动（README 头号坑）。而「空」有两种含义，
+    // 在单次响应里**完全无法分辨**：
+    //   - 抖动：武汉市的所有市辖区被整片吞掉（重试就会回来）；
+    //   - 真叶子：dmfw 不下钻香港/澳门，它们本来就没有子节点（重试恒为空）。
+    // 唯一可靠的判据是**行为**：连抓几次仍空，才是真的空。
+    if (union.length === 0 && level < maxLevel) {
+      for (let retry = 0; retry < EMPTY_RETRIES && union.length === 0; retry++) {
+        if (delayMs > 0) await delay(delayMs);
+        try {
+          union = await fetchChildren(code, span);
+          fetched++;
+        } catch {
+          break; // 重试期间的网络错误不升级为 failure，按空处理交下方判定
+        }
+      }
+      // 重试后仍空 → 判定为真叶子（港澳等），可安全缓存，不报缺口
+      if (union.length === 0) emptyConfirmed.push({ code, level });
+    }
+
+    // 毒缓存防线：**未经确认的空子树永不落缓存**。
+    // 空响应一旦写进缓存，断点续爬就把这次抖动永久固化了——且缓存里它和「真叶子」长得一模一样，
+    // 再也分不开。实测 336 个市级请求里 40 个（12%）中招：武汉、哈尔滨的全部市辖区被静默吞掉，
+    // 而那次运行还报告「失败 0」。伪装成成功的数据丢失，比明着报错危险得多。
+    // 经重试确认的空（真叶子）则可缓存，避免每次重跑都重抓港澳。
+    const confirmedEmpty = emptyConfirmed.some((e) => e.code === code);
+    if (cache && (union.length > 0 || confirmedEmpty)) {
+      await cache.set(code, span, union);
+    }
     return union;
   };
 
@@ -292,7 +338,15 @@ export async function crawlAll(
     // - children 非空 → 其子已随本次抓取取回，无需再抓（不入队）；
     // - children 为空 且 level<maxLevel → 截断前沿或真实叶子，入下一波再抓
     //   （若是真实叶子，重抓返回空、无害，与旧 maxLevel=1 逐层抓的语义一致）。
+    //
+    // 过冲截断：步长=2 意味着抓 level-N 根会一并带回 N+1、N+2 两层。当 maxLevel 是奇数
+    // （如 maxLevel=3 只要到县级）时，返回集必然**超出** maxLevel 一层。若照单全收，
+    // crawlAll 的契约「maxLevel = 返回的最深层级」就是假的，调用方按 maxLevel 收窄差分范围
+    // 时会把不该比的层拉进来——实测 maxLevel=3 会带回乡级节点，而乡级码在 NBS/dmfw 之间
+    // **码位分配规则不同**（同一个华山街道，NBS 给 …001000、dmfw 给 …003000），
+    // 拿它做 join key 会凭空产出数千条假 update。故超出 maxLevel 的节点在此处丢弃。
     const walk = (node: DmfwNode, parentCode: string | null): void => {
+      if (node.level > maxLevel) return;
       push(node, parentCode);
       if (node.children.length > 0) {
         for (const child of node.children) walk(child, node.code);
@@ -310,5 +364,5 @@ export async function crawlAll(
     frontier = nextFrontier;
   }
 
-  return { divisions, failures, fetched, cached, jitter };
+  return { divisions, failures, fetched, cached, jitter, emptyConfirmed };
 }

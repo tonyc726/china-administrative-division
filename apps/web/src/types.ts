@@ -32,6 +32,28 @@ export interface Geo {
   jd: number[][];
 }
 
+/**
+ * 数据来源分层 —— 这条曲线**不是同质的**，前端必须把这件事画出来。
+ *
+ * 1980–2020 是逐年全量快照（直接测量）；2021 之后 GB2260 停更，改由民政部官方变更法令
+ * 在 2020 名册上逐年推演。两段的置信度不同，混在一根线里而不作区分，就是让读者
+ * 把「推演」当成「测量」。故 snapshotMax 之后的区段在图上显式区隔。
+ */
+export interface Provenance {
+  /** 逐年全量快照的最后一年；此后为法令推演 */
+  snapshotMax: number;
+  snapshot: { range: [number, number]; method: string; source: string };
+  derived: {
+    range: [number, number];
+    method: string;
+    source: string;
+    /** 独立交叉校验结论（dmfw 实测 vs 法令推演） */
+    crossCheck: string;
+  };
+  /** 官方已公告设立、但**尚未发布区划码**的政区 —— 不编码、不丢弃、明写出来 */
+  pending: { name: string; date: string; note: string }[];
+}
+
 export interface Timeline {
   yearMin: number;
   yearMax: number;
@@ -46,6 +68,7 @@ export interface Timeline {
     districtGained: number;
     cityGained: number;
   };
+  provenance: Provenance;
   source: string;
 }
 

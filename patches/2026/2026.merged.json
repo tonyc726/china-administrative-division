@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "author": "cndiv-merge",
+    "evidence_confidence": "high",
+    "apply_after": "2023-baseline",
+    "notes": "合并自 5 份 patch（管线 dmfw）"
+  },
+  "operations": [
+    {
+      "op": "add",
+      "code": "460302000000",
+      "name": "西沙区",
+      "level": 3,
+      "parent_code": "460300000000"
+    },
+    {
+      "op": "add",
+      "code": "460303000000",
+      "name": "南沙区",
+      "level": 3,
+      "parent_code": "460300000000"
+    },
+    {
+      "op": "add",
+      "code": "500157000000",
+      "name": "两江新区",
+      "level": 3,
+      "parent_code": "500100000000"
+    },
+    {
+      "op": "add",
+      "code": "653228000000",
+      "name": "和康县",
+      "level": 3,
+      "parent_code": "653200000000"
+    },
+    {
+      "op": "add",
+      "code": "653229000000",
+      "name": "和安县",
+      "level": 3,
+      "parent_code": "653200000000"
+    },
+    {
+      "op": "add",
+      "code": "659013000000",
+      "name": "草湖市",
+      "level": 3,
+      "parent_code": "659000000000"
+    },
+    {
+      "op": "add",
+      "code": "810000000000",
+      "name": "香港特别行政区",
+      "level": 1,
+      "parent_code": null
+    },
+    {
+      "op": "add",
+      "code": "820000000000",
+      "name": "澳门特别行政区",
+      "level": 1,
+      "parent_code": null
+    }
+  ]
+}

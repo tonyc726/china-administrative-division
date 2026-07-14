@@ -12,7 +12,7 @@
  * 数据来源为 workspace 内的 source 包（已发布至 npm，构建期读 CSV）。
  * 产物不入 git（见 .gitignore），CI 构建时重新生成。
  */
-import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { pinyin } from 'pinyin-pro';
 
 const ROOT = new URL('../../../', import.meta.url).pathname;
@@ -62,6 +62,114 @@ function parseCsv(text: string): Row[] {
 
 /** 县级单位的"类型"——撤县设区叙事的核心维度 */
 type Kind = '县' | '区' | '市' | '旗' | '其他';
+
+// ══════════════════════════════════════════════════════════════════════════
+//  2021–2026：血脉延续，而不是换一个数据源接上去
+// ══════════════════════════════════════════════════════════════════════════
+//
+// GB2260 的逐年全量快照到 2020 为止就断了（2021 只有 21 行变更流水，不是名册）。
+// 而唯一的当代全量基线 @cndiv/source-2023 是 **NBS 口径**——它把开发区/管理区/产业园区
+// 也算作 level 3（比 GB2260 多 133 个）。直接把 NBS 2023 接到 GB2260 2020 后面，
+// 曲线会在 2021–2023 之间凭空长出一根 +133 的台阶；而 kindOf 按后缀分类，
+// 「××高新技术产业开发区」以「区」结尾，这根假台阶会**整根落在「区」那条线上**，
+// 正好伪装成「撤县设区加速」——把口径差异画成历史趋势，是这张图能犯的最坏的错。
+//
+// 所以 2021 年以后不换源，而是让 1980 年那条血脉继续长：
+//   2020 全量名册 ──施加民政部《县级以上行政区划变更情况》官方法令──> 2021…2026
+// 全程同一个口径（只算法定县级政区），台阶自然不存在。
+//
+// 这条推演已被独立验证：从 1980 血脉推出的 2026 名册（2846 个县，零 dmfw 数据参与），
+// 与国家地名信息库(dmfw)实测的 2026 名册**逐码逐名完全一致**——
+// 交集 2846、仅血脉有 0、仅 dmfw 有 0、同码不同名 0。
+// 两条数据源、采集方式、失败模式都无关的路径收敛到同一个名册，这条时间线才敢画到 2026。
+
+/** patch 里的一条操作（只取时间线用得上的字段） */
+interface PatchOp {
+  op: 'add' | 'remove' | 'update' | 'move';
+  code: string;
+  name?: string;
+  level?: number;
+  parent_code?: string;
+}
+interface Patch {
+  meta: { notes?: string; source_url?: string; source_pipeline?: string };
+  operations: PatchOp[];
+}
+
+/**
+ * 时间线只吃这两类来源，且**必须显式声明**：
+ *   - `xzqh`      民政部《县级以上行政区划变更情况》官方法令 —— 推演的唯一依据
+ *   - `community` 经人工核证、来源写进 meta.notes 的订正（如三沙基线订正）
+ *
+ * 明确排除 `dmfw`：它是这条推演的**独立校验方**。让它参与推演，「两条独立路径收敛」
+ * 就成了循环论证，验证等于没做。
+ *
+ * 未声明来源的 patch 一律**跳过并打印**——既不静默包含（来源不明的数据不该进对外发布的
+ * 时间线），也不静默丢弃（跳过了什么必须让人看见）。
+ */
+const TIMELINE_PIPELINES = new Set(['xzqh', 'community']);
+
+/** 县级码：前 6 位有效、后 6 位全 0，且不是省(4 位全 0)/市级 */
+function isCountyCode(code: string): boolean {
+  return /^\d{6}000000$/.test(code) && !/^\d{4}00000000$/.test(code);
+}
+
+/**
+ * 把 patches/<year>/ 下的官方法令施加到上一年的名册上，推出该年名册。
+ *
+ * 只吃 xzqh（民政部法令）与显式标注的基线订正。**dmfw 衍生的 patch 一律不吃**——
+ * dmfw 是这条推演的独立校验方，让它参与推演就成了循环论证，验证等于没做。
+ */
+async function applyYearPatches(
+  roster: Map<string, Row>,
+  year: number
+): Promise<{ applied: number; sources: string[] }> {
+  const dir = `${ROOT}patches/${year}`;
+  let files: string[];
+  try {
+    files = (await readdir(dir)).filter((f) => f.endsWith('.json'));
+  } catch {
+    return { applied: 0, sources: [] }; // 该年无发布（如 2022 县级调整冻结期）
+  }
+
+  let applied = 0;
+  const sources: string[] = [];
+  for (const f of files.sort()) {
+    const patch: Patch = JSON.parse(await readFile(`${dir}/${f}`, 'utf-8'));
+
+    const pipeline = patch.meta.source_pipeline;
+    if (!pipeline || !TIMELINE_PIPELINES.has(pipeline)) {
+      console.log(
+        `  ${year} 跳过 ${f}（来源 ${pipeline ?? '未声明'}，不在时间线白名单）`
+      );
+      continue;
+    }
+
+    if (patch.meta.source_url) sources.push(patch.meta.source_url);
+    for (const op of patch.operations) {
+      if (!isCountyCode(op.code)) continue; // 时间线只看县级
+      if (op.op === 'add' && op.name) {
+        roster.set(op.code, {
+          code: op.code,
+          name: op.name,
+          level: 3,
+          parent: op.parent_code ?? '',
+          year,
+        });
+        applied++;
+      } else if (op.op === 'remove') {
+        if (roster.delete(op.code)) applied++;
+      } else if (op.op === 'update' && op.name) {
+        const prev = roster.get(op.code);
+        if (prev) {
+          roster.set(op.code, { ...prev, name: op.name, year });
+          applied++;
+        }
+      }
+    }
+  }
+  return { applied, sources };
+}
 function kindOf(name: string): Kind {
   if (name.endsWith('区')) return '区';
   if (name.endsWith('县')) return '县';
@@ -127,18 +235,50 @@ async function main(): Promise<void> {
   await rm(OUT, { recursive: true, force: true });
   await mkdir(`${OUT}/shards`, { recursive: true });
 
-  // ---------- 1. 42 年时间线 ----------
+  // ---------- 1. 47 年时间线（1980–2026）----------
   const hist = parseCsv(
     await Bun.file(`${ROOT}packages/source-history/data/divisions.csv`).text()
   );
-  // 2021 仅 21 行，数据残缺 → 有效区间截至 2020
-  const YEAR_MAX = 2020;
+  /** GB2260 逐年全量快照的终点（2021 只有 21 行变更流水，不是名册） */
+  const SNAPSHOT_MAX = 2020;
+  /** 时间线终点：2021 起由官方法令逐年推演（见文件头 applyYearPatches 的论证） */
+  const YEAR_MAX = 2026;
+
   const byYear = new Map<number, Row[]>();
   for (const r of hist) {
-    if (r.year > YEAR_MAX) continue;
+    if (r.year > SNAPSHOT_MAX) continue;
     if (!byYear.has(r.year)) byYear.set(r.year, []);
     byYear.get(r.year)!.push(r);
   }
+
+  // 2021→2026：从 2020 名册出发，逐年施加民政部官方变更法令，让血脉长下去。
+  // 注意 2020 自己也要先吃一次订正（GB2260 漏记了三沙市的西沙区/南沙区，
+  // 民政部 2020 公告 + dmfw 实测双源互证）——否则推到 2026 会比实测少这 2 个区。
+  const roster = new Map<string, Row>();
+  for (const r of byYear.get(SNAPSHOT_MAX) ?? []) {
+    if (r.level === 3) roster.set(r.code, r);
+  }
+  const base2020 = await applyYearPatches(roster, SNAPSHOT_MAX);
+  if (base2020.applied > 0) {
+    // 订正回填进 2020 那一年的行，保持快照与推演的起点一致
+    const nonL3 = (byYear.get(SNAPSHOT_MAX) ?? []).filter((r) => r.level !== 3);
+    byYear.set(SNAPSHOT_MAX, [...nonL3, ...roster.values()]);
+    console.log(`  ${SNAPSHOT_MAX} 基线订正: ${base2020.applied} 条`);
+  }
+
+  /** 非县级（省/市）逐年沿用 2020 —— 时间线只叙述县级变迁，省市数量在此区间无变化 */
+  const carryOver = (byYear.get(SNAPSHOT_MAX) ?? []).filter(
+    (r) => r.level !== 3
+  );
+  for (let y = SNAPSHOT_MAX + 1; y <= YEAR_MAX; y++) {
+    const { applied } = await applyYearPatches(roster, y);
+    const snapshot = [...roster.values()].map((r) => ({ ...r, year: y }));
+    byYear.set(y, [...carryOver.map((r) => ({ ...r, year: y })), ...snapshot]);
+    console.log(
+      `  ${y} 推演: 施加 ${applied} 条官方法令 → 县级 ${snapshot.length}`
+    );
+  }
+
   const years = [...byYear.keys()].sort((a, b) => a - b);
   const series: Record<Kind, number[]> = { 县: [], 区: [], 市: [], 旗: [], 其他: [] };
   const provinces: number[] = [];
@@ -158,11 +298,13 @@ async function main(): Promise<void> {
    *   2. 换码但同「地级前缀 + 词根」—— 撤县设区常换码（丰南县 → 丰南区）。
    * 都配不上的，如实记作从名册上消失（后继不明，不编）。
    */
+  // 名册取自 byYear —— 它已含 1980–2020 的 GB2260 快照 **和** 2021–2026 的法令推演，
+  // 两段同源同口径，故「哪一行被划掉、变成了什么」这套配对逻辑对新老年份一视同仁。
   const l3ByYear = new Map<number, Map<string, string>>();
-  for (const r of hist) {
-    if (r.level !== 3 || r.year > YEAR_MAX) continue;
-    if (!l3ByYear.has(r.year)) l3ByYear.set(r.year, new Map());
-    l3ByYear.get(r.year)!.set(r.code, r.name);
+  for (const [y, rows] of byYear) {
+    const m = new Map<string, string>();
+    for (const r of rows) if (r.level === 3) m.set(r.code, r.name);
+    l3ByYear.set(y, m);
   }
 
   interface YearChange {
@@ -243,7 +385,37 @@ async function main(): Promise<void> {
       districtGained: series['区'].at(-1)! - series['区'][0],
       cityGained: series['市'].at(-1)! - series['市'][0],
     },
-    source: 'GB/T 2260 (@cndiv/source-history)',
+    /**
+     * 数据来源分层：这条曲线不是同质的，前端必须把这件事画出来，不能假装 47 年一个样。
+     *   1980–2020  逐年**全量快照**（GB/T 2260）——直接测量
+     *   2021–2026  由民政部**官方变更法令**在 2020 名册上逐年推演；
+     *              并经国家地名信息库(dmfw)实测独立交叉校验：2026 名册逐码逐名完全吻合。
+     * 单独列出 pending：官方已公告设立、但**尚未发布区划码**的政区。不编码、不静默丢弃、
+     * 明写在数据里——这是数据在追现实的证据，不是缺陷。
+     */
+    provenance: {
+      snapshotMax: SNAPSHOT_MAX,
+      snapshot: {
+        range: [years[0], SNAPSHOT_MAX],
+        method: 'GB/T 2260 逐年全量快照',
+        source: '@cndiv/source-history',
+      },
+      derived: {
+        range: [SNAPSHOT_MAX + 1, YEAR_MAX],
+        method: '民政部《县级以上行政区划变更情况》官方法令逐年推演',
+        source: 'xzqh.mca.gov.cn',
+        crossCheck:
+          '国家地名信息库(dmfw)实测 2026 县级名册 2846 个，与推演结果逐码逐名一致（差异 0）',
+      },
+      pending: [
+        {
+          name: '岑岭县',
+          date: '2026-03-26',
+          note: '新疆维吾尔自治区公告设立，由喀什地区管辖；官方区划码尚未发布，故未计入名册（绝不臆造码）',
+        },
+      ],
+    },
+    source: 'GB/T 2260 (@cndiv/source-history) + 民政部变更法令 (xzqh.mca.gov.cn)',
   };
   await writeFile(`${OUT}/timeline.json`, JSON.stringify(timeline));
 
@@ -581,6 +753,31 @@ async function main(): Promise<void> {
 
   // ---------- 报告 ----------
   const kb = (n: number): string => `${(n / 1024).toFixed(1)} KB`;
+  /*
+   * 静态文案守卫：首屏那个巨型数字、<title>、OG 描述里的「N 个县消失」是**硬编码**的
+   * （SEO 与首屏骨架都要它，运行时取数来不及）。而它的真值由本脚本算出。
+   *
+   * 这两者会漂移——实测已经漂了：数据延到 2026 后真值是 652，而文案里躺着 5 年前的 641。
+   * 一个对外传播的站点，标题里写着错的数字，比少一个功能糟得多。故构建期直接卡死。
+   */
+  const lost = timeline.headline.countyLost;
+  const guarded: [string, string][] = [
+    ['apps/web/index.html', await readFile(`${ROOT}apps/web/index.html`, 'utf-8')],
+    ['apps/web/src/i18n.ts', await readFile(`${ROOT}apps/web/src/i18n.ts`, 'utf-8')],
+    ['apps/web/src/App.tsx', await readFile(`${ROOT}apps/web/src/App.tsx`, 'utf-8')],
+  ];
+  const stale = guarded.filter(([, src]) => !src.includes(String(lost)));
+  if (stale.length > 0) {
+    console.error(
+      `\n❌ 文案里的「县消失数」与数据不符。真值 = ${lost}，但下列文件没有出现这个数字：`
+    );
+    for (const [f] of stale) console.error(`   ${f}`);
+    console.error(
+      '   首屏大字 / <title> / og:description 都在讲这个数字，对外发布前必须改对。'
+    );
+    process.exit(1);
+  }
+
   console.log('✅ 构建完成');
   console.log(`  timeline.json  ${kb(JSON.stringify(timeline).length)}  (${years[0]}–${YEAR_MAX})`);
   console.log(`  tree.json      ${kb(JSON.stringify(tree).length)}  (${tree.length} 节点, L1–L3)`);

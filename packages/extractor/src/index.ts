@@ -10,14 +10,24 @@ export * from './resolve.js';
 export * from './llm.js';
 export * from './providers.js';
 
-import type { ChangeIntent, CodeResolver, ResolveResult } from './types.js';
+import type {
+  ChangeIntent,
+  CodeResolver,
+  NewCodeResolver,
+  ResolveResult,
+} from './types.js';
 import { extractIntents } from './rules.js';
 import { extractIntentsWithLlm, type LlmComplete } from './llm.js';
 import { intentsToPatch } from './resolve.js';
 
 export interface ExtractOptions {
-  /** 名称→码解析器（基于基线） */
+  /** 后向：名称→码解析器（基于**基线年**快照），解析被撤销/更名/划转的既有实体 */
   resolve: CodeResolver;
+  /**
+   * 前向：新设实体解析器（基于**更晚的权威快照**，如 NBS 2023 / dmfw 实时）。
+   * 缺省时 establish 一律落人工——新设实体在旧基线里必然查不到。
+   */
+  resolveNew?: NewCodeResolver;
   /** 可选 LLM 后端；提供则优先，空结果回退规则法（Tool Use 失败兜底） */
   llm?: LlmComplete;
 }
@@ -49,5 +59,9 @@ export async function extractPatch(
     via = 'rules';
   }
 
-  return { ...intentsToPatch(intents, options.resolve), intents, via };
+  const resolved = intentsToPatch(intents, {
+    resolve: options.resolve,
+    resolveNew: options.resolveNew,
+  });
+  return { ...resolved, intents, via };
 }

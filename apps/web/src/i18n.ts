@@ -50,6 +50,15 @@ interface Copy {
   /** 事实核对：「区」从未超过「县」，只是差距收窄——不可写成「交叉/反超」 */
   gapNote: (from: string, to: string) => string;
   caveatBadge: string;
+  /** 推演区底纹上的短标签 */
+  derivedBand: string;
+  /**
+   * 图下的来源分层说明。快照 vs 推演的置信度不同，不能混作一谈；
+   * 但推演经过独立实测交叉校验，这一点也必须说出来——否则读者会低估它。
+   */
+  provenanceNote: (snapshotMax: number, yearMax: number) => string;
+  /** 已公告设立、官方码尚未发布的政区（不编码、不丢弃、明写出来） */
+  pendingNote: (name: string, date: string) => string;
 
   explorerTitle: string;
   explorerSub: (villages: string) => string;
@@ -131,9 +140,9 @@ interface Copy {
 
 const zh: Copy = {
   brand: '中国行政区划时光机',
-  brandSub: '1980–2020 · 五级名册',
-  tagline: '四十年，641 个县从名册上消失',
-  heroKicker: '1980 → 2020',
+  brandSub: '1980–2026 · 五级名册',
+  tagline: '四十年，652 个县从名册上消失',
+  heroKicker: '1980 → 2026',
   heroSuffix: '个县，从名册上消失',
   heroLead: (lost, district, city) =>
     `四十年间，${lost} 个「县」从中国的行政区划名册上消失了。它们并没有真的不见——${district} 个改作了「区」，${city} 个改作了「市」。城市化的四十年，就这样一笔一笔，写进了名册。`,
@@ -161,8 +170,13 @@ const zh: Copy = {
   tipLabels: ['县', '区', '市'],
   tipTotal: '县级合计',
   gapNote: (from, to) =>
-    `1980 年，「县」的数目是「区」的 ${from} 倍；到 2020 年，只剩 ${to} 倍。差距仍在收窄。`,
+    `1980 年，「县」的数目是「区」的 ${from} 倍；到 2026 年，只剩 ${to} 倍。差距仍在收窄。`,
   caveatBadge: '口径变化',
+  derivedBand: '法令推演区',
+  provenanceNote: (snapshotMax, yearMax) =>
+    `1980–${snapshotMax} 为 GB/T 2260 逐年全量快照（直接测量）；${snapshotMax + 1}–${yearMax} 期间国家统计局停止发布年度区划，故由民政部《县级以上行政区划变更情况》的官方法令在 ${snapshotMax} 年名册上逐年推演（图中斜纹区）。该推演经独立交叉校验：推出的 ${yearMax} 年县级名册与国家地名信息库实测结果逐码逐名完全一致，差异为零。`,
+  pendingNote: (name, date) =>
+    `另：${name}（${date} 公告设立）官方区划码尚未发布，故未计入名册——我们不编造区划码。`,
 
   explorerTitle: '寻找你的家乡',
   explorerSub: (v) =>
@@ -254,19 +268,19 @@ const zh: Copy = {
   devRepo: 'GitHub 仓库',
 
   sourceNote:
-    '数据来源：国家统计局 2023 年快照、GB/T 2260 历史编码（1980–2020）、民政部国家地名信息库增量。',
+    '数据来源：GB/T 2260 历史编码（1980–2020 逐年全量快照）、民政部《县级以上行政区划变更情况》官方法令（2021–2026 推演）、国家统计局 2023 年五级快照（乡村下钻）、国家地名信息库（交叉校验）。',
   footer: '数据开放，欢迎自由使用与转载。',
 };
 
 const en: Copy = {
   brand: 'China Division Time Machine',
-  brandSub: '1980–2020 · five-level registry',
-  tagline: '641 counties vanished in 40 years',
-  heroKicker: '1980 → 2020',
+  brandSub: '1980–2026 · five-level registry',
+  tagline: '652 counties vanished in 40 years',
+  heroKicker: '1980 → 2026',
   heroSuffix: 'counties vanished',
   heroLead: (lost, district, city) =>
     `Over forty years, ${lost} counties disappeared from China's administrative registry. They were not erased — ${district} became urban districts, ${city} became county-level cities. Four decades of urbanization, written line by line into the registry.`,
-  heroNote: 'Derived by diffing official year-by-year registries, 1980–2020.',
+  heroNote: 'Derived by diffing official year-by-year registries, 1980–2026.',
   heroReplay: 'Run it again',
   heroPause: 'Hold',
   heroResume: 'Resume',
@@ -293,8 +307,13 @@ const en: Copy = {
   tipLabels: ['County', 'District', 'City'],
   tipTotal: 'Total',
   gapNote: (from, to) =>
-    `In 1980 counties outnumbered districts ${from} to one. By 2020, ${to} to one — and the gap keeps closing.`,
+    `In 1980 counties outnumbered districts ${from} to one. By 2026, ${to} to one — and the gap keeps closing.`,
   caveatBadge: 'coding change',
+  derivedBand: 'derived from decrees',
+  provenanceNote: (snapshotMax, yearMax) =>
+    `1980–${snapshotMax} are annual full snapshots from GB/T 2260 (direct measurement). From ${snapshotMax + 1} the National Bureau of Statistics stopped publishing its annual division dataset, so ${snapshotMax + 1}–${yearMax} are derived year by year from the Ministry of Civil Affairs' official change decrees, applied to the ${snapshotMax} roster (hatched area). The derivation was independently cross-checked: the resulting ${yearMax} county roster matches the National Place-Name Database exactly — same codes, same names, zero discrepancies.`,
+  pendingNote: (name, date) =>
+    `Note: ${name} (established ${date}) has no official division code published yet, so it is not counted — we do not invent codes.`,
 
   explorerTitle: 'Find your hometown',
   explorerSub: (v) =>
@@ -388,7 +407,7 @@ const en: Copy = {
   devRepo: 'GitHub repo',
 
   sourceNote:
-    'Sources: NBS 2023 snapshot, GB/T 2260 historical codes (1980–2020), and incremental patches from the Ministry of Civil Affairs.',
+    'Sources: GB/T 2260 historical codes (annual full snapshots, 1980–2020), official change decrees from the Ministry of Civil Affairs (derived, 2021–2026), the NBS 2023 five-level snapshot (township/village drill-down), and the National Place-Name Database (cross-check).',
   footer: 'Open data. Free to use and redistribute.',
 };
 

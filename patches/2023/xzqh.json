@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "author": "xzqh-crawler",
+    "source_url": "http://xzqh.mca.gov.cn/description?dcpid=2023",
+    "evidence_confidence": "high",
+    "apply_after": "2020-baseline",
+    "source_pipeline": "xzqh",
+    "created_at": "2026-07-14T07:56:40.624Z",
+    "notes": "xzqh 2023 县级以上行政区划变更"
+  },
+  "operations": [
+    {
+      "op": "add",
+      "code": "659012000000",
+      "name": "白杨市",
+      "level": 3,
+      "parent_code": "659000000000"
+    },
+    {
+      "op": "remove",
+      "code": "540530000000",
+      "reason": "撤销错那县设立县级错那市"
+    },
+    {
+      "op": "add",
+      "code": "540581000000",
+      "name": "错那市",
+      "level": 3,
+      "parent_code": "540500000000"
+    },
+    {
+      "op": "remove",
+      "code": "540422000000",
+      "reason": "撤销米林县设立县级米林市"
+    },
+    {
+      "op": "add",
+      "code": "540481000000",
+      "name": "米林市",
+      "level": 3,
+      "parent_code": "540400000000"
+    }
+  ]
+}

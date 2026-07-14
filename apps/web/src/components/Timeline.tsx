@@ -68,6 +68,12 @@ export function Timeline({ data, lang }: Props): JSX.Element {
     return (c / d).toFixed(1);
   };
 
+  /** 推演区起点索引（快照终年之后的第一年）；-1 表示全是快照 */
+  const derivedFrom = useMemo(() => {
+    const i = years.indexOf(data.provenance.snapshotMax);
+    return i >= 0 && i < years.length - 1 ? i : null;
+  }, [years, data.provenance.snapshotMax]);
+
   const hoverIdx = hover ?? null;
   const hoverYear = hoverIdx === null ? undefined : years[hoverIdx];
   /** 读数卡取值：未 hover 时定格末年（手机端常驻面板的默认态） */
@@ -104,6 +110,27 @@ export function Timeline({ data, lang }: Props): JSX.Element {
             e.preventDefault();
           }}
         >
+          <defs>
+            {/* 推演区底纹：极淡的斜纹，只在余光里存在——提示口径，不抢曲线 */}
+            <pattern
+              id="derivedHatch"
+              width={6}
+              height={6}
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <line
+                x1={0}
+                y1={0}
+                x2={0}
+                y2={6}
+                stroke="#2f6d68"
+                strokeWidth={1}
+                opacity={0.08}
+              />
+            </pattern>
+          </defs>
+
           {/* 横向网格 */}
           {[0, 500, 1000, 1500, 2000].map((v) => (
             <g key={v}>
@@ -125,6 +152,42 @@ export function Timeline({ data, lang }: Props): JSX.Element {
               </text>
             </g>
           ))}
+
+          {/*
+            推演区：2021 起 GB2260 停止发布逐年全量快照，此后的名册由民政部官方变更法令
+            在 2020 名册上逐年推演得出。测量与推演的置信度不同，混在一根线里不作区分，
+            就是让读者把推演当测量。故此区间用斜纹底纹显式区隔——线照常画（它经得起查：
+            推出的 2026 名册与国家地名信息库实测逐码逐名吻合），但读者有权知道它是怎么来的。
+          */}
+          {derivedFrom !== null && (
+            <g pointerEvents="none">
+              <rect
+                x={x(derivedFrom)}
+                y={PAD.top}
+                width={W - PAD.right - x(derivedFrom)}
+                height={H - PAD.bottom - PAD.top}
+                fill="url(#derivedHatch)"
+              />
+              <line
+                x1={x(derivedFrom)}
+                x2={x(derivedFrom)}
+                y1={PAD.top}
+                y2={H - PAD.bottom}
+                stroke="#2f6d68"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                opacity={0.5}
+              />
+              <text
+                x={W - PAD.right - 4}
+                y={H - PAD.bottom - 8}
+                textAnchor="end"
+                className="fill-ink-3 text-[10px]"
+              >
+                {t.derivedBand}
+              </text>
+            </g>
+          )}
 
           {/* 里程碑：口径变化(caveat)用暗金虚线 + 明确标注，绝不混同为行政变更 */}
           {data.milestones.map((m, i) => {
@@ -316,6 +379,24 @@ export function Timeline({ data, lang }: Props): JSX.Element {
       <p className="mt-8 border-l-2 border-clay pl-4 font-display text-lg leading-relaxed text-ink-2">
         {t.gapNote(ratio(0), ratio(years.length - 1))}
       </p>
+
+      {/*
+        来源分层：读者有权知道这根线的后半段是怎么来的。
+        既不隐瞒「它是推演」，也不淡化「它经得起实测校验」——两句都说。
+      */}
+      <div className="mt-6 space-y-2 border-t border-rule pt-4 text-xs leading-relaxed text-ink-3">
+        <p>
+          {t.provenanceNote(
+            data.provenance.snapshotMax,
+            data.provenance.derived.range[1]
+          )}
+        </p>
+        {data.provenance.pending.map((p) => (
+          <p key={p.name} className="text-clay">
+            {t.pendingNote(p.name, p.date)}
+          </p>
+        ))}
+      </div>
     </figure>
   );
 }

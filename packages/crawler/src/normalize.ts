@@ -11,9 +11,16 @@
  */
 import { getParentCode, DIVISION_LEVEL } from '@cndiv/core';
 import type { Division } from '@cndiv/core';
+import { PLACEHOLDER_NAMES } from '@cndiv/reader';
 
-/** NBS 基线中的结构性占位层名称；dmfw 扁平模型永不返回这些节点 */
-export const PLACEHOLDER_NAMES = new Set(['市辖区', '省直辖县级行政区划']);
+/**
+ * NBS 基线中的结构性占位层名称；dmfw 扁平模型永不返回这些节点。
+ *
+ * 单一真相源在 `@cndiv/reader`——此处仅**再导出**，绝不另存一份。
+ * 曾经两边各定义一份并漂移，结果 `自治区直辖县级行政区划`（新疆 659000）两边都漏，
+ * 被当成真政区产出假 remove。要增删占位层，改 reader 那一处。
+ */
+export { PLACEHOLDER_NAMES };
 
 /**
  * 判定是否为 NBS 结构性占位层（直辖市「市辖区」/ 省直管「省直辖县级行政区划」，均为 level2）。

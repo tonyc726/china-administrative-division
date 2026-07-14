@@ -176,16 +176,36 @@ describe('crawlAll 步长=2', () => {
     });
   });
 
-  it('步长2 请求数 < step1，且无重复抓取（去重）', async () => {
+  it('步长2 请求数 < step1，且每个节点只展开一次（去重）', async () => {
     await crawlAll('', { year: YEAR, maxLevel: 4, delayMs: 0 });
-    const newFetches = calls.length;
     // 旧 step1 抓取数 = 根 + 所有 level<4 的内部节点
     const oldFetches =
       1 + Object.keys(levelOf).filter((c) => c !== '' && levelOf[c] < 4).length;
-    expect(newFetches).toBeLessThan(oldFetches);
-    // 无重复抓取：每个 code 至多被请求一次
-    const seen = new Set(calls.map((c) => c.code));
-    expect(seen.size).toBe(calls.length);
+    expect(calls.length).toBeLessThan(oldFetches);
+
+    // 去重不变量：每个 code 只作为「抓取根」**展开**一次。
+    // 注意 M2 是真实叶子（children=[]），会触发空子树重试——那是刻意的有界重抓，
+    // 不是去重失效，故按 code 分组后单独校验（见下一个用例）。
+    const expandCounts = new Map<string, number>();
+    for (const c of calls)
+      expandCounts.set(c.code, (expandCounts.get(c.code) ?? 0) + 1);
+    for (const [code, n] of expandCounts) {
+      if (children[code]?.length) expect(n).toBe(1); // 有子节点 → 一次抓完，绝不重抓
+    }
+  });
+
+  /**
+   * 空子树 = 抖动 or 真叶子，单次响应无法分辨，只能靠**重试行为**区分。
+   * M2 是 fixture 里的真实叶子：连抓 1+EMPTY_RETRIES 次仍空 → 确认为叶子，落入 emptyConfirmed。
+   * 真实抓取中，武汉/哈尔滨那种「抖动吐空」则会在重试时把子树吐回来，从而自愈。
+   */
+  it('空子树触发有界重试；重试后仍空 → 确认为真叶子', async () => {
+    const res = await crawlAll('', { year: YEAR, maxLevel: 4, delayMs: 0 });
+    const m2Calls = calls.filter((c) => c.code === 'M2').length;
+    expect(m2Calls).toBe(3); // 首抓 + EMPTY_RETRIES(2)
+    expect(res.emptyConfirmed.map((e) => e.code)).toContain('M2');
+    // 有子节点的节点不该出现在缺口清单里
+    expect(res.emptyConfirmed.map((e) => e.code)).not.toContain('A1a');
   });
 
   it('failures 与计数字段存在且本例无失败', async () => {
