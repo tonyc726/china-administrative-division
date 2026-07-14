@@ -79,6 +79,8 @@ interface Copy {
   jumping: string;
   /** 截断如实告知：命中 778 条只显示 40 条，必须说出来 */
   resultTruncated: (total: number, shown: number) => string;
+  /** 多级限定（「辽宁 和平」）里认不出的那个词——不能静默降级成全国搜索 */
+  scopeUnresolved: (tokens: string) => string;
 
   /** 县级谱系 → 一句人文叙述；events 为空返回 null（不显示，不编造） */
   lineageStory: (events: LineageEvent[], sinceMin: number) => string | null;
@@ -181,8 +183,8 @@ const zh: Copy = {
   explorerTitle: '寻找你的家乡',
   explorerSub: (v) =>
     `省、市、县、乡镇、村与社区 —— 五级名册全部可搜（含 ${v} 个村落与社区）。中文或拼音都行。`,
-  searchPlaceholder: '搜省市县、乡镇、村 —— 中文或拼音，如「新安村」xinancun xac',
-  searchHint: '支持全拼与首字母；也可以先搜到县，再逐级翻下去',
+  searchPlaceholder: '搜省市县、乡镇、村 —— 如「辽宁 和平」「新安村」xinancun',
+  searchHint: '可以加省市限定重名，如「辽宁 和平」；支持全拼与首字母',
   noResult: '名册里没有找到这个地名',
   loading: '翻找中…',
   pickTown: '选择乡镇 / 街道',
@@ -197,6 +199,7 @@ const zh: Copy = {
   jumping: '正在翻到那一页…',
   resultTruncated: (total, shown) =>
     `全国共 ${total.toLocaleString()} 条命中，这里只列出前 ${shown} 条。`,
+  scopeUnresolved: (tokens) => `名册里没有「${tokens}」这个地方，已按全国搜索。`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;
@@ -318,8 +321,8 @@ const en: Copy = {
   explorerTitle: 'Find your hometown',
   explorerSub: (v) =>
     `Provinces, prefectures, counties, townships, villages — all five levels are searchable (${v} villages and communities included). Chinese or pinyin.`,
-  searchPlaceholder: 'Search any level — Chinese or pinyin, e.g. 新安村 / xinancun / xac',
-  searchHint: 'Full pinyin and initials both work; or find the county first and leaf down',
+  searchPlaceholder: 'Search any level, e.g. "Liaoning Heping" or 新安村 / xinancun',
+  searchHint: 'Narrow a common name with a province/city, e.g. "Liaoning Heping"; pinyin works too',
   noResult: 'No such place in the registry',
   loading: 'Leafing through…',
   pickTown: 'Pick a township',
@@ -334,6 +337,7 @@ const en: Copy = {
   jumping: 'Turning to that page…',
   resultTruncated: (total, shown) =>
     `${total.toLocaleString()} matches nationwide; showing the first ${shown}.`,
+  scopeUnresolved: (tokens) => `No place named "${tokens}" in the registry — searched nationwide instead.`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;

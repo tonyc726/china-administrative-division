@@ -13,14 +13,25 @@
  * 边界（如实说明，不粉饰）：
  *   · 只匹配**前缀**。子串匹配要按字位建 n-gram，索引体积乘以名字长度，不划算。
  *   · 查询短于 2 个字符时不查村级（首字母只有一位 → 命中面过大），只给 L1–L3。
+ *
+ * 限定域（「辽宁 和平」）：调用方（query.ts + Explorer）已经把限定词解析成码前缀，
+ * 这里只做最后一步——按前缀过滤桶里翻出来的条目。不必为限定域再建索引：
+ * 桶本来就要整个下载，过滤只是省流量、不省请求。
  */
 import type { Division } from './types';
+import { inScope, type Scope } from './query';
 
 const BASE = import.meta.env.BASE_URL;
 
 /** 一次查询最多下载的桶数——多音字/切分歧义最坏情况下的兜底闸门 */
 const MAX_BUCKETS = 4;
 const MAX_HITS = 40;
+/**
+ * 乡镇专属配额：全国乡镇只有 4.1 万，村/社区有 62 万——同一个 40 条的口子，
+ * 常见村名（「新华」全国 72 个乡镇）会被几百个同名村挤到一个都不剩。
+ * 按 level 分开截断，乡镇独占一份配额，不与村互相争抢。
+ */
+const MAX_TOWN_HITS = 20;
 
 interface Keys {
   suffixes: string[];
@@ -160,10 +171,11 @@ export function canSearchDeep(q: string): boolean {
 }
 
 /**
- * 搜乡镇 + 村 / 社区。返回按命中强度排序的前 40 条。
+ * 搜乡镇 + 村 / 社区。返回按命中强度排序的结果，乡镇最多 20 条、村/社区补满剩余名额，总数不超过 40。
+ * scope 非空时只保留落在该限定域码前缀下的条目（如「辽宁 和平」只留 21 开头的）。
  * 网络失败一律降级为空数组 —— 搜索框不该因为一个桶 404 就白屏。
  */
-export async function searchDeep(raw: string): Promise<DeepResult> {
+export async function searchDeep(raw: string, scope: Scope | null = null): Promise<DeepResult> {
   const empty: DeepResult = { hits: [], total: 0 };
   const q = normalize(raw);
   if (!canSearchDeep(q)) return empty;
@@ -181,6 +193,7 @@ export async function searchDeep(raw: string): Promise<DeepResult> {
   const hits: Hit[] = [];
   for (const entries of loaded) {
     for (const e of entries) {
+      if (!inScope(e.code, scope)) continue;
       const score = scoreOf(e, q, py);
       if (score < 0) continue;
       hits.push({
@@ -193,13 +206,15 @@ export async function searchDeep(raw: string): Promise<DeepResult> {
     }
   }
   // 命中强度 → 名字短的优先（「新安村」排在「新安村村」前）→ 码序稳定
-  hits.sort(
-    (a, b) =>
-      a.score - b.score ||
-      a.name.length - b.name.length ||
-      a.code.localeCompare(b.code)
-  );
-  return { hits: hits.slice(0, MAX_HITS), total: hits.length };
+  const byRank = (a: Hit, b: Hit): number =>
+    a.score - b.score || a.name.length - b.name.length || a.code.localeCompare(b.code);
+  hits.sort(byRank);
+
+  // 乡镇先占自己的配额，剩下的名额才轮到村——总量仍是 MAX_HITS，只是不再被村吃干净
+  const towns = hits.filter((h) => h.level === 4).slice(0, MAX_TOWN_HITS);
+  const villages = hits.filter((h) => h.level === 5).slice(0, MAX_HITS - towns.length);
+  const shown = [...towns, ...villages].sort(byRank);
+  return { hits: shown, total: hits.length };
 }
 
 /** 预热：用户点进搜索框就把 keys 拉下来，第一次敲键时已就绪 */

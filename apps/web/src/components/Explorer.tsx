@@ -15,7 +15,8 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import type { Division, Shard, TreeRow } from '../types';
 import { COPY, type Lang } from '../i18n';
 import { ShareCard } from './ShareCard';
-import { canSearchDeep, normalize, searchDeep, warmup, type Hit } from '../search';
+import { canSearchDeep, searchDeep, warmup, type Hit } from '../search';
+import { buildLocator, parseQuery, inScope, type Locator, type Parsed, type PlaceRow, type Scope } from '../query';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -31,11 +32,8 @@ interface Props {
   seed: { q: string; n: number } | null;
 }
 
-/** 内存里的 L1–L3 条目：Division + 拼音，供即时匹配 */
-interface TopRow extends Division {
-  py: string;
-  ini: string;
-}
+/** 内存里的 L1–L3 条目：Division + 拼音，供即时匹配（与 query.ts 的限定词解析共用同一形状） */
+type TopRow = PlaceRow;
 
 interface TreeIndex {
   byCode: Map<string, Division>;
@@ -76,6 +74,27 @@ function loadShard(county: string): Promise<Shard> {
 
 const COUNTY_OF = (code: string): string => `${code.slice(0, 6)}000000`;
 const TOWN_OF = (code: string): string => `${code.slice(0, 9)}000`;
+
+/** L1–L3 里给定「词 + 限定域」的即时匹配——与 search.ts 的 scoreOf 同一套规则，供 scope 收窄复用 */
+function scoredTop(index: TreeIndex, term: string, scope: Scope | null): Division[] {
+  if (term.length === 0) return [];
+  const py = /^[a-z]+$/.test(term);
+  const scored: [number, TopRow][] = [];
+  for (const d of index.all) {
+    if (!inScope(d.code, scope)) continue;
+    let s = -1;
+    if (py) {
+      if (d.py === term || d.ini === term) s = 0;
+      else if (d.py.startsWith(term)) s = 1;
+      else if (d.ini.startsWith(term)) s = 2;
+    } else if (d.name === term) s = 0;
+    else if (d.name.startsWith(term)) s = 1;
+    else if (d.name.includes(term)) s = 2;
+    if (s >= 0) scored.push([s, d]);
+  }
+  scored.sort((a, b) => a[0] - b[0] || a[1].level - b[1].level || a[1].name.length - b[1].name.length);
+  return scored.slice(0, 12).map(([, d]) => d);
+}
 
 function Group({ title, children }: { title: string; children: ReactNode }): JSX.Element {
   return (
@@ -174,31 +193,37 @@ export function Explorer({
     };
   }, [path]);
 
-  /** L1–L3：内存里即时匹配（中文子串 / 全拼 / 首字母），零请求 */
-  const results = useMemo((): Division[] => {
-    const q = normalize(query);
-    if (!index || q.length === 0) return [];
-    const py = /^[a-z]+$/.test(q);
-    const scored: [number, TopRow][] = [];
-    for (const d of index.all) {
-      let s = -1;
-      if (py) {
-        if (d.py === q || d.ini === q) s = 0;
-        else if (d.py.startsWith(q)) s = 1;
-        else if (d.ini.startsWith(q)) s = 2;
-      } else if (d.name === q) s = 0;
-      else if (d.name.startsWith(q)) s = 1;
-      else if (d.name.includes(q)) s = 2;
-      if (s >= 0) scored.push([s, d]);
-    }
-    scored.sort((a, b) => a[0] - b[0] || a[1].level - b[1].level || a[1].name.length - b[1].name.length);
-    return scored.slice(0, 12).map(([, d]) => d);
-  }, [index, query]);
+  /** 限定词解析器：随 tree 一起建一次（「辽宁」「沈阳」…都是它的词表） */
+  const locator = useMemo((): Locator | null => (index ? buildLocator(index.all) : null), [index]);
 
-  /** L4–L5：防抖后查倒排桶。查询串变了就丢弃在途结果（竞态是搜索框的头号 bug） */
+  /**
+   * 「辽宁 和平」→ 限定域 + 名字；「宁波横街」→ 尝试切分。interps 按可信度降序，
+   * 都是候选解释——空格分隔的显式限定永远排第一，切分兜底放最后。
+   */
+  const parsed = useMemo((): Parsed => parseQuery(query, locator), [query, locator]);
+  const hasQuery = parsed.interps.length > 0;
+  const primaryTerm = parsed.interps[0]?.term ?? '';
+
+  /**
+   * L1–L3：内存里即时匹配，零请求。逐个 interp 试，第一个有命中的赢——
+   * 「辽宁 和平」不必等网络，和平区本来就在这 3348 条常驻内存里。
+   */
+  const results = useMemo((): Division[] => {
+    if (!index) return [];
+    for (const interp of parsed.interps) {
+      const r = scoredTop(index, interp.term, interp.scope);
+      if (r.length > 0) return r;
+    }
+    return [];
+  }, [index, parsed]);
+
+  /**
+   * L4–L5：防抖后查倒排桶，同样按 interp 顺序试。查询串变了就丢弃在途结果
+   * （竞态是搜索框的头号 bug）。多试一个 interp 只在前一个真的零命中时才发生，
+   * 常态下（显式限定 / 无歧义整体解释）只有一轮请求。
+   */
   useEffect(() => {
-    const q = normalize(query);
-    if (!canSearchDeep(q)) {
+    if (!hasQuery) {
       setDeep([]);
       setDeepTotal(0);
       setDeepLoading(false);
@@ -207,18 +232,30 @@ export function Explorer({
     let alive = true;
     setDeepLoading(true);
     const timer = setTimeout(() => {
-      void searchDeep(q).then((r) => {
-        if (!alive) return;
-        setDeep(r.hits);
-        setDeepTotal(r.total);
-        setDeepLoading(false);
-      });
+      void (async () => {
+        for (const interp of parsed.interps) {
+          if (!canSearchDeep(interp.term)) continue;
+          const r = await searchDeep(interp.term, interp.scope);
+          if (!alive) return;
+          if (r.hits.length > 0) {
+            setDeep(r.hits);
+            setDeepTotal(r.total);
+            setDeepLoading(false);
+            return;
+          }
+        }
+        if (alive) {
+          setDeep([]);
+          setDeepTotal(0);
+          setDeepLoading(false);
+        }
+      })();
     }, DEBOUNCE_MS);
     return () => {
       alive = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [parsed, hasQuery]);
 
   /** 从任意节点回溯出完整祖先链（tree 内 L1–L3） */
   const ancestorsOf = useCallback(
@@ -291,7 +328,6 @@ export function Explorer({
   const isLeaf = current !== null && (current.level === 5 || options.length === 0);
   const lineage = t.lineageStory(shard?.h ?? [], historySince);
 
-  const q = normalize(query);
   const towns = useMemo(() => deep.filter((h) => h.level === 4), [deep]);
   const villages = useMemo(() => deep.filter((h) => h.level === 5), [deep]);
   const hasAnyResult = results.length > 0 || deep.length > 0;
@@ -337,11 +373,14 @@ export function Explorer({
             className="w-full rounded-lg border border-line-2 bg-paper px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
           />
           <p className="mt-2 text-xs text-ink-3">
-            {q.length > 0 && !canSearchDeep(q) ? t.deepHint : t.searchHint}
+            {hasQuery && !canSearchDeep(primaryTerm) ? t.deepHint : t.searchHint}
           </p>
+          {parsed.unresolved.length > 0 && (
+            <p className="mt-1 text-xs text-clay">{t.scopeUnresolved(parsed.unresolved.join('、'))}</p>
+          )}
 
-          {!index && q.length > 0 && <p className="mt-4 text-sm text-ink-3">{t.loading}</p>}
-          {index && q.length > 0 && !hasAnyResult && !deepLoading && (
+          {!index && hasQuery && <p className="mt-4 text-sm text-ink-3">{t.loading}</p>}
+          {index && hasQuery && !hasAnyResult && !deepLoading && (
             <p className="mt-4 text-sm text-ink-3">{t.noResult}</p>
           )}
 
