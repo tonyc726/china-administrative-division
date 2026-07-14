@@ -10,6 +10,10 @@ const siteUrl = (process.env.DOCS_SITE_URL ?? 'https://tonyc726.github.io/china-
 
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
 
+// 文档站现在是主站的辅助链接（主站部署在 GH Pages 根路径，文档站挂在 /docs/ 子路径）。
+// 只有 GH Pages 构建会设置这个变量，其它独立部署（Cloudflare/Vercel）没有主站，不渲染这条 nav。
+const homeUrl = process.env.DOCS_HOME_URL;
+
 export default defineConfig({
   lang: 'zh-CN',
   title: '中国行政区划数据基础设施',
@@ -60,6 +64,7 @@ export default defineConfig({
     },
 
     nav: [
+      ...(homeUrl ? [{ text: '← 时光机主站', link: homeUrl }] : []),
       { text: '指南', link: '/guide/why-v2' },
       { text: '包参考', link: '/reference/core' },
       {

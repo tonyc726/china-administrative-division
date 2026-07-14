@@ -135,6 +135,8 @@ interface Copy {
   devTitle: string;
   devLead: string;
   devRepo: string;
+  /** 辅助链接：给开发者/维护者看的文档站——独立部署在 /docs/ 子路径，不与主站抢流量 */
+  devDocs: string;
 
   sourceNote: string;
   footer: string;
@@ -269,6 +271,7 @@ const zh: Copy = {
   devLead:
     '本站的每一个数字，都来自 npm 上公开的数据包：五级区划、四十年历史、邮编与区号，皆可直接安装取用。',
   devRepo: 'GitHub 仓库',
+  devDocs: '完整文档站 →',
 
   sourceNote:
     '数据来源：GB/T 2260 历史编码（1980–2020 逐年全量快照）、民政部《县级以上行政区划变更情况》官方法令（2021–2026 推演）、国家统计局 2023 年五级快照（乡村下钻）、国家地名信息库（交叉校验）。',
@@ -409,6 +412,7 @@ const en: Copy = {
   devLead:
     "China's official statistics portal went dark — the pages that published this data now 404, frozen at 2023. So the pipeline was rebuilt: five levels, forty years of history, shipped as npm packages you can install today.",
   devRepo: 'GitHub repo',
+  devDocs: 'Full documentation site →',
 
   sourceNote:
     'Sources: GB/T 2260 historical codes (annual full snapshots, 1980–2020), official change decrees from the Ministry of Civil Affairs (derived, 2021–2026), the NBS 2023 five-level snapshot (township/village drill-down), and the National Place-Name Database (cross-check).',
