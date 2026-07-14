@@ -27,6 +27,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.3.4
         version: 4.7.0(vite@6.4.3(jiti@2.7.0)(lightningcss@1.32.0))
+      pinyin-pro:
+        specifier: ^3.28.1
+        version: 3.28.1
       tailwindcss:
         specifier: ^4.0.0
         version: 4.3.2
@@ -750,6 +753,9 @@ packages:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
+  pinyin-pro@3.28.1:
+    resolution: {integrity: sha512-oqz8ulwRgtUXRi0vbqEfGNly19zpyCxYrjhkk5TibGcgSW6eNwS5woajCXRwqURi8Ehc2yOFTiB4uNoZ+NJOnA==}
+
   postcss@8.5.18:
     resolution: {integrity: sha512-xdB1oSLHbz1vRWgCDalrCqEFTWzFlhqFC5tIHLMOSUIjhm3XXQ1qrFy8S/ESr1JYRRXqM3c1QFiMZUJdUTqyMQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -1399,6 +1405,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.5: {}
+
+  pinyin-pro@3.28.1: {}
 
   postcss@8.5.18:
     dependencies:

@@ -31,11 +31,24 @@ export function Timeline({ data, lang }: Props): JSX.Element {
 
   const { years, series } = data;
   const yMax = 2200;
+  const last = years.length - 1;
 
   const x = (i: number): number =>
     PAD.left + (i / (years.length - 1)) * (W - PAD.left - PAD.right);
   const y = (v: number): number =>
     H - PAD.bottom - (v / yMax) * (H - PAD.top - PAD.bottom);
+
+  /** 屏幕坐标 → 最近的年份索引（一套逻辑同时喂鼠标、触摸、触控笔） */
+  const pick = (e: React.PointerEvent<SVGSVGElement>): void => {
+    const box = e.currentTarget.getBoundingClientRect();
+    if (box.width === 0) return;
+    const vx = ((e.clientX - box.left) / box.width) * W;
+    const i = Math.round(((vx - PAD.left) / (W - PAD.left - PAD.right)) * last);
+    setHover(Math.min(last, Math.max(0, i)));
+  };
+
+  const step = (delta: number): void =>
+    setHover((h) => Math.min(last, Math.max(0, (h ?? last) + delta)));
 
   const paths = useMemo(
     () =>
@@ -56,6 +69,10 @@ export function Timeline({ data, lang }: Props): JSX.Element {
   };
 
   const hoverIdx = hover ?? null;
+  const hoverYear = hoverIdx === null ? undefined : years[hoverIdx];
+  /** 读数卡取值：未 hover 时定格末年（手机端常驻面板的默认态） */
+  const readIdx = hoverIdx ?? last;
+  const readYear = years[readIdx] ?? data.yearMax;
 
   return (
     <figure className="mx-auto w-full max-w-5xl">
@@ -71,10 +88,21 @@ export function Timeline({ data, lang }: Props): JSX.Element {
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full touch-none"
+          className="w-full cursor-crosshair touch-none focus:outline-none"
           role="img"
           aria-label={t.chartTitle}
-          onMouseLeave={() => setHover(null)}
+          tabIndex={0}
+          onPointerMove={pick}
+          onPointerDown={pick}
+          onPointerLeave={() => setHover(null)}
+          onBlur={() => setHover(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') step(-1);
+            else if (e.key === 'ArrowRight') step(1);
+            else if (e.key === 'Escape') setHover(null);
+            else return;
+            e.preventDefault();
+          }}
         >
           {/* 横向网格 */}
           {[0, 500, 1000, 1500, 2000].map((v) => (
@@ -114,9 +142,11 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                   strokeWidth={1}
                   strokeDasharray={isCaveat ? '2 4' : '4 4'}
                 />
+                {/* 靠右的里程碑向左书写，否则英文长标签会溢出画布被裁掉 */}
                 <text
-                  x={x(idx) + 5}
+                  x={x(idx) + (x(idx) > W * 0.7 ? -5 : 5)}
                   y={PAD.top + 12 + (i % 2) * 16}
+                  textAnchor={x(idx) > W * 0.7 ? 'end' : 'start'}
                   className={`text-[10px] ${isCaveat ? 'fill-gold' : 'fill-ink-3'}`}
                 >
                   {lang === 'zh' ? m.label : m.labelEn}
@@ -140,19 +170,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
             />
           ))}
 
-          {/* hover 命中区 + 指示 */}
-          {years.map((yr, i) => (
-            <rect
-              key={yr}
-              x={x(i) - (W - PAD.left - PAD.right) / years.length / 2}
-              y={PAD.top}
-              width={(W - PAD.left - PAD.right) / years.length}
-              height={H - PAD.top - PAD.bottom}
-              fill="transparent"
-              onMouseEnter={() => setHover(i)}
-            />
-          ))}
-
+          {/* 命中指示：竖准线 + 三点 */}
           {hoverIdx !== null && (
             <g pointerEvents="none">
               <line
@@ -160,7 +178,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 x2={x(hoverIdx)}
                 y1={PAD.top}
                 y2={H - PAD.bottom}
-                stroke="#cfc5ab"
+                stroke="#8a8474"
                 strokeWidth={1}
               />
               {SERIES.map((s) => {
@@ -171,37 +189,105 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                     key={s.key}
                     cx={x(hoverIdx)}
                     cy={y(v)}
-                    r={4}
+                    r={4.5}
                     fill="#faf9f5"
                     stroke={s.color}
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                   />
                 );
               })}
             </g>
           )}
 
-          {/* x 轴年份（每 5 年） */}
-          {years.map((yr, i) =>
-            yr % 5 === 0 ? (
+          {/* x 轴年份：常规每 5 年一格；hover 的那一年顶上来，并让紧邻的刻度让位 */}
+          {years.map((yr, i) => {
+            if (yr % 5 !== 0) return null;
+            const near = hoverIdx !== null && Math.abs(i - hoverIdx) <= 1;
+            if (near && i !== hoverIdx) return null;
+            return (
               <text
                 key={yr}
                 x={x(i)}
                 y={H - PAD.bottom + 20}
                 textAnchor="middle"
-                className="fill-ink-3 text-[11px]"
+                className={
+                  i === hoverIdx
+                    ? 'fill-clay text-[11px] font-semibold'
+                    : 'fill-ink-3 text-[11px]'
+                }
               >
                 {yr}
               </text>
-            ) : null
+            );
+          })}
+          {hoverIdx !== null && hoverYear !== undefined && hoverYear % 5 !== 0 && (
+            <text
+              x={x(hoverIdx)}
+              y={H - PAD.bottom + 20}
+              textAnchor="middle"
+              pointerEvents="none"
+              className="fill-clay text-[11px] font-semibold"
+            >
+              {hoverYear}
+            </text>
           )}
         </svg>
 
-        {/* 读数面板：hover 时显示当年三项，未 hover 时显示末年 */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        {/*
+         * 读数卡。桌面：贴着准线浮动（靠右侧时翻边），纵向落在两条曲线之间的空档。
+         * 手机：图太窄，浮卡会盖住曲线 —— 退化为图表下方的常驻面板（默认末年），
+         * 同时兼作图例，所以下面那行图例在小屏隐藏。
+         * 位移全部走 sm: 前缀的 Tailwind class，inline style 只留 left（static 下自动失效）。
+         */}
+        <div
+          className={`z-10 w-full rounded-lg border border-line-2 bg-paper/95 p-3 shadow-lg backdrop-blur-sm sm:pointer-events-none sm:absolute sm:top-1/2 sm:mt-0 sm:w-44 sm:-translate-y-1/2 ${
+            readIdx / last > 0.62
+              ? 'sm:-translate-x-[calc(100%+14px)]'
+              : 'sm:translate-x-[14px]'
+          } ${hoverIdx === null ? 'mt-4 sm:hidden' : 'mt-4'}`}
+          style={{ left: `${(x(readIdx) / W) * 100}%` }}
+        >
+          <div className="font-display text-sm font-semibold tabular-nums text-ink">
+            {t.tipYear(readYear)}
+          </div>
+          <dl className="mt-2 space-y-1.5">
+            {SERIES.map((s, si) => {
+              const v = series[s.key][readIdx];
+              if (v === undefined) return null;
+              const prev = readIdx > 0 ? series[s.key][readIdx - 1] : undefined;
+              const delta = prev === undefined ? 0 : v - prev;
+              return (
+                <div key={s.key} className="flex items-center gap-2 text-xs">
+                  <span
+                    className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
+                    style={{ backgroundColor: s.color }}
+                  />
+                  <dt className="text-ink-2">{t.tipLabels[si]}</dt>
+                  <dd className="ml-auto flex items-baseline gap-1.5">
+                    <span className="font-display tabular-nums text-ink">{v}</span>
+                    <span className="w-8 text-right font-mono text-[10px] tabular-nums text-ink-3">
+                      {delta === 0
+                        ? ''
+                        : delta > 0
+                          ? `+${delta}`
+                          : `−${Math.abs(delta)}`}
+                    </span>
+                  </dd>
+                </div>
+              );
+            })}
+            <div className="flex items-center gap-2 border-t border-line pt-1.5 text-xs">
+              <dt className="text-ink-3">{t.tipTotal}</dt>
+              <dd className="ml-auto font-display tabular-nums text-ink-2">
+                {SERIES.reduce((sum, s) => sum + (series[s.key][readIdx] ?? 0), 0)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        {/* 图例：定格在末年，作为静态参照——实时读数交给读数卡 */}
+        <div className="mt-4 hidden flex-wrap items-center gap-x-6 gap-y-2 text-sm sm:flex">
           {SERIES.map((s) => {
-            const arr = series[s.key];
-            const v = hoverIdx !== null ? arr[hoverIdx] : arr.at(-1);
             const label =
               s.key === '县'
                 ? t.legendCounty
@@ -215,12 +301,14 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                   style={{ backgroundColor: s.color }}
                 />
                 <span className="text-ink-2">{label}</span>
-                <span className="font-display tabular-nums text-ink">{v}</span>
+                <span className="font-display tabular-nums text-ink">
+                  {series[s.key].at(-1)}
+                </span>
               </span>
             );
           })}
           <span className="ml-auto font-display text-xs tabular-nums text-ink-3">
-            {hoverIdx !== null ? years[hoverIdx] : `${data.yearMin}–${data.yearMax}`}
+            {`${data.yearMin}–${data.yearMax}`}
           </span>
         </div>
       </div>

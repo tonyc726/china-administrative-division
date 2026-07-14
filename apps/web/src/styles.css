@@ -34,6 +34,20 @@
   }
 }
 
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * 首屏那片田（烧成灰的旧县名 / 长出来的新县名）不在这里 —— 它整个活在 Canvas 里，见 Hero.tsx。
+ * 原因：灰烬要「飞走」。CSS 与 SVG 滤镜都只能就地变形一个字，没有粒子这个概念。
+ */
+
 html {
   scroll-behavior: smooth;
   color-scheme: light;

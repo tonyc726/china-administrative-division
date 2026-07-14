@@ -11,6 +11,27 @@ export interface Milestone {
   kind: 'real' | 'caveat';
 }
 
+/**
+ * 某一年的增删。第一项永远是**省码（2 位）** —— 它决定这个名字烧在地图的哪一块上。
+ * out = [省, 消失的县, 它变成的名字（'' = 后继不明，绝不编造）]；in = [省, 新写上的县]
+ */
+export interface YearChange {
+  y: number;
+  out: [string, string, string][];
+  in: [string, string][];
+}
+
+/**
+ * 省级边界（public/data/geo.json）。r / jd 里的环是**开环**，闭合交给渲染端的 closePath。
+ * ⚠️ 第三方数据，带未了结的合规风险 —— 见 apps/web/data/PROVENANCE.md。
+ */
+export interface Geo {
+  /** c=省码2位, n=简称, r=外环（经纬度扁平交错：lon,lat,lon,lat…） */
+  provs: { c: string; n: string; r: number[][] }[];
+  /** 南海断续线，十段，一段都不能少 */
+  jd: number[][];
+}
+
 export interface Timeline {
   yearMin: number;
   yearMax: number;
@@ -18,6 +39,8 @@ export interface Timeline {
   series: Record<Kind, number[]>;
   provinces: number[];
   milestones: Milestone[];
+  /** 逐年的名册增删 —— 时光机放的就是这个（划掉 826 − 新写 185 = 641，与头条自洽） */
+  changes: YearChange[];
   headline: {
     countyLost: number;
     districtGained: number;
@@ -33,8 +56,8 @@ export interface Stats {
   source: string;
 }
 
-/** tree.json：紧凑元组 [code, name, level, parentCode]，L1–L3 */
-export type TreeRow = [string, string, number, string];
+/** tree.json：紧凑元组 [code, name, level, parentCode, 全拼, 首字母]，L1–L3 */
+export type TreeRow = [string, string, number, string, string, string];
 
 /** 县级变迁事件：[year, name]，仅变化点（如 [1980,'余姚县'],[1985,'余姚市']） */
 export type LineageEvent = [number, string];
@@ -62,12 +85,16 @@ export interface Names {
   };
   surnames: {
     total: number;
+    /** 全量（几百个姓），降序 —— 用户要查的是自己的姓，不只是榜首 */
     rank: [string, number][];
   };
   marks: {
     north: string[];
     south: string[];
+    /** 通名 → 全国总数 + 各省分布（全省份，降序） */
     stats: Record<string, { total: number; provs: [string, number][] }>;
+    /** 每省村总数 —— 热力图必须按它归一化，否则读到的是「哪个省村多」 */
+    provTotals: Record<string, number>;
   };
 }
 

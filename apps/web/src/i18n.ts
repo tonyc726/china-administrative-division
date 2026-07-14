@@ -13,19 +13,40 @@ export type Lang = 'zh' | 'en';
 
 interface Copy {
   brand: string;
+  /** 页眉副题：一行说清这本名册的时间跨度与体量 */
+  brandSub: string;
   tagline: string;
   heroKicker: string;
-  heroNumber: (n: number) => string;
   /** 紧跟巨型数字，与之连读成句 —— 不重复数字本身 */
   heroSuffix: string;
   heroLead: (lost: number, district: number, city: number) => string;
   heroNote: string;
+  /** 时光机：一本逐年翻页的名册 —— 谁被划掉，谁被写上 */
+  heroReplay: string;
+  heroPause: string;
+  heroResume: string;
+  heroDialCounty: string;
+  heroDialDistrict: string;
+  heroDialCity: string;
+  /** canvas 的替代文本 —— 屏幕读不出一张地图，得有人替它说 */
+  heroField: string;
+  /** 落点只到省，不到县 —— 这一点必须写在图上，不能让人以为那是县的真实坐标 */
+  heroGeoNote: string;
+  heroScrub: string;
+  scrubVol: (n: number) => string;
+  scrubHint: string;
+  scrubCaveat: string;
+  heroSkip: (year: number) => string;
 
   chartTitle: string;
   chartSub: (from: number, to: number) => string;
   legendCounty: string;
   legendDistrict: string;
   legendCity: string;
+  /** hover 读数卡：年份标题 / 三条曲线的短名 / 合计行 */
+  tipYear: (year: number) => string;
+  tipLabels: [string, string, string];
+  tipTotal: string;
   /** 事实核对：「区」从未超过「县」，只是差距收窄——不可写成「交叉/反超」 */
   gapNote: (from: string, to: string) => string;
   caveatBadge: string;
@@ -40,25 +61,50 @@ interface Copy {
   pickVillage: string;
   backToSearch: string;
 
+  /** 五级搜索：结果分组 + 深层（乡镇/村）加载态 */
+  groupTop: string;
+  groupTown: string;
+  groupVillage: string;
+  searchingDeep: string;
+  deepHint: string;
+  jumping: string;
+  /** 截断如实告知：命中 778 条只显示 40 条，必须说出来 */
+  resultTruncated: (total: number, shown: number) => string;
+
   /** 县级谱系 → 一句人文叙述；events 为空返回 null（不显示，不编造） */
   lineageStory: (events: LineageEvent[], sinceMin: number) => string | null;
   lineageLabel: string;
 
-  /** 村名的年轮 */
+  /** 最常见的村名（排序条形 + 点击联动搜索） */
   namesTitle: string;
   namesSub: (era: number) => string;
   namesLead: (topName: string, topCount: number, eraInTop: number) => string;
   eraBadge: string;
   eraDisclaimer: string;
+  axisVillages: string;
+  clickToSearch: string;
+
+  /** 姓氏的村庄（棒棒糖图 + 查你自己的姓） */
   surnameTitle: string;
   surnameSub: (total: string) => string;
+  surnameYours: string;
+  surnameYoursPlaceholder: string;
+  surnameFound: (sur: string, count: number, rank: number) => string;
+  surnameMissing: (sur: string) => string;
 
-  /** 南塘北屯 */
+  /** 南塘北屯（通名 × 省份热力图） */
   marksTitle: string;
   marksSub: string;
   marksNorth: string;
   marksSouth: string;
   marksLead: string;
+  /** 归一化开关：统计学的核心——原始村数会被省份体量混淆 */
+  marksModeRate: string;
+  marksModeRaw: string;
+  marksModeNote: string;
+  marksCell: (prov: string, mark: string, count: number, rate: string) => string;
+  marksAxisProv: string;
+  marksColorNote: string;
 
   /** 稀有度 */
   rarityUnique: string;
@@ -85,32 +131,58 @@ interface Copy {
 
 const zh: Copy = {
   brand: '中国行政区划时光机',
+  brandSub: '1980–2020 · 五级名册',
   tagline: '四十年，641 个县从名册上消失',
   heroKicker: '1980 → 2020',
-  heroNumber: (n) => `${n}`,
   heroSuffix: '个县，从名册上消失',
   heroLead: (lost, district, city) =>
     `四十年间，${lost} 个「县」从中国的行政区划名册上消失了。它们并没有真的不见——${district} 个改作了「区」，${city} 个改作了「市」。城市化的四十年，就这样一笔一笔，写进了名册。`,
   heroNote: '依据国家统计局与民政部公开名册，逐年比对得出。',
+  heroReplay: '再走一遍',
+  heroPause: '停一下',
+  heroResume: '继续',
+  heroDialCounty: '县',
+  heroDialDistrict: '区',
+  heroDialCity: '市',
+  heroField: '中国地图：被取消的县名在它所属的省份上烧成灰飘散，新的名字从同一块土地上长出来',
+  heroGeoNote: '名字落在它所属的省内 · 精确到省，不到县',
+  heroScrub: '拖动，回到任何一年',
+  scrubVol: (n) => (n === 0 ? '这一年，名册没有改动' : `这一年，${n} 个县从名册上消失`),
+  scrubHint: '柱高 = 这一年消失的县数 · 拖动或按方向键',
+  scrubCaveat: '口径变化，非行政变更',
+  heroSkip: (year) => `跳到 ${year} →`,
 
   chartTitle: '县、区、市的四十年',
   chartSub: (from, to) => `${from}–${to}，全国县级行政单位的构成`,
   legendCounty: '县',
   legendDistrict: '区（市辖区）',
   legendCity: '市（县级市）',
+  tipYear: (year) => `${year} 年`,
+  tipLabels: ['县', '区', '市'],
+  tipTotal: '县级合计',
   gapNote: (from, to) =>
     `1980 年，「县」的数目是「区」的 ${from} 倍；到 2020 年，只剩 ${to} 倍。差距仍在收窄。`,
   caveatBadge: '口径变化',
 
-  explorerTitle: '找到你的村庄',
-  explorerSub: (v) => `${v} 个村落与社区，沿五级名册逐级翻找，找到属于你的那一行。`,
-  searchPlaceholder: '搜索省、市或县，例如：余姚',
-  searchHint: '先找到县，再逐级翻到你的乡镇与村庄',
+  explorerTitle: '寻找你的家乡',
+  explorerSub: (v) =>
+    `省、市、县、乡镇、村与社区 —— 五级名册全部可搜（含 ${v} 个村落与社区）。中文或拼音都行。`,
+  searchPlaceholder: '搜省市县、乡镇、村 —— 中文或拼音，如「新安村」xinancun xac',
+  searchHint: '支持全拼与首字母；也可以先搜到县，再逐级翻下去',
   noResult: '名册里没有找到这个地名',
   loading: '翻找中…',
   pickTown: '选择乡镇 / 街道',
   pickVillage: '选择村 / 社区',
   backToSearch: '← 重新查找',
+
+  groupTop: '省 · 市 · 县',
+  groupTown: '乡镇 / 街道',
+  groupVillage: '村 · 社区',
+  searchingDeep: '正在翻找 66 万条乡镇与村…',
+  deepHint: '再输一个字，就能搜到乡镇与村',
+  jumping: '正在翻到那一页…',
+  resultTruncated: (total, shown) =>
+    `全国共 ${total.toLocaleString()} 条命中，这里只列出前 ${shown} 条。`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;
@@ -127,7 +199,7 @@ const zh: Copy = {
   },
   lineageLabel: '这个县的四十年',
 
-  namesTitle: '村名的年轮',
+  namesTitle: '最常见的村名',
   namesSub: (era) =>
     `全国 ${era.toLocaleString()} 个村庄，名字来自同一个年代的词汇表。`,
   namesLead: (topName, topCount, eraInTop) =>
@@ -135,15 +207,32 @@ const zh: Copy = {
   eraBadge: '时代词',
   eraDisclaimer:
     '「时代词」是本站依据 1950–70 年代政治话语作出的归类，非官方定义；「太平」「兴隆」「花园」等传统地名一律未计入。',
+  axisVillages: '村庄数',
+  clickToSearch: '点任意一行，搜出全国所有同名的村',
+
   surnameTitle: '姓氏的村庄',
   surnameSub: (total) => `${total} 个村子以「某家」命名。你家的姓，有多少个村？`,
+  surnameYours: '你的姓',
+  surnameYoursPlaceholder: '姓',
+  surnameFound: (sur, count, rank) =>
+    `全国有 ${count.toLocaleString()} 个村子叫「${sur}家…」，在所有姓氏里排第 ${rank}。`,
+  surnameMissing: (sur) => `名册里没有以「${sur}」命名的村。`,
 
   marksTitle: '南塘北屯',
-  marksSub: '村名的最后一个字，藏着它在南方还是北方',
+  marksSub: '村名里的一个字，藏着它在南方还是北方',
   marksNorth: '北方通名',
   marksSouth: '南方通名',
   marksLead:
-    '「庄」「屯」「营」「堡」扎堆在河北、山东、辽宁；「塘」「圩」「畈」「冲」几乎只见于湖南、湖北、安徽、江西。没有人规定过这条线，它是几百年农耕与聚落方式，自己长出来的。',
+    '按密度看：「庄」在天津与河北，「屯」在辽宁，「堡」在辽宁与宁夏，「沟」在甘肃与陕西的黄土高原；「塘」「圩」「畈」「冲」几乎只见于湖南、湖北、安徽、江西。没有人规定过这条线，它是几百年农耕与聚落方式，自己长出来的。',
+  marksModeRate: '每万村',
+  marksModeRaw: '原始村数',
+  marksModeNote:
+    '按「每万村」归一化：直接比原始村数，读到的只是「哪个省村多」（河北 5 万村，海南 2 千村）。切到「原始村数」看「沟」这一行——前三名会变成河北、河南、山东（清一色的村庄大省）；而按密度，「沟」真正的家在甘肃与陕西，黄土高原。省份体量是混淆变量，摘掉它，字才回到它自己的地理里。',
+  marksCell: (prov, mark, count, rate) =>
+    `${prov} · 「${mark}」：${count.toLocaleString()} 个村，每万村 ${rate} 个`,
+  marksAxisProv: '省份按「北方通名密度 − 南方通名密度」排序 —— 这条从北到南的谱是数据自己排出来的，不是我们指定的',
+  marksColorNote:
+    '颜色深浅 = 该字在该省的密度，按每一行自己的最大值归一 —— 回答的是「这个字集中在哪」，不是「哪个字更多」。跨行的量级请看行首的总数。',
 
   rarityUnique: '全国独一无二',
   rarityShared: (n) => `全国还有 ${n - 1} 个同名村`,
@@ -171,13 +260,28 @@ const zh: Copy = {
 
 const en: Copy = {
   brand: 'China Division Time Machine',
+  brandSub: '1980–2020 · five-level registry',
   tagline: '641 counties vanished in 40 years',
   heroKicker: '1980 → 2020',
-  heroNumber: (n) => `${n}`,
   heroSuffix: 'counties vanished',
   heroLead: (lost, district, city) =>
     `Over forty years, ${lost} counties disappeared from China's administrative registry. They were not erased — ${district} became urban districts, ${city} became county-level cities. Four decades of urbanization, written line by line into the registry.`,
   heroNote: 'Derived by diffing official year-by-year registries, 1980–2020.',
+  heroReplay: 'Run it again',
+  heroPause: 'Hold',
+  heroResume: 'Resume',
+  heroDialCounty: 'Counties',
+  heroDialDistrict: 'Districts',
+  heroDialCity: 'Cities',
+  heroField:
+    'Map of China: abolished county names burn to ash over their own province; new names grow from the same ground',
+  heroGeoNote: 'Placed within its province · province-accurate, not county-accurate',
+  heroScrub: 'Drag to any year',
+  scrubVol: (n) =>
+    n === 0 ? 'Nothing changed this year' : `${n} ${n === 1 ? 'county' : 'counties'} vanished this year`,
+  scrubHint: 'Bar height = counties lost that year · drag or use arrow keys',
+  scrubCaveat: 'coding change, not a real reorganisation',
+  heroSkip: (year) => `Skip to ${year} →`,
 
   chartTitle: 'Counties, districts, cities: forty years',
   chartSub: (from, to) =>
@@ -185,20 +289,32 @@ const en: Copy = {
   legendCounty: 'County (县)',
   legendDistrict: 'Urban district (区)',
   legendCity: 'County-level city (市)',
+  tipYear: (year) => `${year}`,
+  tipLabels: ['County', 'District', 'City'],
+  tipTotal: 'Total',
   gapNote: (from, to) =>
     `In 1980 counties outnumbered districts ${from} to one. By 2020, ${to} to one — and the gap keeps closing.`,
   caveatBadge: 'coding change',
 
-  explorerTitle: 'Find your village',
+  explorerTitle: 'Find your hometown',
   explorerSub: (v) =>
-    `${v} villages and communities. Leaf through five levels of the registry to the line that is yours.`,
-  searchPlaceholder: 'Search a province, city or county',
-  searchHint: 'Find the county first, then leaf down to your township and village',
+    `Provinces, prefectures, counties, townships, villages — all five levels are searchable (${v} villages and communities included). Chinese or pinyin.`,
+  searchPlaceholder: 'Search any level — Chinese or pinyin, e.g. 新安村 / xinancun / xac',
+  searchHint: 'Full pinyin and initials both work; or find the county first and leaf down',
   noResult: 'No such place in the registry',
   loading: 'Leafing through…',
   pickTown: 'Pick a township',
   pickVillage: 'Pick a village',
   backToSearch: '← Search again',
+
+  groupTop: 'Provinces · Prefectures · Counties',
+  groupTown: 'Townships',
+  groupVillage: 'Villages · Communities',
+  searchingDeep: 'Leafing through 660,000 townships and villages…',
+  deepHint: 'One more character reaches township and village level',
+  jumping: 'Turning to that page…',
+  resultTruncated: (total, shown) =>
+    `${total.toLocaleString()} matches nationwide; showing the first ${shown}.`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;
@@ -215,7 +331,7 @@ const en: Copy = {
   },
   lineageLabel: 'This county, over forty years',
 
-  namesTitle: 'The rings of a name',
+  namesTitle: 'The most common village names',
   namesSub: (era) =>
     `${era.toLocaleString()} villages share a vocabulary from one single era.`,
   namesLead: (topName, topCount, eraInTop) =>
@@ -223,16 +339,34 @@ const en: Copy = {
   eraBadge: 'era word',
   eraDisclaimer:
     '“Era words” is our own classification, based on 1950s–70s political vocabulary — not an official definition. Traditional names such as 太平 (Peace-and-Order), 兴隆 (Prosperity) and 花园 (Garden) are deliberately excluded.',
+  axisVillages: 'villages',
+  clickToSearch: 'Click any row to find every village that carries the name',
+
   surnameTitle: 'Villages of a surname',
   surnameSub: (total) =>
     `${total} villages are named after a family. How many carry yours?`,
+  surnameYours: 'Your surname',
+  surnameYoursPlaceholder: '姓',
+  surnameFound: (sur, count, rank) =>
+    `${count.toLocaleString()} villages are named after the 「${sur}」 family — #${rank} among all surnames.`,
+  surnameMissing: (sur) => `No village in the registry is named after 「${sur}」.`,
 
   marksTitle: 'Ponds in the south, hamlets in the north',
-  marksSub: 'The last character of a village name tells you which half of China it sits in',
+  marksSub: 'One character in a village name tells you which half of China it sits in',
   marksNorth: 'Northern suffixes',
   marksSouth: 'Southern suffixes',
   marksLead:
-    '庄 zhuāng, 屯 tún, 营 yíng, 堡 bǔ cluster in Hebei, Shandong and Liaoning; 塘 táng (pond), 圩 wéi (polder), 畈 fàn (paddy flat), 冲 chōng (valley) appear almost only in Hunan, Hubei, Anhui and Jiangxi. Nobody drew this line. Centuries of farming and settlement grew it.',
+    'By density: 庄 zhuāng belongs to Tianjin and Hebei, 屯 tún to Liaoning, 堡 bǔ to Liaoning and Ningxia, 沟 gōu to the loess plateau of Gansu and Shaanxi; 塘 táng (pond), 圩 wéi (polder), 畈 fàn (paddy flat) and 冲 chōng (valley) appear almost only in Hunan, Hubei, Anhui and Jiangxi. Nobody drew this line. Centuries of farming and settlement grew it.',
+  marksModeRate: 'Per 10,000 villages',
+  marksModeRaw: 'Raw count',
+  marksModeNote:
+    'Normalized per 10,000 villages. Switch to raw counts and look at the 沟 gōu row: its top three become Hebei, Henan and Shandong — simply the provinces with the most villages. By density, 沟 actually belongs to Gansu and Shaanxi: the loess plateau. Province size is a confounder; remove it and each character returns to its own geography.',
+  marksCell: (prov, mark, count, rate) =>
+    `${prov} · 「${mark}」: ${count.toLocaleString()} villages, ${rate} per 10,000`,
+  marksAxisProv:
+    'Provinces are ordered by (northern density − southern density). This north-to-south spectrum is what the data itself produced — we did not assign it',
+  marksColorNote:
+    'Colour intensity = the density of that character in that province, normalized within each row — it answers “where does this character cluster”, not “which character is more common”. For cross-row magnitude, read the totals in the left column.',
 
   rarityUnique: 'The only one in China',
   rarityShared: (n) => `${n - 1} other villages share this name`,
