@@ -1,0 +1,100 @@
+name: GitHub Pages
+
+# 主站（apps/web，时光机展示站）部署在仓库根路径；文档站（docs-site）挂在 /docs/ 子路径，
+# 作为面向开发者/维护者的辅助入口。两站独立构建，合并进同一个 Pages artifact 一次性发布。
+# 取代原先只发布 docs-site 到根路径的 docs.yml。
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/web/**'
+      - 'docs-site/**'
+      - 'packages/*/README.md'
+      - 'docs/**'
+      - 'patches/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# GitHub Pages 部署所需权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只保留最新一次部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  SITE_URL: https://tonyc726.github.io/china-administrative-division
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # docs-site 的 lastUpdated 需要完整 git 历史
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+
+      # apps/web 的 build-data.ts 直接读 packages/source-*/data/divisions.csv（monorepo 相对路径）。
+      # 这两个 CSV 体积大，仓库里 gitignore 掉了，CI 无法本地重新生成——改从已发布的 npm 包里取，
+      # 这正是 @cndiv/source-2023 / @cndiv/source-history 存在的意义（唯一可复现的数据源）。
+      - name: Fetch source data CSVs from npm
+        run: |
+          mkdir -p /tmp/src2023 /tmp/srchist packages/source-2023/data packages/source-history/data
+          npm pack @cndiv/source-2023 --silent --pack-destination /tmp
+          tar -xzf /tmp/cndiv-source-2023-*.tgz -C /tmp/src2023
+          cp /tmp/src2023/package/data/divisions.csv packages/source-2023/data/divisions.csv
+          npm pack @cndiv/source-history --silent --pack-destination /tmp
+          tar -xzf /tmp/cndiv-source-history-*.tgz -C /tmp/srchist
+          cp /tmp/srchist/package/data/divisions.csv packages/source-history/data/divisions.csv
+
+      # apps/web 独立于 workspace（--ignore-workspace），部署到 GH Pages 项目页需要 /<repo>/ 前缀
+      - name: Build web (homepage)
+        working-directory: apps/web
+        env:
+          WEB_BASE: /china-administrative-division/
+        run: |
+          pnpm install --ignore-workspace
+          pnpm run build
+
+      # docs-site 现在是主站的辅助链接，挂在 /docs/ 子路径；DOCS_HOME_URL 让它反向链回主站
+      - name: Build docs-site (auxiliary, under /docs/)
+        working-directory: docs-site
+        env:
+          DOCS_BASE: /china-administrative-division/docs/
+          DOCS_SITE_URL: ${{ env.SITE_URL }}/docs
+          DOCS_HOME_URL: ${{ env.SITE_URL }}/
+        run: |
+          pnpm install --ignore-workspace
+          pnpm build
+
+      - name: Combine into one Pages artifact
+        run: |
+          rm -rf dist
+          mkdir -p dist/docs
+          cp -r apps/web/dist/. dist/
+          cp -r docs-site/.vitepress/dist/. dist/docs/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

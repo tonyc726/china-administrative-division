@@ -216,6 +216,12 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
             >
               npm · @cndiv
             </a>
+            <a
+              href={`${BASE}docs/`}
+              className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3 hover:text-ink"
+            >
+              {t.devDocs}
+            </a>
           </div>
         </div>
       </section>
