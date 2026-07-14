@@ -26,7 +26,11 @@ import { fetchChanges } from './xzqh.js';
 import { parseDivisionsCsv } from './baseline.js';
 import { buildCacheResolver } from './xzqh-resolver.js';
 import { defaultCachePath } from '@cndiv/reader';
-import { extractPatch, type CodeResolver } from '@cndiv/extractor';
+import {
+  extractPatch,
+  type CodeResolver,
+  type NewCodeResolver,
+} from '@cndiv/extractor';
 import {
   validatePatch,
   type Operation,
@@ -38,6 +42,11 @@ interface ResolverHandle {
   resolve: CodeResolver;
   /** 日志描述 */
   desc: string;
+  /**
+   * 实际使用的后向快照年 —— 即本 patch 的基线年，写进 meta.apply_after。
+   * 变更事件逐年链式：2021 的撤并设立必须施加在 2020 名册上。仅 cache.db 态可知。
+   */
+  snapshotYear?: number;
   /** 仅 cache.db 态有：同名歧义（多候选）→ 全候选码，落人工 */
   ambiguous?: ReadonlyMap<string, string[]>;
   close(): void;
@@ -88,6 +97,7 @@ async function assembleResolver(opts: {
       return {
         resolve: r.resolve,
         desc: `cache.db 快照 ${r.snapshotYear}（${r.size} 名索引）`,
+        snapshotYear: r.snapshotYear,
         ambiguous: r.ambiguous,
         close: r.close,
       };
@@ -108,6 +118,48 @@ async function assembleResolver(opts: {
   };
 }
 
+/** 前向解析器句柄：解析新设实体的官方码；不可用时为 undefined（establish 全落人工） */
+interface ForwardHandle {
+  resolveNew?: NewCodeResolver;
+  desc: string;
+  close(): void;
+}
+
+/**
+ * 装配**前向**解析器：在更晚的权威快照里查新设实体的官方码。
+ *
+ * 为什么必须有它：`撤销横县，设立县级横州市` —— 横州市在 2020 基线里当然查无此名，
+ * 但它的官方码 450181 就写在 NBS 2023 快照里。没有前向解析，所有 establish 全落人工，
+ * 增量管线就只会「删」不会「增」，物化出来的年份名册会逐年失血。
+ *
+ * FMEA：cache.db 缺失 / 无更晚快照 → 返回空句柄，establish 退回人工（旧行为），不中断。
+ */
+function assembleForward(opts: {
+  cache?: string;
+  forwardYear?: number;
+}): ForwardHandle {
+  const cachePath = opts.cache ?? defaultCachePath();
+  if (!opts.cache && !existsSync(cachePath)) {
+    return { desc: '无（establish 全落人工）', close: () => {} };
+  }
+  try {
+    const r = buildCacheResolver({
+      dbPath: cachePath,
+      snapshotYear: opts.forwardYear,
+    });
+    return {
+      resolveNew: r.resolveRef,
+      desc: `cache.db 快照 ${r.snapshotYear}（新设实体取官方码）`,
+      close: r.close,
+    };
+  } catch (e) {
+    console.warn(
+      `⚠ 前向解析器不可用（${(e as Error).message}），establish 全落人工`
+    );
+    return { desc: '无（establish 全落人工）', close: () => {} };
+  }
+}
+
 async function main(): Promise<void> {
   const year = Number(get('year'));
   if (!Number.isInteger(year)) {
@@ -118,12 +170,19 @@ async function main(): Promise<void> {
   }
   const author = get('author') ?? 'xzqh-crawler';
   const snapshotYearArg = get('snapshot-year');
+  const forwardYearArg = get('forward-year');
   const handle = await assembleResolver({
     cache: get('cache'),
     snapshotYear: snapshotYearArg ? Number(snapshotYearArg) : undefined,
     baseline: get('baseline'),
   });
-  console.log(`解析器：${handle.desc}`);
+  // 前向：缺省取 cache.db 最新快照（buildCacheResolver 内部 max(years)）
+  const forward = assembleForward({
+    cache: get('cache'),
+    forwardYear: forwardYearArg ? Number(forwardYearArg) : undefined,
+  });
+  console.log(`后向解析器（既有实体）：${handle.desc}`);
+  console.log(`前向解析器（新设实体）：${forward.desc}`);
 
   try {
     console.log(`抓取 xzqh ${year} 年《县级以上行政区划变更情况》...`);
@@ -146,7 +205,10 @@ async function main(): Promise<void> {
         operations: ops,
         unresolved,
         via,
-      } = await extractPatch(change.text, { resolve: handle.resolve });
+      } = await extractPatch(change.text, {
+        resolve: handle.resolve,
+        resolveNew: forward.resolveNew,
+      });
       operations.push(...ops);
       unresolvedCount += unresolved.length;
       for (const u of unresolved) {
@@ -180,7 +242,10 @@ async function main(): Promise<void> {
         author,
         source_url: `http://xzqh.mca.gov.cn/description?dcpid=${year}`,
         evidence_confidence: 'high',
-        apply_after: '2023-baseline',
+        // 基线年 = 本次解析所用的后向快照年，而非写死的 2023。
+        // 变更事件是**逐年链式**的：2021 的变更施加在 2020 名册上，2024 的施加在 2023 上。
+        // 写死 2023 会让 apply-patch 把 2021 的撤并设立克隆到 2023 名册上去，年份血脉直接错位。
+        apply_after: `${handle.snapshotYear ?? 2023}-baseline`,
         source_pipeline: 'xzqh', // 管线戳：merge 优先级最高（事件流权威）
         created_at: new Date().toISOString(),
         notes: `xzqh ${year} 县级以上行政区划变更`,
@@ -208,6 +273,7 @@ async function main(): Promise<void> {
       console.log(JSON.stringify(validated.data, null, 2));
     }
   } finally {
+    forward.close(); // 前向解析器独占一个 cache.db 连接，同样要释放
     handle.close(); // 释放 cache.db 连接（CSV/占位为 noop）
   }
 }

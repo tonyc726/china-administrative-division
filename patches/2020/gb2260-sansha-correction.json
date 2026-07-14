@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "author": "lineage-correction",
+    "source_url": "http://xzqh.mca.gov.cn/description?dcpid=2020",
+    "evidence_confidence": "high",
+    "apply_after": "2020-baseline",
+    "source_pipeline": "community",
+    "notes": "GB2260 2020 基线订正：补回三沙市的两个市辖区。GB2260 的 2020 快照是年末状态（已含邢台襄都区、芜湖弋江区等 2020 年变更），却唯独没有为三沙市(460300)记录任何县级下级——这是上游 GB2260 自身的缺口，不是采集缺失。两个独立官方源互证其存在：① 民政部《2020 年县级以上行政区划变更情况》公告「海南省三沙市设立西沙区、南沙区」；② 国家地名信息库(dmfw)实测在库，并给出官方 12 位码 460302/460303。码取自 dmfw，非推导、非臆造。不补这一条，从 1980 血脉推演出的 2026 名册会比 dmfw 实测少这 2 个区。"
+  },
+  "operations": [
+    {
+      "op": "add",
+      "code": "460302000000",
+      "name": "西沙区",
+      "level": 3,
+      "parent_code": "460300000000"
+    },
+    {
+      "op": "add",
+      "code": "460303000000",
+      "name": "南沙区",
+      "level": 3,
+      "parent_code": "460300000000"
+    }
+  ]
+}

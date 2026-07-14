@@ -63,9 +63,8 @@ async function main(): Promise<void> {
   console.log(
     `抓取 dmfw（root="${root || '全国'}", maxLevel=${maxLevel}, concurrency=${concurrency}, cache=${cacheDir}${stabilizeOn ? ', 稳定化=on' : ''}）...`
   );
-  const { divisions, failures, fetched, cached, jitter } = await crawlAll(
-    root,
-    {
+  const { divisions, failures, fetched, cached, jitter, emptyConfirmed } =
+    await crawlAll(root, {
       year,
       maxLevel,
       concurrency,
@@ -76,8 +75,7 @@ async function main(): Promise<void> {
         console.log(
           `  波次 ${wave}（每波抓 2 层）: 展开 ${fr} 节点 → 累计 ${total} 条`
         ),
-    }
-  );
+    });
   console.log(
     `抓取完成：${divisions.length} 条（网络 ${fetched} / 缓存 ${cached}），失败 ${failures.length}`
   );
@@ -85,6 +83,41 @@ async function main(): Promise<void> {
     console.warn(
       `  失败节点(可重跑续爬): ${failures.slice(0, 10).join(', ')}${failures.length > 10 ? ' …' : ''}`
     );
+  }
+  // 空子树定性：crawlAll 已排除瞬时抖动，剩下的要么是真叶子、要么是持续缺口。
+  // 判据在基线里——基线说这个节点有孩子，dmfw 却始终吐不出来，那就是缺口。
+  //
+  // 为什么必须中止：差分靠「基线有、当前无」判定撤销。缺口会让整个市的市辖区被误判为
+  // 成片撤销（实测武汉、哈尔滨曾被静默吞掉全部市辖区，而运行报告「失败 0」）。
+  // 半截数据流进下游，比抓取失败危险得多 → 非零退出。
+  if (emptyConfirmed.length > 0) {
+    const baselineHasChildren = (code: string): boolean =>
+      allBaseline.some((d) => d.parent_code === code);
+    const gaps = emptyConfirmed.filter((e) => baselineHasChildren(e.code));
+    const leaves = emptyConfirmed.filter((e) => !baselineHasChildren(e.code));
+
+    if (leaves.length > 0) {
+      console.log(
+        `ℹ️  ${leaves.length} 个节点确认无子节点（基线亦无，属 dmfw 不下钻的真叶子，如港澳）: ${leaves
+          .map((e) => e.code)
+          .join(', ')}`
+      );
+    }
+    if (gaps.length > 0) {
+      console.error(
+        `\n❌ ${gaps.length} 个节点持续返回空子树，但基线显示它们有下级政区——抓取存在缺口，差分结果不可信。`
+      );
+      console.error(
+        `   缺口节点: ${gaps
+          .slice(0, 10)
+          .map((e) => e.code)
+          .join(', ')}${gaps.length > 10 ? ' …' : ''}`
+      );
+      console.error(
+        '   空结果不落缓存，直接重跑同一 --cache 目录即可自动重试这些节点。'
+      );
+      process.exit(1);
+    }
   }
   if (jitter.length > 0) {
     const recovered = jitter.reduce((s, j) => s + Math.max(0, j.recovered), 0);

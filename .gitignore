@@ -673,3 +673,12 @@ xcuserdata/
 
 # Playwright MCP 运行时产物（非项目代码）
 .playwright-mcp/
+
+# apps/web 构建产物（数据由 scripts/build-data.ts 从 source 包重新生成，不入 git）
+apps/web/public/data/
+apps/web/dist/
+apps/web/node_modules/
+apps/web/.playwright-mcp/
+
+# 采集中间产物（差分原料），最终产物在 patches/
+raw/

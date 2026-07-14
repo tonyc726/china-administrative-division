@@ -1,0 +1,10 @@
+# 静态数据资产：不可变，长缓存（分片文件名即区划码，内容变了会重新构建）
+/data/shards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+# 搜索倒排桶：单个最大 ~256KB，命中率高，值得和分片同级的长缓存
+/data/search/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

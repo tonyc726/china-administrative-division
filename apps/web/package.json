@@ -1,0 +1,28 @@
+{
+  "name": "@cndiv/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "China Division Time Machine — standalone showcase app. Installed with --ignore-workspace so React deps do not touch the monorepo lockfile.",
+  "scripts": {
+    "data": "bun scripts/build-data.ts",
+    "dev": "bun scripts/build-data.ts && vite",
+    "build": "bun scripts/build-data.ts && tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "pinyin-pro": "^3.28.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

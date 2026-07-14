@@ -4,6 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { canonicalizeParent, isPlaceholder, PLACEHOLDER_NAMES } from '../dist/normalize.js';
+import { PLACEHOLDER_NAMES as READER_PLACEHOLDER_NAMES } from '@cndiv/reader';
 import type { Division } from '@cndiv/core';
 
 const d = (code: string, name: string, level: number, parent: string | null): Division => ({
@@ -65,7 +66,28 @@ describe('isPlaceholder', () => {
     expect(isPlaceholder(d('110101000000', '市辖区', 3, '110100000000'))).toBe(false);
   });
 
-  it('占位层名单锁定为民政部/NBS 现行两类', () => {
-    expect([...PLACEHOLDER_NAMES].sort()).toEqual(['市辖区', '省直辖县级行政区划']);
+  /**
+   * 名单锁定，防静默漂移。曾经 crawler 与 reader 各存一份且已分叉，双方都漏了新疆的
+   * 「自治区直辖县级行政区划」(659000) —— 于是它被当成真政区，在 dmfw 差分里产出假 remove。
+   * 现已收敛到 @cndiv/reader 单一真相源；此断言同时钉住「内容」与「唯一来源」。
+   */
+  it('占位层名单锁定，且与 @cndiv/reader 单一真相源一致', () => {
+    expect([...PLACEHOLDER_NAMES].sort()).toEqual(
+      [
+        '市辖区',
+        '县',
+        '省直辖县级行政区划',
+        '省直辖县级行政单位',
+        '自治区直辖县级行政区划',
+      ].sort()
+    );
+    // crawler 侧必须是 reader 的再导出，不得另存一份
+    expect(PLACEHOLDER_NAMES).toBe(READER_PLACEHOLDER_NAMES);
+  });
+
+  it('新疆「自治区直辖县级行政区划」是占位层（曾漏判 → 假 remove）', () => {
+    expect(
+      isPlaceholder(d('659000000000', '自治区直辖县级行政区划', 2, '650000000000'))
+    ).toBe(true);
   });
 });

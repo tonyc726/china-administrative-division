@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "author": "xzqh-crawler",
+    "source_url": "http://xzqh.mca.gov.cn/description?dcpid=2026",
+    "evidence_confidence": "high",
+    "apply_after": "2023-baseline",
+    "source_pipeline": "xzqh",
+    "created_at": "2026-07-14T07:57:13.480Z",
+    "notes": "xzqh 2026 县级以上行政区划变更"
+  },
+  "operations": [
+    {
+      "op": "add",
+      "code": "659013000000",
+      "name": "草湖市",
+      "level": 3,
+      "parent_code": "659000000000"
+    }
+  ]
+}

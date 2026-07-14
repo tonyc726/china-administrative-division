@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "author": "xzqh-crawler",
+    "source_url": "http://xzqh.mca.gov.cn/description?dcpid=2025",
+    "evidence_confidence": "high",
+    "apply_after": "2023-baseline",
+    "source_pipeline": "xzqh",
+    "created_at": "2026-07-14T07:57:02.727Z",
+    "notes": "xzqh 2025 县级以上行政区划变更"
+  },
+  "operations": [
+    {
+      "op": "remove",
+      "code": "500105000000",
+      "reason": "撤销江北区、渝北区，设立两江新区"
+    },
+    {
+      "op": "remove",
+      "code": "500112000000",
+      "reason": "撤销江北区、渝北区，设立两江新区"
+    },
+    {
+      "op": "add",
+      "code": "500157000000",
+      "name": "两江新区",
+      "level": 3,
+      "parent_code": "500100000000"
+    }
+  ]
+}
