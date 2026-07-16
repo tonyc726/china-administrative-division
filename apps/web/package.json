@@ -7,7 +7,7 @@
   "scripts": {
     "data": "bun scripts/build-data.ts",
     "dev": "bun scripts/build-data.ts && vite",
-    "build": "bun scripts/build-data.ts && tsc -b && vite build",
+    "build": "bun scripts/build-data.ts && tsc -b && vite build && bun scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },

@@ -59,7 +59,7 @@ docs-site/
   ops/                     # 架构 / 运维 / 编制规则（@include docs/*.md）
 ```
 
-> `docs/` 下的内部规划稿（项目重构方案 / 改造实施计划 / 采集优化清单 / spike 等）未纳入站点导航，保留在仓库中供考古。如需上站，在 `ops/` 加对应 `@include` 页并补进 `config.ts` sidebar。
+> `docs/` 下的内部规划稿（项目重构方案 / 改造实施计划 / 采集优化清单 / 采集能力提升实施计划 / spike 等）已归档至 `docs/history/`，未纳入站点导航，保留供考古。如需上站，在 `ops/` 加对应 `@include` 页（路径 `../../docs/history/<file>.md`）并补进 `config.ts` sidebar。
 
 ## 待收敛（TODO）
 

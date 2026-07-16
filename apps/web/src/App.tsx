@@ -17,15 +17,29 @@ const BASE = import.meta.env.BASE_URL;
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
 
 function detectLang(): Lang {
+  // 服务端渲染时 window/navigator 不存在，返回默认值
+  if (typeof window === 'undefined') return 'zh';
   const url = new URLSearchParams(window.location.search).get('lang');
   if (url === 'zh' || url === 'en') return url;
   return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
 
-export function App(): JSX.Element {
+export interface AppProps {
+  prerendered?: {
+    timeline: TimelineData;
+    stats: Stats;
+  };
+}
+
+export function App({ prerendered }: AppProps): JSX.Element {
   const [lang, setLang] = useState<Lang>(detectLang);
-  const [timeline, setTimeline] = useState<TimelineData | null>(null);
-  const [stats, setStats] = useState<Stats | null>(null);
+  // 如果有预渲染数据，直接使用；否则初始化为 null 并在 useEffect 中 fetch
+  const [timeline, setTimeline] = useState<TimelineData | null>(
+    prerendered?.timeline ?? null
+  );
+  const [stats, setStats] = useState<Stats | null>(
+    prerendered?.stats ?? null
+  );
   const [names, setNames] = useState<Names | null>(null);
   const [geo, setGeo] = useState<Geo | null>(null);
   /**
@@ -43,6 +57,24 @@ export function App(): JSX.Element {
   }, []);
 
   useEffect(() => {
+    // 预渲染数据已通过 props 传入，跳过 timeline/stats fetch
+    if (prerendered) {
+      // names 和 geo 仍然懒加载（非 SEO 关键路径）
+      Promise.all([
+        fetch(`${BASE}data/names.json`).then((r) => r.json() as Promise<Names>),
+        fetch(`${BASE}data/geo.json`).then((r) => r.json() as Promise<Geo>),
+      ])
+        .then(([nm, gj]) => {
+          setNames(nm);
+          setGeo(gj);
+        })
+        .catch(() => {
+          /* 静态资产缺失 → 保持骨架，不白屏 */
+        });
+      return;
+    }
+
+    // 无预渲染数据时（开发环境 / 降级），走原有完整 fetch 逻辑
     void Promise.all([
       fetch(`${BASE}data/timeline.json`).then((r) => r.json() as Promise<TimelineData>),
       fetch(`${BASE}data/stats.json`).then((r) => r.json() as Promise<Stats>),
@@ -58,7 +90,7 @@ export function App(): JSX.Element {
       .catch(() => {
         /* 静态资产缺失 → 保持骨架，不白屏 */
       });
-  }, []);
+  }, [prerendered]);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
@@ -70,7 +102,8 @@ export function App(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-paper text-ink-2 antialiased">
-      {/* 页眉：赤陶方印 + 刊名 + 副题，随页滚动常驻（双轨叙事的入口） */}
+      {/* 页眉：赤陶方印 + 刊名 + 副题，随页滚动常驻（双轨叙事的入口）
+          z-40：高于地图 Canvas(1)、寻根搜索浮层(10)，低于模态框(50) */}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
           {/* min-w-0：flex 子项默认 min-width:auto，不给它就压不下去，刊名会把窄屏撑出横向滚动 */}
@@ -131,7 +164,7 @@ export function App(): JSX.Element {
         <section className="mx-auto max-w-5xl px-6 pb-24 pt-16 sm:pt-28">
           <p className="font-mono text-sm tracking-[0.2em] text-clay">{t.heroKicker}</p>
           <h1 className="mt-8 flex flex-wrap items-baseline gap-x-5 gap-y-2">
-            <span className="font-display text-[clamp(5rem,17vw,10.5rem)] font-semibold leading-none tracking-tight text-clay">
+            <span className="font-display text-[clamp(5rem,17vw,10.5rem)] font-semibold leading-none tracking-tight tabular-nums text-clay">
               652
             </span>
             <span className="font-display text-2xl font-medium text-ink sm:text-4xl">
@@ -142,22 +175,22 @@ export function App(): JSX.Element {
       )}
 
       {/* ---------- 三个叙事：时间的、名字的、地理的 ---------- */}
-      <section className="border-t border-line px-6 py-24">
+      <section className="border-t border-line px-6 py-20">
         {timeline && <Timeline data={timeline} lang={lang} />}
       </section>
 
-      <section className="border-t border-line bg-paper-2/60 px-6 py-24">
+      <section className="border-t border-line bg-paper-2/60 px-6 py-28">
         {names && <NameRings data={names} lang={lang} onSearch={searchFor} />}
       </section>
 
-      <section className="border-t border-line px-6 py-24">
+      <section className="border-t border-line px-6 py-20">
         {names && <SouthNorth data={names} lang={lang} />}
       </section>
 
-      {/* ---------- 寻根（含县的四十年谱系 + 稀有度）---------- */}
+      {/* ---------- 寻根（含县的四十年谱系 + 稀有度）—— 核心交互，给足呼吸空间 ---------- */}
       <section
         id="explore"
-        className="scroll-mt-16 border-t border-line bg-paper-2/60 px-6 py-24"
+        className="scroll-mt-16 border-t border-line bg-paper-2/60 px-6 py-32"
       >
         <Explorer
           lang={lang}
@@ -190,7 +223,7 @@ export function App(): JSX.Element {
       </section>
 
       {/* ---------- 开发者转化 ---------- */}
-      <section className="border-t border-line px-6 py-24">
+      <section className="border-t border-line px-6 py-28">
         <div className="mx-auto max-w-3xl">
           <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
             {t.devTitle}

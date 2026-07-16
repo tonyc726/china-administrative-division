@@ -56,7 +56,7 @@ describe('diffToPatch', () => {
     expect(validatePatch(patch).success).toBe(true); // 非空且合法（空名节点已被剔除）
   });
 
-  // T2.2：level5 村级已冻结于 NBS 2023，永久不参与增量差分（官方无活源，见 docs/spike-village-level5.md）。
+  // T2.2：level5 村级已冻结于 NBS 2023，永久不参与增量差分（官方无活源，见 docs/history/spike-village-level5.md）。
   // 固化不变量：无论 add/update/remove 三个方向，默认 levels 都不得对 level5 产出任何操作。
   it('村级(level5)默认超出比对范围：add/update/remove 三方向均不产出 level5 op', () => {
     const baseWithVillage: Division[] = [

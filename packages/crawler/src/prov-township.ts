@@ -13,7 +13,7 @@
  * 拿到字节后即可 `解析 → 归一 → diffToPatch(levels=[4]) → validatePatch` 产出增量。
  *
  * 边界（Occam）：不内置活体抓取（异构反爬，逐省适配另议）；解析器只认「9 位码 + 名称」两列，
- * 其余列忽略；不处理村级（level5 已永久冻结，见 spike-village-level5）。
+ * 其余列忽略；不处理村级（level5 已永久冻结，见 docs/history/spike-village-level5）。
  */
 import { load } from 'cheerio';
 import { SOURCE_TYPE, type Division } from '@cndiv/core';
