@@ -10,7 +10,8 @@
     "cndiv-postal": "dist/run-ip138.js",
     "cndiv-xzqh": "dist/run-xzqh.js",
     "cndiv-prov-township": "dist/run-prov-township.js",
-    "cndiv-verify": "dist/run-verify.js"
+    "cndiv-verify": "dist/run-verify.js",
+    "cndiv-stname": "dist/run-stname.js"
   },
   "exports": {
     ".": {
@@ -28,6 +29,7 @@
     "crawl": "tsx src/run.ts",
     "crawl:postal": "tsx src/run-ip138.ts",
     "crawl:xzqh": "tsx src/run-xzqh.ts",
+    "crawl:stname": "tsx src/run-stname.ts",
     "verify": "tsx src/run-verify.ts"
   },
   "dependencies": {

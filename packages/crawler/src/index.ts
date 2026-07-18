@@ -23,3 +23,6 @@ export * from './xzqh.js';
 // ip138 邮编/区号采集（产出 @cndiv/source-postal）
 export * from './ip138.js';
 export * from './postal.js';
+// stname/listPub 地名查询（坐标采集，与 xzqh/getList 区划树互补）
+export * from './stname-types.js';
+export * from './stname.js';
