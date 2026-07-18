@@ -108,6 +108,12 @@ JS 在后台安静水合，交互功能激活
 | `geo.json` | ~67KB | 南北分布地图，第三屏内容 |
 | `tree.json` | ~229KB | 搜索索引，按需加载 |
 | `search/*.json` | 分片 | 搜索结果，用户输入后加载 |
+| `wiki/province.json`、`wiki/city.json` | <100KB | 省/市级百科摘要，展开信息面板时加载（见 `2026-07-18-place-info-panel-design.md`） |
+| `wiki/county.json` | ~4-5MB | 县级百科摘要，展开面板时按需 fetch |
+| `coords/upper.json` | <30KB | 省/市坐标 |
+| `coords/shards/*.json` | 单分片 ~8-15KB | 县级及以下坐标，按县级 12 位码按需加载（见 `2026-07-18-dmfw-stname-coords-design.md`） |
+
+> **统一数据加载总表**：内联（`timeline.json` + `stats.json`，SEO 关键路径）与懒加载（上表全部，含信息面板的 `wiki/` + `coords/`）的边界以「是否首屏可见 / 是否 SEO 关键」划分。信息面板（`InfoPanel.tsx`）不参与 SSR 预渲染，其数据一律懒加载。两份规格的懒加载清单以此表为准。
 
 ### 3.3 文件变更清单
 
