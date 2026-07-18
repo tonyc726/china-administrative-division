@@ -24,6 +24,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit dependencies
+        # 扫 pnpm-lock.yaml 全量依赖(含 dev + auto-install 的 optional peer),覆盖常规审计盲区。
+        # 归档目录(legacy/)的漂浮声明不在 lock,由 Dependabot 扫 git package.json 兜底。
+        # 级别 low:任何漏洞阻断 CI;如需放宽改 --audit-level=moderate。
+        run: pnpm audit --audit-level=low
+
       - name: Build (tsc -b, project references)
         run: pnpm build
 
