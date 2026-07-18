@@ -17,6 +17,7 @@
 
 `scripts/utils/` 下仅留 JSON→SQLite 生产链供将来 TS 化参考（依赖 v1 npm 包，**在 v2 内不可直接运行**，纯参考）：
 - `exportSqlite.js`（JSON→SQLite 主流程）· `sqlite.js`（连接）· `sqlite-gb2260.js`（GB2260 专用）
+- v1 完整依赖清单（sequelize 等）见 git history：`git show aa6c282:legacy/package.json`
 
 ## 本地数据（不在 git）
 
@@ -25,7 +26,7 @@
 
 ## 特殊说明
 
-由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2020`的数据全部存在`pageCacheDB/stats.gov.cn`中，如需文件请运行`npm run stats-gov:crawler`自行导出或者提交 issue。
+由于[国家统计局 - 行政区划代码](http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/)的数据文件太大，所以采集到的`2009`-`2020`的数据全部存在`pageCacheDB/stats.gov.cn`中（v1 爬虫已随本目录退役，如需数据见 GitHub Release [`data-snapshot-2023`](https://github.com/tonyc726/china-administrative-division/releases/tag/data-snapshot-2023)）。
 
 ## 现状简介
 
@@ -64,22 +65,6 @@
   - 第二段的第一位数字为类别标识，以“0”表示街道，“1”表示镇，“2 和 3”表示乡，“4 和 5”表示政企合一的单位；
   - 第二段的第二位、第三位数字为该代码段中各行政区划的顺序号；
 - 第三段 **3 位数字**，标识居民委员会和村民委员会的代码
-
-## 使用说明
-
-### 系统依赖
-
-- Linux/MAC
-- Node.js > `v12.*`
-- npm > `v6.*` 或者 yarn
-
-### 爬取数据
-
-```bash
-npm ci
-
-npm run start
-```
 
 ## 数据说明
 

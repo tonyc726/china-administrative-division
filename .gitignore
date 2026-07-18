@@ -649,7 +649,8 @@ xcuserdata/
 # 数据快照压缩态（如需纳管个别小文件，用 `!path/to/file.gz` 显式放行）
 *.gz
 
-# legacy 旧工程：保留 scripts/README/package.json 等参考代码，仅排除其数据与缓存
+# legacy 旧工程：保留 scripts/README 等参考代码，仅排除其数据与缓存
+# v1 依赖清单见 git history (commit aa6c282: legacy/package.json)
 /legacy/data/
 /legacy/database/
 /legacy/pageCacheDB/
