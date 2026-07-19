@@ -678,6 +678,7 @@ xcuserdata/
 # Claude Code 本地技能与运行时产物（团队成员各自独立安装）
 .claude/skills/
 .claude/agents/
+.claude/plans/
 .agents/
 skills-lock.json
 hallmark-repo-snapshot.md
