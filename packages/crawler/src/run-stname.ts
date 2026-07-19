@@ -67,10 +67,10 @@ interface RunStats {
 }
 
 /** 探针：请求一个县一页，打印原始响应（状态码 + body 片段），验证接口契约 */
-async function probe(code: string): Promise<void> {
-  console.log(`[probe] POST stname/listPub  code=${code} type=21610 page=1 size=100`);
+async function probe(code: string, type: string): Promise<void> {
+  console.log(`[probe] POST stname/listPub  code=${code} type=${type || '(空)'} page=1 size=100`);
   try {
-    const { status, body } = await probeStname(code, '21610');
+    const { status, body } = await probeStname(code, type);
     console.log(`[probe] HTTP ${status}  (body ${body.length} 字)`);
     console.log('[probe] body 前 2000 字:');
     console.log(body.slice(0, 2000));
@@ -178,7 +178,7 @@ function saveOut(
 
 async function main(): Promise<void> {
   if (has('probe')) {
-    await probe(get('code') ?? '330282');
+    await probe(get('code') ?? '330282', get('type') ?? '21610');
     return;
   }
 

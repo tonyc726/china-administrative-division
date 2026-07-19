@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import type { Division, Shard, TreeRow } from '../types';
 import { COPY, type Lang } from '../i18n';
 import { ShareCard } from './ShareCard';
+import { InfoPanel } from './InfoPanel';
 import { canSearchDeep, searchDeep, warmup, type Hit } from '../search';
 import { buildLocator, parseQuery, inScope, type Locator, type Parsed, type PlaceRow, type Scope } from '../query';
 
@@ -526,6 +527,7 @@ export function Explorer({
                 lineage={shard?.h ?? []}
                 dup={dup}
               />
+              <InfoPanel leaf={current} />
             </>
           )}
         </div>

@@ -6,8 +6,8 @@
   "description": "China Division Time Machine — standalone showcase app. Installed with --ignore-workspace so React deps do not touch the monorepo lockfile.",
   "scripts": {
     "data": "bun scripts/build-data.ts",
-    "dev": "bun scripts/build-data.ts && vite",
-    "build": "bun scripts/build-data.ts && tsc -b && vite build && bun scripts/prerender.ts",
+    "dev": "bun scripts/build-data.ts && bun scripts/build-coords.ts && vite",
+    "build": "bun scripts/build-data.ts && bun scripts/build-coords.ts && tsc -b && vite build && bun scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },
