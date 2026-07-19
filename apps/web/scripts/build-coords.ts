@@ -120,8 +120,41 @@ function normalizeName(name: string): string {
 async function main(): Promise<void> {
   await mkdir(`${OUT}/shards`, { recursive: true });
 
-  // 1. 读 coords.json
-  const coordsFile = JSON.parse(await readFile(COORDS_JSON, 'utf-8')) as CoordsFile;
+  // 1. 读 coords.json (CI 环境可能不存在，优雅降级输出空坐标)
+  let coordsFile: CoordsFile;
+  try {
+    coordsFile = JSON.parse(await readFile(COORDS_JSON, 'utf-8')) as CoordsFile;
+  } catch (err) {
+    if ((err as { code?: string }).code === 'ENOENT') {
+      console.log(
+        '⚠️  coords.json 不存在，输出空坐标分片（CI 环境或未运行 crawler:stname 时正常）'
+      );
+      // 输出占位产物，让前端 fetch 不 404
+      const upper = {
+        note: 'coords.json 未找到，坐标功能不可用。本地运行 crawler:stname 后重新构建可启用。',
+        provinces: [] as CoordRow[],
+        cities: [] as CoordRow[],
+      };
+      await writeFile(`${OUT}/upper.json`, JSON.stringify(upper));
+      const report: JoinReport = {
+        totalRows: 0,
+        joined: 0,
+        joinExact: 0,
+        joinFallback: 0,
+        missNoCoord: 0,
+        missNoName: 0,
+        joinRate: '0%',
+        shardCount: 0,
+        emptyShardCount: 0,
+        missByCountyTop: [],
+      };
+      await writeFile(`${OUT}/join-report.json`, JSON.stringify(report, null, 2));
+      console.log('✅ build-coords 完成（降级模式，无坐标数据）');
+      return;
+    }
+    throw err;
+  }
+
   const countyCodes = Object.keys(coordsFile.coords); // 6 位县级码
   const totalInput = countyCodes.reduce(
     (s, c) => s + coordsFile.coords[c].length,
