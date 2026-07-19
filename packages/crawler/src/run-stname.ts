@@ -168,7 +168,7 @@ function saveOut(
       };
       await mkdir(path.dirname(outPath), { recursive: true });
       const tmp = `${outPath}.tmp`;
-      await writeFile(tmp, JSON.stringify(payload, null, 2), 'utf-8');
+      await writeFile(tmp, JSON.stringify(payload), 'utf-8');
       await rename(tmp, outPath);
     })
     .catch((e: unknown) =>
