@@ -21,6 +21,7 @@
  *   --cache-dir=<dir>       断点续爬缓存目录（按 code@type 存原始响应）
  *   --out=<file>            产物输出路径（按县级码聚合的原始坐标 JSON）
  *   --counties-file=<file>  县级码列表文件（每行一个 6 位码）；缺省用 dmfw 实时拉取
+ *   --batch-size=<N>       分批写产物的批次大小，默认 100（每 N 任务原子写一次，中断可续跑）
  *
  * 首跑量化目标：
  *   1. WAF 行为：能否拿到数据、封禁率（探针 + 样本）
@@ -32,7 +33,7 @@
  * 本运行器只产出「按县级码聚合的原始坐标（已口径过滤）」；join 进项目 12 位码
  * 体系与分片输出留给 build-coords.ts（见规格 §6/§7）。
  */
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import path from 'path';
 import { crawlAll } from './crawl-all.js';
 import {
@@ -138,6 +139,43 @@ function pct(n: number, d: number): string {
   return d > 0 ? `${((n / d) * 100).toFixed(2)}%` : 'n/a';
 }
 
+/**
+ * 分批写产物（原子：tmp + rename，中断不留半文件）。
+ * Promise 链串行化避免并发 worker 同时写同一 outPath 冲突。
+ * 中断后：outPath 是最近一次完整快照（可能缺末尾 < batchSize 个），缓存 .cache/stname/
+ * 已落盘的任务重跑走缓存跳过，续抓补全后最终 outPath 完整。
+ */
+let saveChain: Promise<void> = Promise.resolve();
+function saveOut(
+  outPath: string,
+  results: Map<string, StnameRow[]>,
+  stats: RunStats,
+  done: number,
+  total: number,
+  elapsedSec: number
+): void {
+  saveChain = saveChain
+    .then(async () => {
+      const payload = {
+        meta: {
+          fetchedAt: new Date().toISOString(),
+          stats,
+          progress: `${done}/${total}`,
+          elapsedSec,
+          note: '原始坐标（已口径过滤 21610+21620），未 join 12 位码、未分片。分批写出，中断可续跑（缓存 .cache/stname/）。',
+        },
+        coords: Object.fromEntries(results),
+      };
+      await mkdir(path.dirname(outPath), { recursive: true });
+      const tmp = `${outPath}.tmp`;
+      await writeFile(tmp, JSON.stringify(payload, null, 2), 'utf-8');
+      await rename(tmp, outPath);
+    })
+    .catch((e: unknown) =>
+      console.error(`  ⚠ 产物写出失败: ${e instanceof Error ? e.message : e}`)
+    );
+}
+
 async function main(): Promise<void> {
   if (has('probe')) {
     await probe(get('code') ?? '330282');
@@ -150,6 +188,8 @@ async function main(): Promise<void> {
   const cacheDir = get('cache-dir');
   const outPath = get('out');
   const countiesFile = get('counties-file');
+  /** 分批写产物的批次大小（每 N 个任务写一次，中断可续跑） */
+  const batchSize = Number(get('batch-size') ?? 100);
 
   const countyCodes = await fetchCountyCodes({ countiesFile, cacheDir });
   const scoped = limit ? countyCodes.slice(0, limit) : countyCodes;
@@ -225,6 +265,17 @@ async function main(): Promise<void> {
         `  进度 ${done}/${tasks.length} | 抓 ${stats.fetched} 缓存 ${stats.cached} 抖 ${stats.jitter} 失败 ${stats.failures} | ${elapsedSec.toFixed(0)}s @ ${rate} req/s`
       );
     }
+    // 分批写产物（每 batchSize 个任务，原子写，中断可续跑）
+    if (outPath && (done % batchSize === 0 || done === tasks.length)) {
+      saveOut(
+        outPath,
+        results,
+        stats,
+        done,
+        tasks.length,
+        (Date.now() - startedAt) / 1000
+      );
+    }
   });
 
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(0);
@@ -254,18 +305,9 @@ async function main(): Promise<void> {
   }
 
   if (outPath) {
-    const payload = {
-      meta: {
-        fetchedAt: new Date().toISOString(),
-        stats,
-        elapsedSec: Number(elapsedSec),
-        note: '原始坐标（已口径过滤 21610+21620），未 join 12 位码、未分片。join/分片由 build-coords.ts 完成。',
-      },
-      coords: Object.fromEntries(results),
-    };
-    await mkdir(path.dirname(outPath), { recursive: true });
-    await writeFile(outPath, JSON.stringify(payload, null, 2), 'utf-8');
-    console.log(`\n产物写出: ${outPath}`);
+    // 等所有分批写完成（最终一次已在 done===tasks.length 触发）
+    await saveChain;
+    console.log(`\n产物写出: ${outPath}（含 ${stats.rows} 条，分批原子写）`);
   }
 }
 
