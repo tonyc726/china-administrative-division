@@ -527,9 +527,9 @@ export function Explorer({
                 lineage={shard?.h ?? []}
                 dup={dup}
               />
-              <InfoPanel leaf={current} />
             </>
           )}
+          {current && !loadingShard && <InfoPanel leaf={current} />}
         </div>
       )}
     </section>
