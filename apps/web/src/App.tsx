@@ -13,7 +13,16 @@ import { NameRings } from './components/NameRings';
 import { SouthNorth } from './components/SouthNorth';
 import { Explorer } from './components/Explorer';
 
-const BASE = import.meta.env.BASE_URL;
+/**
+ * Vite 构建时会把 import.meta.env.BASE_URL 静态替换为配置的 base 值；
+ * 但 prerender.ts（SSR）直接用 Bun 执行，不存在 Vite 的替换——BASE_URL 为 undefined，
+ * 导致 `${undefined}docs/` → "undefineddocs/"。
+ * 因此通过 prerendered.baseUrl 透传部署基路径作为 fallback。
+ */
+const BASE: string =
+  typeof import.meta.env.BASE_URL === 'string' && import.meta.env.BASE_URL !== ''
+    ? import.meta.env.BASE_URL
+    : '/';
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
 
 function detectLang(): Lang {
@@ -28,6 +37,8 @@ export interface AppProps {
   prerendered?: {
     timeline: TimelineData;
     stats: Stats;
+    /** 部署基路径（如 /china-administrative-division/），用于 SSR 时替换 import.meta.env.BASE_URL */
+    baseUrl?: string;
   };
 }
 
@@ -250,7 +261,7 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
               npm · @cndiv
             </a>
             <a
-              href={`${BASE}docs/`}
+              href={`${prerendered?.baseUrl ?? BASE}docs/`}
               className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3 hover:text-ink"
             >
               {t.devDocs}

@@ -24,7 +24,7 @@ const timeline = JSON.parse(fs.readFileSync(path.join(distDir, 'data/timeline.js
 const stats = JSON.parse(fs.readFileSync(path.join(distDir, 'data/stats.json'), 'utf-8'));
 
 // 服务端渲染 App
-const prerendered = { timeline, stats };
+const prerendered = { timeline, stats, baseUrl: process.env.WEB_BASE ?? '/' };
 const appHtml = ReactDOMServer.renderToString(
   React.createElement(App, { prerendered })
 );
