@@ -62,7 +62,7 @@ export function NameRings({ data, lang, onSearch }: Props): JSX.Element {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+      <h2 className="font-display text-2xl text-ink sm:text-3xl">
         {t.namesTitle}
       </h2>
       <p className="mt-2 text-sm text-ink-3">{t.namesSub(data.era.total)}</p>
@@ -170,7 +170,7 @@ export function NameRings({ data, lang, onSearch }: Props): JSX.Element {
 
       {/* ---------- 姓氏：棒棒糖图 + 查你自己的姓 ---------- */}
       <div className="mt-16 border-t border-line pt-10">
-        <h3 className="font-display text-xl font-semibold text-ink">
+        <h3 className="font-display text-xl text-ink">
           {t.surnameTitle}
         </h3>
         <p className="mt-2 text-sm text-ink-3">
@@ -241,7 +241,7 @@ export function NameRings({ data, lang, onSearch }: Props): JSX.Element {
                   >
                     <span
                       className={`w-7 shrink-0 font-display text-base ${
-                        mine ? 'font-semibold text-clay' : 'text-ink'
+                        mine ? 'font-medium text-clay' : 'text-ink'
                       }`}
                     >
                       {sur}

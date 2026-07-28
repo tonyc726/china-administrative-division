@@ -1,141 +1,145 @@
 /* ============================================================
-   Kami（紙）设计语言 · VitePress 主题覆盖
-   暖羊皮纸底 · 唯一墨蓝强调（≤5% 面积）· 衬线扛层级（锁 500，无斜体）
-   暖调灰阶四级 · 微阴影非硬投影 · 用字体层级替代装饰
-   Tokens 源自 tw93/Kami references/tokens.json + design.md
+   Claude 设计系统 · VitePress 主题覆盖
+   暖奶油纸底 · 珊瑚橙唯一强调（≤5% 面积）· 衬线扛层级（400 regular，无粗体）
+   暖调灰阶四级 · 深藏青产品面 · 微阴影非硬投影
+   Tokens 源自 getdesign claude + 项目根 DESIGN.md
 
    暗色对比度原则：正文/强调/面/边框一律引用会随主题切换的 --vp-c-*
-   语义变量，切勿直接写 --kami-* 固定亮色（否则暗底下近黑字、深墨蓝字不可见）。
-   仅「品牌实心」元素（brand 按钮、hero 光晕）保留 --kami-brand。
+   语义变量，切勿直接写固定亮色（否则暗底下近黑字、深珊瑚字不可见）。
+   仅「品牌实心」元素（brand 按钮、hero 光晕）保留 --claude-coral。
    ============================================================ */
 
 :root {
-  /* —— Kami 原始 token —— */
-  --kami-parchment: #f5f4ed; /* 页面底：暖奶油，情绪基底，禁纯白 */
-  --kami-parchment-2: #efeee6; /* 侧栏/次级面，比 parchment 略沉 */
-  --kami-ivory: #faf9f5; /* 卡片/抬起容器，比 parchment 更亮 */
-  --kami-sand: #e8e6dc; /* 交互面/按钮默认 */
-  --kami-brand: #1b365d; /* 墨蓝：唯一彩色 */
-  --kami-brand-light: #2d5a8a; /* 墨蓝亮变体：暗底链接、hover */
-  --kami-tint: #eef2f7; /* 墨蓝 8% 实色 */
-  --kami-tag: #e4ecf5; /* 墨蓝 18% 实色：标签底 */
-  --kami-near-black: #141413; /* 正文主色：最深但非纯黑，暖橄榄底 */
-  --kami-dark-warm: #3d3d3a; /* 次级文字、表头、链接 */
-  --kami-olive: #504e49; /* 描述、caption */
-  --kami-stone: #6b6a64; /* 日期、元信息 */
-  --kami-border: #e8e6dc;
-  --kami-border-soft: #e5e3d8;
-  --kami-breaking-bg: #f0e0d8; /* 唯一暖警示色（warning 容器） */
-  --kami-breaking-fg: #8b4513;
+  /* —— Claude 原始 token —— */
+  --claude-canvas: #faf9f5;        /* 页面底：暖奶油，情绪基底，禁纯白 */
+  --claude-surface-soft: #f5f0e8;  /* 侧栏/次级面 */
+  --claude-surface-card: #efe9de;  /* 卡片/抬起容器 */
+  --claude-surface-cream: #e8e0d2; /* 交互面/按下态 */
+  --claude-coral: #cc785c;         /* 珊瑚橙：唯一彩色 */
+  --claude-coral-active: #a9583e;  /* 珊瑚橙深色：hover/active */
+  --claude-coral-disabled: #e6dfd8;/* 珊瑚橙禁用 */
+  --claude-surface-dark: #181715;  /* 深藏青 */
+  --claude-surface-dark-elevated: #252320; /* 深藏青抬起 */
+  --claude-ink: #141413;           /* 正文主色：最深但非纯黑，暖底 */
+  --claude-body: #3d3d3a;          /* 次级文字 */
+  --claude-muted: #6c6a64;         /* 描述、caption */
+  --claude-muted-soft: #8e8b82;    /* 日期、元信息 */
+  --claude-hairline: #e6dfd8;      /* 边框 */
+  --claude-hairline-soft: #ebe6df; /* 弱边框 */
+  --claude-on-dark: #faf9f5;       /* 深色面文字 */
+  --claude-on-dark-soft: #a09d96;  /* 深色面次级文字 */
+  --claude-accent-teal: #5db8a6;   /* 辅助：青绿 */
+  --claude-accent-amber: #e8a55a;  /* 辅助：琥珀 */
 
-  /* —— 衬线扛层级：系统栈，零字体下载 —— */
-  --kami-serif: Georgia, "Songti SC", "STSong", "Source Han Serif SC",
-    "Noto Serif CJK SC", serif;
-  --kami-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
-  --kami-mono: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Monaco,
-    "Songti SC", monospace;
+  /* —— 衬线扛层级：系统栈，零字体下载，CJK 回退宋体系 —— */
+  --claude-display: "Tiempos Headline", Georgia, "Songti SC", "STSong",
+    "Noto Serif SC", "Source Han Serif SC", serif;
+  --claude-body-font: "StyreneB", Inter, -apple-system, BlinkMacSystemFont,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto,
+    sans-serif;
+  --claude-mono: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Monaco,
+    monospace;
 }
 
 /* ---------- 字体：正文 sans、层级 serif ---------- */
 :root {
-  --vp-font-family-base: var(--kami-sans);
-  --vp-font-family-mono: var(--kami-mono);
+  --vp-font-family-base: var(--claude-body-font);
+  --vp-font-family-mono: var(--claude-mono);
 }
 
-/* ---------- 亮色主题：Kami 暖调映射 ---------- */
+/* ---------- 亮色主题：Claude 暖调映射 ---------- */
 :root {
-  --vp-c-bg: var(--kami-parchment);
-  --vp-c-bg-alt: var(--kami-parchment-2);
-  --vp-c-bg-soft: var(--kami-ivory);
-  --vp-c-bg-elv: var(--kami-ivory);
+  --vp-c-bg: var(--claude-canvas);
+  --vp-c-bg-alt: var(--claude-surface-soft);
+  --vp-c-bg-soft: var(--claude-surface-card);
+  --vp-c-bg-elv: var(--claude-surface-card);
 
-  --vp-c-text-1: var(--kami-near-black);
-  --vp-c-text-2: var(--kami-olive);
-  --vp-c-text-3: var(--kami-stone);
+  --vp-c-text-1: var(--claude-ink);
+  --vp-c-text-2: var(--claude-body);
+  --vp-c-text-3: var(--claude-muted);
 
-  --vp-c-divider: var(--kami-border);
-  --vp-c-border: var(--kami-border);
-  --vp-c-gutter: var(--kami-border-soft);
+  --vp-c-divider: var(--claude-hairline);
+  --vp-c-border: var(--claude-hairline);
+  --vp-c-gutter: var(--claude-hairline-soft);
 
-  /* 唯一强调色：墨蓝 */
-  --vp-c-brand-1: var(--kami-brand);
-  --vp-c-brand-2: var(--kami-brand-light);
-  --vp-c-brand-3: var(--kami-brand-light);
-  --vp-c-brand-soft: var(--kami-tag);
+  /* 唯一强调色：珊瑚橙 */
+  --vp-c-brand-1: var(--claude-coral);
+  --vp-c-brand-2: var(--claude-coral-active);
+  --vp-c-brand-3: var(--claude-coral-active);
+  --vp-c-brand-soft: rgba(204, 120, 92, 0.12);
 
   /* 暖化各 neutral 阶（VitePress 默认是冷灰） */
-  --vp-c-gray-1: #e3e1d7;
-  --vp-c-gray-2: #eceadf;
-  --vp-c-gray-3: var(--kami-parchment-2);
-  --vp-c-gray-soft: rgba(107, 106, 100, 0.14);
+  --vp-c-gray-1: #e8e0d2;
+  --vp-c-gray-2: #efe9de;
+  --vp-c-gray-3: var(--claude-surface-soft);
+  --vp-c-gray-soft: rgba(108, 106, 100, 0.12);
 
   /* 微阴影：warm whisper，非硬投影 */
-  --vp-shadow-1: 0 1px 2px rgba(60, 56, 44, 0.06);
-  --vp-shadow-2: 0 3px 12px rgba(60, 56, 44, 0.08);
-  --vp-shadow-3: 0 8px 24px rgba(60, 56, 44, 0.1);
+  --vp-shadow-1: 0 1px 2px rgba(20, 20, 19, 0.06);
+  --vp-shadow-2: 0 3px 12px rgba(20, 20, 19, 0.08);
+  --vp-shadow-3: 0 8px 24px rgba(20, 20, 19, 0.1);
 
   /* 自定义容器（tip/info/warning）暖化 */
   --vp-custom-block-tip-border: transparent;
-  --vp-custom-block-tip-text: var(--kami-near-black);
-  --vp-custom-block-tip-bg: var(--kami-tint);
-  --vp-custom-block-tip-code-bg: var(--kami-tag);
-  --vp-custom-block-info-bg: var(--kami-ivory);
-  --vp-custom-block-warning-bg: var(--kami-breaking-bg);
-  --vp-custom-block-warning-text: var(--kami-breaking-fg);
+  --vp-custom-block-tip-text: var(--claude-ink);
+  --vp-custom-block-tip-bg: rgba(204, 120, 92, 0.08);
+  --vp-custom-block-tip-code-bg: rgba(204, 120, 92, 0.14);
+  --vp-custom-block-info-bg: var(--claude-surface-soft);
+  --vp-custom-block-warning-bg: #f0e0d8;
+  --vp-custom-block-warning-text: #8b4513;
   --vp-custom-block-warning-border: transparent;
 
-  /* 首页 hero：标题墨蓝，logo 背后一层墨蓝→朱砂柔光 */
-  --vp-home-hero-name-color: var(--kami-brand);
+  /* 首页 hero：标题珊瑚橙，logo 背后珊瑚→藏青柔光 */
+  --vp-home-hero-name-color: var(--claude-coral);
   --vp-home-hero-name-background: none;
   --vp-home-hero-image-background-image: linear-gradient(
     -45deg,
-    rgba(27, 54, 93, 0.14),
-    rgba(198, 64, 47, 0.1)
+    rgba(204, 120, 92, 0.18),
+    rgba(24, 23, 21, 0.08)
   );
   --vp-home-hero-image-filter: blur(46px);
 }
 
-/* ---------- 暗色主题：deep-dark 暖炭 ---------- */
+/* ---------- 暗色主题：深藏青暖炭 ---------- */
 .dark {
-  --vp-c-bg: #141413; /* deep-dark：非纯黑，微橄榄底 */
-  --vp-c-bg-alt: #1b1b19;
-  --vp-c-bg-soft: #201f1d;
-  --vp-c-bg-elv: #26251f;
+  --vp-c-bg: #181715;              /* surface-dark */
+  --vp-c-bg-alt: #1f1e1b;         /* surface-dark-soft */
+  --vp-c-bg-soft: #252320;        /* surface-dark-elevated */
+  --vp-c-bg-elv: #2a2924;
 
-  --vp-c-text-1: #f2f0e8;
+  --vp-c-text-1: #faf9f5;         /* on-dark */
   --vp-c-text-2: #c9c6ba;
-  --vp-c-text-3: #96938a;
+  --vp-c-text-3: #a09d96;         /* on-dark-soft */
 
   --vp-c-divider: #33322d;
   --vp-c-border: #3a3931;
-  --vp-c-gutter: #26251f;
+  --vp-c-gutter: #252320;
 
-  --vp-c-brand-1: #7ea3cf; /* 暗底提亮墨蓝，保证链接对比度 */
-  --vp-c-brand-2: #9bbbde;
-  --vp-c-brand-3: #6d92bd;
-  --vp-c-brand-soft: rgba(126, 163, 207, 0.16);
+  --vp-c-brand-1: #d49278;        /* 暗底提亮珊瑚，保证链接对比度 */
+  --vp-c-brand-2: #e0aa93;
+  --vp-c-brand-3: #c8846a;
+  --vp-c-brand-soft: rgba(204, 120, 92, 0.16);
 
   --vp-c-gray-1: #33322d;
-  --vp-c-gray-2: #26251f;
-  --vp-c-gray-3: #1b1b19;
+  --vp-c-gray-2: #252320;
+  --vp-c-gray-3: #1f1e1b;
 
-  --vp-custom-block-tip-bg: rgba(126, 163, 207, 0.1);
+  --vp-custom-block-tip-bg: rgba(204, 120, 92, 0.1);
   --vp-custom-block-warning-bg: rgba(139, 69, 19, 0.16);
   --vp-custom-block-warning-text: #d8a878;
 
-  /* hero 主标题在暗底改用提亮墨蓝；柔光加浓一档 */
+  /* hero 主标题在暗底改用提亮珊瑚；柔光加浓一档 */
   --vp-home-hero-name-color: var(--vp-c-brand-1);
   --vp-home-hero-image-background-image: linear-gradient(
     -45deg,
-    rgba(126, 163, 207, 0.22),
-    rgba(198, 64, 47, 0.16)
+    rgba(204, 120, 92, 0.26),
+    rgba(24, 23, 21, 0.1)
   );
   --vp-home-hero-image-filter: blur(52px);
 }
 
 /* ============================================================
-   排版：衬线扛层级，锁 500，无斜体
+   排版：衬线扛层级，weight 400 regular，无斜体标题
    ============================================================ */
 
 .vp-doc h1,
@@ -146,30 +150,30 @@
 .VPHero .text,
 .VPHomeHero .name,
 h1.title {
-  font-family: var(--kami-serif);
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: var(--claude-display);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .vp-doc h1 {
   font-size: 2.1rem;
-  line-height: 1.2;
-  letter-spacing: 0;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
 }
 .vp-doc h2 {
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   line-height: 1.25;
   margin-top: 3rem;
   padding-top: 1.6rem;
   border-top: 1px solid var(--vp-c-divider);
 }
 .vp-doc h3 {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   line-height: 1.3;
   margin-top: 2rem;
 }
 
-/* 正文：暖调、宽松阅读行高，中文 0.3pt 字距 */
+/* 正文：暖调、宽松阅读行高 */
 .vp-doc p,
 .vp-doc li {
   line-height: 1.72;
@@ -179,27 +183,36 @@ h1.title {
   color: var(--vp-c-text-1);
 }
 
-/* 强调：serif 不加粗，用墨蓝 + 字重 500 表达（暗底自动提亮为 brand-1） */
+/* 强调：衬线不加粗，用珊瑚橙 + 字重 500 表达 */
 .vp-doc strong {
   font-weight: 600;
+  color: var(--claude-coral);
+}
+.dark .vp-doc strong {
   color: var(--vp-c-brand-1);
 }
 
-/* 引用块：墨蓝左栏 + serif，编辑感 */
+/* 引用块：珊瑚橙左栏 + 衬线，编辑感 */
 .vp-doc blockquote {
-  border-left: 3px solid var(--vp-c-brand-1);
+  border-left: 3px solid var(--claude-coral);
   background: var(--vp-c-bg-soft);
   border-radius: 0 6px 6px 0;
   padding: 0.6rem 1.2rem;
   color: var(--vp-c-text-2);
 }
+.dark .vp-doc blockquote {
+  border-left-color: var(--vp-c-brand-1);
+}
 .vp-doc blockquote p {
-  font-family: var(--kami-serif);
+  font-family: var(--claude-display);
 }
 
-/* 禁斜体（Kami 不变量 #10，屏幕端仅诗性行例外，此处一律正体） */
+/* 禁斜体标题（Claude 不变量），正文内斜体保留为强调手段 */
 .vp-doc em {
-  font-style: normal;
+  font-style: italic;
+  color: var(--claude-coral);
+}
+.dark .vp-doc em {
   color: var(--vp-c-brand-1);
 }
 
@@ -223,7 +236,7 @@ h1.title {
   border-collapse: collapse;
 }
 .vp-doc th {
-  font-family: var(--kami-sans);
+  font-family: var(--claude-body-font);
   font-weight: 600;
   font-size: 0.86rem;
   letter-spacing: 0.02em;
@@ -241,10 +254,10 @@ h1.title {
   background: var(--vp-c-bg-soft);
 }
 
-/* 行内代码：暖 tint 底、墨蓝字 */
+/* 行内代码：暖 tint 底、珊瑚字 */
 .vp-doc :not(pre) > code {
-  background: var(--kami-tag);
-  color: var(--kami-brand);
+  background: rgba(204, 120, 92, 0.1);
+  color: var(--claude-coral-active);
   border-radius: 4px;
   font-size: 0.86em;
   font-weight: 500;
@@ -254,16 +267,25 @@ h1.title {
   color: var(--vp-c-brand-1);
 }
 
-/* 代码块：暖底 + 柔边，弱化「终端黑框」的机器感 */
+/* 代码块：亮色模式暖底 + Shiki 浅色主题适配，暗色模式深底 */
 .vp-doc div[class*='language-'] {
-  background: #faf9f5;
-  border: 1px solid var(--kami-border);
+  background: var(--claude-surface-soft);
+  border: 1px solid var(--claude-hairline);
   border-radius: 8px;
   box-shadow: var(--vp-shadow-1);
+}
+/* Shiki 代码块内文本：亮底用暗墨，保证 github-light 主题对比度 */
+.vp-doc div[class*='language-'] pre,
+.vp-doc div[class*='language-'] code {
+  color: var(--claude-ink);
 }
 .dark .vp-doc div[class*='language-'] {
   background: #1b1b19;
   border-color: var(--vp-c-border);
+}
+.dark .vp-doc div[class*='language-'] pre,
+.dark .vp-doc div[class*='language-'] code {
+  color: var(--claude-on-dark);
 }
 .vp-doc div[class*='language-'] .lang {
   color: var(--vp-c-text-3);
@@ -278,45 +300,58 @@ h1.title {
 }
 .VPNavBar.has-sidebar .content-body,
 .VPNavBar {
-  background: rgba(245, 244, 237, 0.72) !important;
+  background: rgba(250, 249, 245, 0.78) !important;
 }
+.dark .VPNavBar.has-sidebar .content-body,
 .dark .VPNavBar {
-  background: rgba(20, 20, 19, 0.72) !important;
+  background: rgba(24, 23, 21, 0.78) !important;
 }
 
-/* 站点标题用 serif */
+/* 站点标题用衬线 */
 .VPNavBarTitle .title {
-  font-family: var(--kami-serif);
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-family: var(--claude-display);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
-/* 侧栏当前项：墨蓝左栏，克制（暗底自动提亮） */
+/* 侧栏当前项：珊瑚橙左栏，克制 */
 .VPSidebarItem.is-active > .item .link .text,
 .VPSidebarItem.is-active > .item .text {
-  color: var(--vp-c-brand-1) !important;
+  color: var(--claude-coral) !important;
   font-weight: 600;
+}
+.dark .VPSidebarItem.is-active > .item .link .text,
+.dark .VPSidebarItem.is-active > .item .text {
+  color: var(--vp-c-brand-1) !important;
 }
 .VPSidebarItem .text {
   font-size: 0.9rem;
 }
 .VPSidebarItem.level-0 > .item > .indicator {
+  background-color: var(--claude-coral) !important;
+}
+.dark .VPSidebarItem.level-0 > .item > .indicator {
   background-color: var(--vp-c-brand-1) !important;
+}
+
+/* 搜索按钮：珊瑚描边 */
+.VPNavBarSearch {
+  border-color: var(--claude-hairline);
 }
 
 /* ============================================================
    首页 Hero / Features：去 AI 味
-   —— serif 主标题、墨蓝、克制卡片、微阴影
+   —— serif 主标题、珊瑚橙、克制卡片、微阴影
    ============================================================ */
 
-/* 加宽主区，允许中文主标题平衡换行（有 logo 图时为两栏，不再强制单行） */
+/* 加宽主区，允许中文主标题平衡换行 */
 .VPHero .main {
   max-width: 100%;
 }
 .VPHero .name {
   font-size: 2.7rem;
-  line-height: 1.16;
-  letter-spacing: 0;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
 .VPHero .text {
@@ -326,7 +361,7 @@ h1.title {
   margin-top: 0.4rem;
 }
 .VPHero .tagline {
-  font-family: var(--kami-serif);
+  font-family: var(--claude-display);
   color: var(--vp-c-text-2);
   line-height: 1.6;
   font-size: 1.05rem;
@@ -337,16 +372,16 @@ h1.title {
   max-height: 240px;
 }
 
-/* 主 CTA：墨蓝实心（品牌色保留，双模式白字可读）；次 CTA：暖沙描边 */
+/* 主 CTA：珊瑚橙实心（品牌色保留，双模式白字可读）；次 CTA：暖底描边 */
 .VPButton.brand {
-  background: var(--kami-brand);
-  border-color: var(--kami-brand);
-  color: #faf9f5;
+  background: var(--claude-coral);
+  border-color: var(--claude-coral);
+  color: #ffffff;
   font-weight: 500;
 }
 .VPButton.brand:hover {
-  background: var(--kami-brand-light);
-  border-color: var(--kami-brand-light);
+  background: var(--claude-coral-active);
+  border-color: var(--claude-coral-active);
 }
 .VPButton.alt {
   background: var(--vp-c-bg-soft);
@@ -359,11 +394,11 @@ h1.title {
   background: var(--vp-c-bg-soft);
 }
 
-/* Feature 卡片：抬起面 + 柔边 + whisper 阴影，hover 墨蓝细边 */
+/* Feature 卡片：抬起面 + 柔边 + whisper 阴影，hover 珊瑚细边 */
 .VPFeature {
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-border);
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--vp-shadow-1);
   transition:
     border-color 0.2s ease,
@@ -371,13 +406,16 @@ h1.title {
     transform 0.2s ease;
 }
 .VPFeature:hover {
-  border-color: var(--vp-c-brand-1);
+  border-color: var(--claude-coral);
   box-shadow: var(--vp-shadow-2);
   transform: translateY(-2px);
 }
+.dark .VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
+}
 .VPFeature .title {
-  font-family: var(--kami-serif);
-  font-weight: 500;
+  font-family: var(--claude-display);
+  font-weight: 400;
   font-size: 1.15rem;
   color: var(--vp-c-text-1);
 }
@@ -387,12 +425,15 @@ h1.title {
   font-size: 0.9rem;
 }
 .VPFeature .link-text-value {
-  color: var(--vp-c-brand-1);
+  color: var(--claude-coral);
   font-weight: 500;
 }
-/* feature 图标：缩小、去饱和，避免 emoji 喧宾夺主（Kami #19） */
+.dark .VPFeature .link-text-value {
+  color: var(--vp-c-brand-1);
+}
+/* feature 图标：珊瑚 tint，去饱和 */
 .VPFeature .icon {
-  background: var(--vp-c-brand-soft) !important;
+  background: rgba(204, 120, 92, 0.12) !important;
   border-radius: 8px;
   font-size: 20px !important;
   filter: saturate(0.85);
@@ -409,23 +450,34 @@ h1.title {
   border-color: transparent;
 }
 .vp-doc .custom-block-title {
-  font-family: var(--kami-sans);
+  font-family: var(--claude-body-font);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-/* 页脚 */
+/* 页脚：深藏青（surface-dark），与主站同调 */
 .VPFooter {
   border-top: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-alt);
+  background: var(--claude-surface-dark);
 }
 .VPFooter .message,
 .VPFooter .copyright {
-  color: var(--vp-c-text-3);
+  color: var(--claude-on-dark-soft);
   font-size: 0.82rem;
 }
+.VPFooter .copyright a {
+  color: var(--claude-on-dark);
+}
+/* 亮色主题页脚不受 dark 类控制，需显式覆盖 */
+:root .VPFooter {
+  background: var(--claude-surface-dark);
+}
+:root .VPFooter .message,
+:root .VPFooter .copyright {
+  color: var(--claude-on-dark-soft);
+}
 
-/* 数字统一 lining/tabular，避免 serif 旧式数字跳基线（Kami #33） */
+/* 数字统一 lining/tabular */
 .vp-doc td,
 .vp-doc th,
 .VPHero,

@@ -6,7 +6,7 @@ import HistoryExplorer from './components/HistoryExplorer.vue';
 import KamiFigure from './components/KamiFigure.vue';
 import './custom.css';
 
-// Kami 设计语言（紙）：暖羊皮纸底 + 唯一墨蓝强调 + 衬线扛层级。
+// Claude 设计系统：暖奶油纸底 + 珊瑚橙唯一强调 + 衬线扛层级（weight 400）。
 // 全局注册图表组件，供 Markdown 直接引用。
 export default {
   extends: DefaultTheme,

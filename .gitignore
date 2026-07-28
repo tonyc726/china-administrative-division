@@ -691,3 +691,6 @@ apps/web/.playwright-mcp/
 
 # 采集中间产物（差分原料），最终产物在 patches/
 raw/
+
+# hallmark 设计工具运行时产物（设计令牌文档 DESIGN.md 入库，工具状态不入库）
+.hallmark/

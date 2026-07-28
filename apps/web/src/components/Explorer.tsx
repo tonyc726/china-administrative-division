@@ -356,7 +356,7 @@ export function Explorer({
 
   return (
     <section className="mx-auto w-full max-w-3xl">
-      <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+      <h2 className="font-display text-2xl text-ink sm:text-3xl">
         {t.explorerTitle}
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-3">
@@ -371,7 +371,7 @@ export function Explorer({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={warmup}
             placeholder={t.searchPlaceholder}
-            className="w-full rounded-lg border border-line-2 bg-paper px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
+            className="w-full rounded-md border border-line-2 bg-paper px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
           />
           <p className="mt-2 text-xs text-ink-3">
             {hasQuery && !canSearchDeep(primaryTerm) ? t.deepHint : t.searchHint}

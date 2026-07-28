@@ -59,10 +59,11 @@ const BORN_SPROUT_AT = 240;
 /** 灰烬采样步长（px）。1 = 每个笔画像素一粒灰；调成 2 会稀成「掉渣」，不是烧掉 */
 const ASH_STEP = 1;
 
+/** styles.css token 的像素镜像（rgba 插值必须拿数值）：ink / ink-3 / clay + 数据色 gold/pine */
 const PALETTE = {
-  ink: [38, 36, 30],
-  ash: [138, 132, 116],
-  clay: [188, 87, 56],
+  ink: [20, 20, 19],
+  ash: [108, 106, 100],
+  clay: [204, 120, 92],
   gold: [168, 137, 78],
   pine: [47, 109, 104],
 } as const;
@@ -689,11 +690,11 @@ export function Hero({ data, geo, lang }: Props): JSX.Element {
           <h1 className="mt-7 flex flex-wrap items-baseline gap-x-4 gap-y-2">
             <span
               ref={numEl}
-              className="font-display text-[clamp(4rem,11vw,7rem)] font-semibold leading-none tracking-tight tabular-nums text-clay"
+              className="font-display text-[clamp(4rem,11vw,7rem)] leading-none tracking-tight tabular-nums text-clay"
             >
               0
             </span>
-            <span className="font-display text-xl font-medium text-ink sm:text-2xl">
+            <span className="font-display text-xl text-ink sm:text-2xl">
               {t.heroSuffix}
             </span>
           </h1>

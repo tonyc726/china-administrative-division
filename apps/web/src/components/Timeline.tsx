@@ -15,9 +15,9 @@ const H = 420;
 const PAD = { top: 32, right: 24, bottom: 44, left: 52 };
 
 const SERIES = [
-  { key: '县', color: '#bc5738', width: 3 },
-  { key: '区', color: '#2f6d68', width: 3 },
-  { key: '市', color: '#a8894e', width: 2 },
+  { key: '县', color: 'var(--color-clay)', width: 3 },
+  { key: '区', color: 'var(--color-pine)', width: 3 },
+  { key: '市', color: 'var(--color-gold)', width: 2 },
 ] as const;
 
 interface Props {
@@ -83,7 +83,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
   return (
     <figure className="mx-auto w-full max-w-5xl">
       <figcaption className="mb-6">
-        <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+        <h2 className="font-display text-2xl text-ink sm:text-3xl">
           {t.chartTitle}
         </h2>
         <p className="mt-2 text-sm text-ink-3">
@@ -124,7 +124,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 y1={0}
                 x2={0}
                 y2={6}
-                stroke="#2f6d68"
+                style={{ stroke: 'var(--color-pine)' }}
                 strokeWidth={1}
                 opacity={0.08}
               />
@@ -139,7 +139,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 x2={W - PAD.right}
                 y1={y(v)}
                 y2={y(v)}
-                stroke="#e2dbc8"
+                style={{ stroke: 'var(--color-line)' }}
                 strokeWidth={1}
               />
               <text
@@ -173,7 +173,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 x2={x(derivedFrom)}
                 y1={PAD.top}
                 y2={H - PAD.bottom}
-                stroke="#2f6d68"
+                style={{ stroke: 'var(--color-pine)' }}
                 strokeWidth={1}
                 strokeDasharray="3 3"
                 opacity={0.5}
@@ -201,7 +201,9 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                   x2={x(idx)}
                   y1={PAD.top}
                   y2={H - PAD.bottom}
-                  stroke={isCaveat ? '#a8894e' : '#cfc5ab'}
+                  style={{
+                    stroke: isCaveat ? 'var(--color-gold)' : 'var(--color-line-2)',
+                  }}
                   strokeWidth={1}
                   strokeDasharray={isCaveat ? '2 4' : '4 4'}
                 />
@@ -225,7 +227,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
               key={p.key}
               d={p.d}
               fill="none"
-              stroke={p.color}
+              style={{ stroke: p.color }}
               strokeWidth={p.width}
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -241,7 +243,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 x2={x(hoverIdx)}
                 y1={PAD.top}
                 y2={H - PAD.bottom}
-                stroke="#8a8474"
+                style={{ stroke: 'var(--color-ink-3)' }}
                 strokeWidth={1}
               />
               {SERIES.map((s) => {
@@ -253,8 +255,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                     cx={x(hoverIdx)}
                     cy={y(v)}
                     r={4.5}
-                    fill="#faf9f5"
-                    stroke={s.color}
+                    style={{ fill: 'var(--color-paper)', stroke: s.color }}
                     strokeWidth={2.5}
                   />
                 );
@@ -275,7 +276,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
                 textAnchor="middle"
                 className={
                   i === hoverIdx
-                    ? 'fill-clay text-[11px] font-semibold'
+                    ? 'fill-clay text-[11px] font-medium'
                     : 'fill-ink-3 text-[11px]'
                 }
               >
@@ -289,7 +290,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
               y={H - PAD.bottom + 20}
               textAnchor="middle"
               pointerEvents="none"
-              className="fill-clay text-[11px] font-semibold"
+              className="fill-clay text-[11px] font-medium"
             >
               {hoverYear}
             </text>
@@ -310,7 +311,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
           } ${hoverIdx === null ? 'mt-4 sm:hidden' : 'mt-4'}`}
           style={{ left: `${(x(readIdx) / W) * 100}%` }}
         >
-          <div className="font-display text-sm font-semibold tabular-nums text-ink">
+          <div className="font-display text-sm font-medium tabular-nums text-ink">
             {t.tipYear(readYear)}
           </div>
           <dl className="mt-2 space-y-1.5">
@@ -384,7 +385,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
         来源分层：读者有权知道这根线的后半段是怎么来的。
         既不隐瞒「它是推演」，也不淡化「它经得起实测校验」——两句都说。
       */}
-      <div className="mt-6 space-y-2 border-t border-rule pt-4 text-xs leading-relaxed text-ink-3">
+      <div className="mt-6 space-y-2 border-t border-line pt-4 text-xs leading-relaxed text-ink-3">
         <p>
           {t.provenanceNote(
             data.provenance.snapshotMax,

@@ -1,23 +1,43 @@
 @import 'tailwindcss';
 
+/* Hallmark · redesign: theme-alignment · genre: editorial · macrostructure: Long Document (既有结构保留)
+ * design-system: DESIGN.md (claude) · designed-as-app
+ * 2026-07-28 · 对齐项目根 DESIGN.md（Claude 设计系统）：珊瑚橙 #cc785c、深藏青节奏、serif display 400。
+ * CJK 适配：衬线栈保留宋体系；中文标题字距为 0（负字距只给西文大数字）；pine/gold 是数据系列色，非品牌色。
+ */
+
 /**
- * 人文档案风色板 —— 参照 Anthropic 的设计语言：
- * 暖纸底、墨色文字、赤陶橙点缀、衬线标题、编辑排版。
+ * 色板锁定于项目根 DESIGN.md（Claude 设计系统）：
+ * 暖纸底、墨色文字、珊瑚橙点缀、深藏青产品面、衬线标题、编辑排版。
  * 这是一个关于地方志与家乡记忆的站点，不是仪表盘。
  */
 @theme {
-  --color-paper: #faf9f5; /* 主纸面 */
-  --color-paper-2: #f2ede1; /* 交替底 / 卡片 */
-  --color-paper-3: #e9e2d0; /* 深纸 / hover */
-  --color-line: #e2dbc8; /* 分隔线 */
-  --color-line-2: #cfc5ab; /* 强边框 */
-  --color-ink: #26241e; /* 主墨 */
-  --color-ink-2: #57534a; /* 次墨 */
-  --color-ink-3: #8a8474; /* 弱墨 / 注释 */
-  --color-clay: #bc5738; /* 赤陶橙 —— 唯一的强调色 */
-  --color-clay-2: #9e4526; /* 赤陶橙 hover/深 */
-  --color-pine: #2f6d68; /* 墨松绿 —— 曲线第二色 */
-  --color-gold: #a8894e; /* 暗金 —— 口径标注/第三色 */
+  /* 暖纸面 —— canvas / surface-soft / surface-card */
+  --color-paper: #faf9f5; /* 主纸面 = DESIGN canvas */
+  --color-paper-2: #f5f0e8; /* 交替底 = surface-soft */
+  --color-paper-3: #efe9de; /* 卡片 = surface-card */
+  --color-line: #e6dfd8; /* hairline */
+  --color-line-2: #d5cec0; /* 强边框（输入框、图例、印面描边） */
+
+  /* 墨色 —— ink / body / muted（#6c6a64 在纸面上 4.7:1，正文可读性达标） */
+  --color-ink: #141413; /* 主墨 */
+  --color-ink-2: #3d3d3a; /* 次墨 / 正文 */
+  --color-ink-3: #6c6a64; /* 弱墨 / 注释 */
+
+  /* 珊瑚橙 —— 唯一的品牌强调色（primary / primary-active） */
+  --color-clay: #cc785c;
+  --color-clay-2: #a9583e;
+
+  /* 深藏青产品面 —— surface-dark 系列：开发者区与页脚的明暗节奏 */
+  --color-night: #181715; /* surface-dark */
+  --color-night-2: #252320; /* surface-dark-elevated */
+  --color-night-3: #34312b; /* 深色面上的 hover 抬升 */
+  --color-on-night: #faf9f5; /* on-dark（与 canvas 同调） */
+  --color-on-night-soft: #a09d96; /* on-dark-soft */
+
+  /* 数据系列色（图表语义：区=松绿、市=暗金）—— 非品牌色，不随品牌规则走 */
+  --color-pine: #2f6d68;
+  --color-gold: #a8894e;
 
   --font-display:
     Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC',
