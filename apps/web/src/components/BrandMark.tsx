@@ -8,7 +8,7 @@
  * ④ 横细竖粗
  * ⑤ 撇出锐锋、折肩出棱
  *
- * 结构：纸面外框 → 朱膘印面 → 白文"州""九"。
+ * 结构：纸面外框 → 珊瑚橙印面 → 白文"州""九"。
  * φ 网格 34×34，外框圆角 8，内印面 25×25 圆角 2.5。
  *
  * ⚠️ public/favicon.svg 是同源结构（去外框、缩为 21 网格），改这里请同步。
@@ -30,14 +30,14 @@ export function BrandMark({ className = 'h-9 w-9' }: Props): JSX.Element {
         rx="8"
         style={{ fill: 'var(--color-paper)', stroke: 'var(--color-line-2)' }}
       />
-      {/* 朱膘印面：25×25，圆角 2.5 */}
+      {/* 珊瑚橙印面：25×25，圆角 2.5 */}
       <rect
         x="4.5"
         y="4.5"
         width="25"
         height="25"
         rx="2.5"
-        fill="#bd3826"
+        style={{ fill: 'var(--color-clay)' }}
       />
       {/* 州 · 多宝塔法度：方切头、腰微提、垂露、点小而锐 */}
       <g fill="var(--color-paper)">
