@@ -45,13 +45,15 @@ features:
 
 ## 三行上手
 
+安装 CLI 并注水数据到本地：
+
 ```bash
 npm i -g @cndiv/cli
 cndiv hydrate --year=2023          # 下载 @cndiv/source-2023 → ~/.cndiv/cache.db
 cndiv export --year=2023 --output=divisions-2023.csv
 ```
 
-在代码里查询：
+`cndiv hydrate` 把数据落到标准 SQLite 文件，可直接用任意 SQLite 客户端查询，也可在 JS/TS 中用 [`@cndiv/reader`](/reference/reader) 查询：
 
 ```ts
 import { openCache } from '@cndiv/reader';
@@ -68,14 +70,20 @@ cn.close();
 
 ## 它解决什么
 
-> 原数据源国家统计局 `stats.gov.cn`（统计用区划代码和城乡划分代码）自 **2024 年起停止公开发布**、**2026 年起统一转向「国家地名信息库」**（dmfw.mca.gov.cn），全量五级数据已无官方活源。
+原数据源国家统计局 `stats.gov.cn`（统计用区划代码和城乡划分代码）自 **2024 年起停止公开发布**、**2026 年起统一转向「国家地名信息库」**（dmfw.mca.gov.cn），全量五级数据已无官方活源。
 
-v2 架构从「镜像一个源」转为 **「2023 基线快照 ＋ 社区 Patch 增量 ＋ 多源合成」**，并把数据与代码彻底解耦：
+面对这个断层，v2 架构从「镜像一个源」转为 **「2023 基线快照 ＋ 社区 Patch 增量 ＋ 多源合成」**，并把数据与代码彻底解耦：
 
 ```
 构建期(维护者)                     分发                用户运行期
 历史源/dmfw/镜像 → 合成 → SQLite → NPM @cndiv/source-YYYY → cndiv hydrate → ~/.cndiv/cache.db
                                   + GitHub Release 归档        + patches/*.json  → cndiv apply-patch
 ```
+
+三个核心设计决策：
+
+- **用户侧零爬虫**：只从 NPM 拉取数据包注水到本地 SQLite，不依赖任何在线数据源的可用性。
+- **大数据不进 git**：数据通过 NPM / GitHub Release 分发，仓库保持轻量。
+- **来源可追溯**：每条数据带置信度分档（`official_nbs > mca_decree > community > shadow_map`），可回答「从哪来、可信度多高」。
 
 详见 [为什么是 v2](/guide/why-v2)。

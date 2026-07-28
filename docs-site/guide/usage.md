@@ -19,8 +19,8 @@ getLevelFromCode('310115000000');                      // 3 (COUNTY)
 getParentCode('310115000000', DIVISION_LEVEL.COUNTY);  // '310100000000'
 ```
 
-::: tip 坑与全清单
-16 个导出全清单与坑（无「码→名」反查、`normalizeCode` 不校验省码、`getParentCode` 需先判级等）见 [`@cndiv/core` 参考](/reference/core)。可跑示例：`npx tsx packages/core/examples/code-tools.ts`。
+::: tip 完整 API 参考
+16 个导出的全清单与已知边界（无「码→名」反查、`normalizeCode` 不校验省码、`getParentCode` 需先判级等）见 [`@cndiv/core` 参考](/reference/core)。可跑示例：`npx tsx packages/core/examples/code-tools.ts`。
 :::
 
 ## 查询注水后的数据（`@cndiv/reader`）
@@ -38,7 +38,7 @@ cn.close();
 ```
 
 ::: tip 也可直接写 SQL
-不用 reader、自带 `better-sqlite3` 直接写 SQL 亦可（reader 即此封装）——底层范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
+不用 reader、自带 `better-sqlite3` 直接写 SQL 亦可——reader 即此封装。底层查询范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
 :::
 
 ## 校验 Patch（`@cndiv/data-protocol`）

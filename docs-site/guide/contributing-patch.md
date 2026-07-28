@@ -41,9 +41,9 @@ Patch 校验与商业地图交叉校验的边界，见 [Patch 校验与交叉校
 
 ## 提交流程
 
-1. 依据公开公告（民政部/省级/市级政府门户）在 `patches/<变更年份>/` 新建 JSON。
-2. 填 `meta.source_url` 指向公告原文，`evidence_confidence` 据证据强度选择。
-3. 本地 `node scripts/validate-patches.mjs` 通过后发 PR。
+1. 依据公开公告（民政部/省级/市级政府门户）在 `patches/<变更年份>/` 新建 JSON 文件。
+2. 填写 `meta.source_url` 指向公告原文，根据证据强度选择 `evidence_confidence`（`high` / `medium` / `low`）。
+3. 本地运行 `node scripts/validate-patches.mjs`，通过后提交 PR。
 4. CI 自动校验，维护者审核证据链后合入。
 
 ## 维护者：数据闭环

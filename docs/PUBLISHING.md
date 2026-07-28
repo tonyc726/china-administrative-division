@@ -21,7 +21,9 @@
 5. **本地 `npm login`** —— 数据包本地发布需要。
 6. 确认本机 **Node 22 LTS**（`nvm use` 读 `.nvmrc`）。
 
-> **本机 registry 是淘宝镜像（只读）**：全局 `~/.npmrc` 设了 `registry=https://registry.npmmirror.com`，直接 `npm publish` 会失败。本仓库各包已在 `package.json` 的 `publishConfig.registry` 钉死 `https://registry.npmjs.org/`，故 `npm publish` / `changeset publish` 会走官方源、不受镜像影响。CI 侧由 `release.yml` 的 `setup-node registry-url` 保证。
+> **本机 registry 是淘宝镜像（只读）**：全局 `~/.npmrc` 设了 `registry=https://registry.npmmirror.com`，直接 `npm publish` 会失败。
+> 
+> 本仓库各包已在 `package.json` 的 `publishConfig.registry` 钉死 `https://registry.npmjs.org/`，故 `npm publish` / `changeset publish` 会走官方源、不受镜像影响。CI 侧由 `release.yml` 的 `setup-node registry-url` 保证。
 >
 > 🔒 **安全**：`~/.npmrc` 若存过明文 `_authToken`，务必用 Automation token 且定期轮换；token 一旦外泄立即在 npmjs.com Revoke。
 

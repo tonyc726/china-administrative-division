@@ -251,10 +251,10 @@ sqlite3 GB2260.2023.sqlite "SELECT * FROM city WHERE provinceCode='110000';"
 
 | 数据源 | 台湾省 | 香港特别行政区 | 澳门特别行政区 |
 |--------|--------|---------------|---------------|
-| GB2260（2013 起） | Yes 代码 710000 | Yes 代码 810000 | Yes 代码 820000 |
-| NBS（所有层级） | No 无数据 | No 无数据 | No 无数据 |
+| GB2260（2013 起） | ✅ 代码 710000 | ✅ 代码 810000 | ✅ 代码 820000 |
+| NBS（所有层级） | ❌ 无数据 | ❌ 无数据 | ❌ 无数据 |
 
-**注意**：NBS **所有层级（省 / 市 / 县 / 乡 / 村）均不收录台港澳**——省级与 `village` 层级实测均为 0 条。此前版本文档误称「NBS village 含台港澳」，已订正。
+NBS **所有层级（省 / 市 / 县 / 乡 / 村）均不收录台港澳**——省级与 `village` 层级实测均为 0 条。此前版本文档误称「NBS village 含台港澳」，已订正。
 
 ### 2. 代码格式差异
 
@@ -277,9 +277,7 @@ sqlite3 GB2260.2023.sqlite "SELECT * FROM city WHERE provinceCode='110000';"
 
 ### 5. 编码说明
 
-- 文件名使用 UTF-8 编码
-- SQLite 数据库内部也使用 UTF-8
-- 特殊字符（如壆壗等）可能存在兼容性问题
+文件名与 SQLite 数据库内部均使用 UTF-8 编码。特殊字符（如壆壗等）可能存在兼容性问题。
 
 ### 6. 更新频率
 
@@ -300,9 +298,13 @@ sqlite3 GB2260.2023.sqlite "SELECT * FROM city WHERE provinceCode='110000';"
 
 ### 8. 城乡分类码（categoryCode）
 
-- **SQLite 成品不含城乡分类码**：`village` 表无 `categoryCode` 列（见上 Schema）。
-- 城乡分类码见原始数据：① 独立文件 `data/stats.gov.cn/categoryCodes.{year}.json` 仅 **2009–2014**；② 年度嵌套 JSON（`{year}.json`）内的 `categoryCode` 内联字段覆盖 **2009–2021**（如 `"categoryCode":"111"` 主城区、`"220"` 村庄）。
-- 2022 年起 stats.gov.cn 停更，城乡分类码不再有新增来源。
+**SQLite 成品不含城乡分类码**：`village` 表无 `categoryCode` 列（见上 Schema）。
+
+城乡分类码见原始数据：
+- 独立文件 `data/stats.gov.cn/categoryCodes.{year}.json` 仅 **2009–2014**（6 个年份）
+- 年度嵌套 JSON（`{year}.json`）内的 `categoryCode` 内联字段覆盖 **2009–2021**（如 `"categoryCode":"111"` 主城区、`"220"` 村庄）
+
+2022 年起 stats.gov.cn 停更，城乡分类码不再有新增来源。
 
 ---
 

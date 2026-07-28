@@ -41,12 +41,14 @@ divisions(
 
 ## 来源置信度分档
 
-每条数据带来源类型，置信度由高到低 4 档：
+每条数据带来源类型，回答「这条记录从哪来、可信度多高」。置信度由高到低 4 档：
 
-```
-official_nbs  >  mca_decree  >  community  >  shadow_map
-国家统计局        民政部令        社区 Patch      商业地图影子
-```
+| 档位 | `source_type` | 含义 |
+|---|---|---|
+| 最高 | `official_nbs` | 国家统计局原始发布，置信度 100 |
+| 高 | `mca_decree` | 民政部令/公报等权威公告 |
+| 中 | `community` | 社区贡献 Patch（经人工核证） |
+| 低 | `shadow_map` | 商业地图推断（仅内部校验，不入 MIT 分发） |
 
 ## 两个必须知道的坑
 
