@@ -520,6 +520,23 @@ When photography is used (rare — mostly testimonials), avatars crop to perfect
 
 **`footer`** — Dark navy footer that closes every page. Background `{colors.surface-dark}` (#181715), text `{colors.on-dark-soft}`. 4-column link list at desktop covering Product / Company / Resources / Legal. Vertical padding 64px. The Anthropic spike-mark + "Anthropic" wordmark sits at the top in `{colors.on-dark}`. The footer never inverts.
 
+## BrandMark
+
+The site mark is a **Chinese seal chop**: a coral square with the white-inked characters 州 (main) and 九 (upper-right corner), following Yan Zhenqing's *Duobao Pagoda Stele* calligraphy rules. The seal metaphor is native to the domain — administrative divisions are recorded in registries, and a chop mark signs the page.
+
+**Construction — `viewBox 0 0 34 34`:**
+
+- **Seal frame**: `rect(0.5, 0.5, 33, 33, rx=8)`, fill `{colors.canvas}` (paper), hairline stroke. A registry-grid cell softened into a seal face.
+- **Coral square**: `rect(4.5, 4.5, 25, 25, rx=2.5)`, fill `{colors.primary}` (#cc785c). The brand accent used deliberately as a seal-paste surface.
+- **州 character**: six SVG paths — three vertical strokes (square-cut tops, slight waist lift, decisive dew-drop terminals) and three side dots (sharp, small, hugging the top segments of the verticals). All five 多宝塔 rules are encoded: square-cut entry, small-sharp dots, decisive terminals, horizontal-thin/vertical-thick, and sharp-hook exits.
+- **九 character**: two SVG paths, `transform="translate(21.6 4.8) scale(1.08)"`, landing in the upper-right corner. The first stroke is thin-horizontal/thick-vertical with a square-cut hook; the second is an angled bend with a hard shoulder and sharp hook.
+
+Both characters render in `{colors.canvas}` (#faf9f5) — white-ink on coral, the traditional seal-chop inversion.
+
+**Favicon** — `apps/web/public/favicon.svg`: same 34-unit grid and full structure (frame + coral square + both characters), hardcoded hex values (no CSS variables in favicon context). At 16px the frame remains legible; the 州 verticals and 九 hook serve as the recognition anchor.
+
+**Files**: `apps/web/src/components/BrandMark.tsx` (React, CSS-variable colors), `apps/web/public/favicon.svg` (standalone, hardcoded hex), `docs-site/public/logo.svg` (standalone), `docs-site/public/favicon.svg` (standalone). All four share identical path data; changes must stay in sync.
+
 ## Do's and Don'ts
 
 ### Do
