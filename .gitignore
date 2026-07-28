@@ -694,3 +694,5 @@ raw/
 
 # hallmark 设计工具运行时产物（设计令牌文档 DESIGN.md 入库，工具状态不入库）
 .hallmark/
+# docs-site 本地开发数据（从 apps/web/public/data 拷贝）
+docs-site/public/data/

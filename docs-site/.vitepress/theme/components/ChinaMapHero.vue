@@ -37,10 +37,12 @@ async function draw() {
   // Fetch geo JSON from main site (docs is under /docs/ subpath)
   let provs: Province[] = [];
   try {
-    // Docs BASE: /china-administrative-division/docs/ → parent: /china-administrative-division/
+    // Deployed GH Pages: BASE=/china-administrative-division/docs/ → parent=/china-administrative-division
+    // Local dev:         BASE=/ → parent='' → url='/data/geo.json' (needs copy in public/)
     const docsBase = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-    const parentBase = docsBase.replace(/\/docs$/, '') || '/';
-    const resp = await fetch(`${parentBase}/data/geo.json`);
+    const parentBase = docsBase.replace(/\/docs$/, '');
+    const url = parentBase ? `${parentBase}/data/geo.json` : '/data/geo.json';
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const geo = await resp.json();
     provs = geo.provs || [];
