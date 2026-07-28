@@ -16,12 +16,14 @@ const CARD_H = 630;
 /** 卡片落款站点：部署时用 VITE_SITE_URL 注入真实域名；未配置则回落到仓库地址（不编造域名） */
 const SITE = import.meta.env.VITE_SITE_URL ?? 'github.com/tonyc726/china-administrative-division';
 
-const PAPER = '#f7f2e7';
-const INK = '#26241e';
-const INK_SOFT = '#57534a';
-const INK_FAINT = '#8a8474';
-const CLAY = '#bc5738';
-const BORDER = '#cfc5ab';
+const PAPER = '#f7f2e7'; /* 卡片专用纸色（比纸面深一档，印感），非界面 token */
+
+/** Canvas 2D 不吃 CSS var() —— 从 token 现场解析，与 styles.css 保持单一真相源 */
+function cssVar(name: string, fallback: string): string {
+  if (typeof window === 'undefined') return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
 
 interface Props {
   lang: Lang;
@@ -68,6 +70,12 @@ function draw(
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
+  const INK = cssVar('--color-ink', '#141413');
+  const INK_SOFT = cssVar('--color-ink-2', '#3d3d3a');
+  const INK_FAINT = cssVar('--color-ink-3', '#6c6a64');
+  const CLAY = cssVar('--color-clay', '#cc785c');
+  const BORDER = cssVar('--color-line-2', '#d5cec0');
+
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = CARD_W * dpr;
   canvas.height = CARD_H * dpr;
@@ -102,13 +110,13 @@ function draw(
   ctx.lineTo(CARD_W - 72, 116);
   ctx.stroke();
 
-  // 主体：末级名称（衬线大字，自适应字号）
+  // 主体：末级名称（衬线大字 400，自适应字号 —— DESIGN.md：display serif 永不加粗）
   ctx.fillStyle = INK;
   let size = 88;
-  ctx.font = serif(size, '600');
+  ctx.font = serif(size);
   while (ctx.measureText(leaf.name).width > CARD_W - 144 && size > 40) {
     size -= 4;
-    ctx.font = serif(size, '600');
+    ctx.font = serif(size);
   }
   ctx.fillText(leaf.name, 72, 218);
 
@@ -124,7 +132,7 @@ function draw(
   ctx.fillText(t.cardCode, 72, 352);
 
   // 区划码逐段绘制：下划线按每段的**实际文字宽度**画，与数字严格等宽对齐
-  ctx.font = serif(58, '600');
+  ctx.font = serif(58);
   const segs = codeSegments(leaf.code);
   const gap = ctx.measureText('0').width * 0.55;
   let sx = 72;
@@ -221,20 +229,20 @@ export function ShareCard({ lang, chain, leaf, lineage, dup }: Props): JSX.Eleme
       <canvas
         ref={ref}
         style={{ aspectRatio: `${CARD_W} / ${CARD_H}` }}
-        className="w-full rounded-md border border-line-2 shadow-[0_2px_16px_rgba(38,36,30,0.08)]"
+        className="w-full rounded-md border border-line-2 shadow-[0_2px_16px_rgba(20,20,19,0.08)]"
       />
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={download}
-          className="rounded-md bg-clay px-4 py-2 text-sm font-medium text-paper transition hover:bg-clay-2"
+          className="h-10 rounded-md bg-clay px-5 text-sm font-medium text-paper outline-none transition hover:bg-clay-2 focus-visible:ring-2 focus-visible:ring-clay/40"
         >
           {t.download}
         </button>
         <button
           type="button"
           onClick={copy}
-          className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3"
+          className="h-10 rounded-md border border-line-2 px-5 text-sm text-ink-2 outline-none transition hover:border-ink-3 focus-visible:ring-2 focus-visible:ring-clay/40"
         >
           {copied ? t.copied : t.copyCode}
         </button>

@@ -85,7 +85,7 @@ export function SouthNorth({ data, lang }: Props): JSX.Element {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+      <h2 className="font-display text-2xl text-ink sm:text-3xl">
         {t.marksTitle}
       </h2>
       <p className="mt-2 text-sm text-ink-3">{t.marksSub}</p>
@@ -187,9 +187,9 @@ export function SouthNorth({ data, lang }: Props): JSX.Element {
                           className="block h-6 w-full min-w-[1.1rem] rounded-[2px] transition-[opacity,box-shadow]"
                           style={{
                             backgroundColor: isNorth
-                              ? `rgba(38, 36, 30, ${0.04 + k * 0.9})`
-                              : `rgba(188, 87, 56, ${0.04 + k * 0.92})`,
-                            boxShadow: on ? 'inset 0 0 0 1px rgba(38,36,30,.45)' : undefined,
+                              ? `rgba(20, 20, 19, ${0.04 + k * 0.9})`
+                              : `rgba(204, 120, 92, ${0.04 + k * 0.92})`,
+                            boxShadow: on ? 'inset 0 0 0 1px rgba(20,20,19,.45)' : undefined,
                           }}
                         />
                       </td>

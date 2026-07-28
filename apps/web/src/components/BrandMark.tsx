@@ -23,13 +23,19 @@ export function BrandMark({ className = 'h-9 w-9' }: Props): JSX.Element {
         width="31"
         height="31"
         rx="7"
-        fill="#faf9f5"
-        stroke="#cfc5ab"
+        style={{ fill: 'var(--color-paper)', stroke: 'var(--color-line-2)' }}
       />
       {/* 县：被切走右上一角的主体 */}
-      <path d="M6 6 H17 V15 H26 V26 H6 Z" fill="#bc5738" />
+      <path d="M6 6 H17 V15 H26 V26 H6 Z" style={{ fill: 'var(--color-clay)' }} />
       {/* 区：那一角，原地改姓 */}
-      <rect x="18.5" y="6" width="7.5" height="7.5" rx="1" fill="#2f6d68" />
+      <rect
+        x="18.5"
+        y="6"
+        width="7.5"
+        height="7.5"
+        rx="1"
+        style={{ fill: 'var(--color-pine)' }}
+      />
     </svg>
   );
 }

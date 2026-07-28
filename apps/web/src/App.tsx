@@ -126,7 +126,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
           >
             <BrandMark className="h-9 w-9 shrink-0 transition group-hover:opacity-85" />
             <span className="min-w-0">
-              <span className="block truncate font-display text-[15px] font-semibold tracking-wide text-ink">
+              <span className="block truncate font-display text-[15px] font-medium tracking-wide text-ink">
                 {t.brand}
               </span>
               <span className="mt-0.5 hidden text-[11px] tabular-nums tracking-wide text-ink-3 sm:block">
@@ -175,10 +175,10 @@ export function App({ prerendered }: AppProps): JSX.Element {
         <section className="mx-auto max-w-5xl px-6 pb-24 pt-16 sm:pt-28">
           <p className="font-mono text-sm tracking-[0.2em] text-clay">{t.heroKicker}</p>
           <h1 className="mt-8 flex flex-wrap items-baseline gap-x-5 gap-y-2">
-            <span className="font-display text-[clamp(5rem,17vw,10.5rem)] font-semibold leading-none tracking-tight tabular-nums text-clay">
+            <span className="font-display text-[clamp(5rem,17vw,10.5rem)] leading-none tracking-tight tabular-nums text-clay">
               652
             </span>
-            <span className="font-display text-2xl font-medium text-ink sm:text-4xl">
+            <span className="font-display text-2xl text-ink sm:text-4xl">
               {t.heroSuffix}
             </span>
           </h1>
@@ -186,22 +186,22 @@ export function App({ prerendered }: AppProps): JSX.Element {
       )}
 
       {/* ---------- 三个叙事：时间的、名字的、地理的 ---------- */}
-      <section className="border-t border-line px-6 py-20">
+      <section className="border-t border-line px-6 py-24">
         {timeline && <Timeline data={timeline} lang={lang} />}
       </section>
 
-      <section className="border-t border-line bg-paper-2/60 px-6 py-28">
+      <section className="border-t border-line bg-paper-2/60 px-6 py-24">
         {names && <NameRings data={names} lang={lang} onSearch={searchFor} />}
       </section>
 
-      <section className="border-t border-line px-6 py-20">
+      <section className="border-t border-line px-6 py-24">
         {names && <SouthNorth data={names} lang={lang} />}
       </section>
 
       {/* ---------- 寻根（含县的四十年谱系 + 稀有度）—— 核心交互，给足呼吸空间 ---------- */}
       <section
         id="explore"
-        className="scroll-mt-16 border-t border-line bg-paper-2/60 px-6 py-32"
+        className="scroll-mt-16 border-t border-line bg-paper-2/60 px-6 py-24"
       >
         <Explorer
           lang={lang}
@@ -214,7 +214,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
       {/* ---------- 名册全景 ---------- */}
       <section className="border-t border-line px-6 py-24">
         <div className="mx-auto max-w-5xl">
-          <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+          <h2 className="font-display text-2xl text-ink sm:text-3xl">
             {t.statsTitle}
           </h2>
           <p className="mt-2 text-sm text-ink-3">{t.statsLead}</p>
@@ -233,15 +233,15 @@ export function App({ prerendered }: AppProps): JSX.Element {
         </div>
       </section>
 
-      {/* ---------- 开发者转化 ---------- */}
-      <section className="border-t border-line px-6 py-28">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+      {/* ---------- 开发者转化：深藏青卡片（DESIGN.md cta-band-dark）—— 全页唯一的深色带 ---------- */}
+      <section className="border-t border-line px-6 py-24">
+        <div className="mx-auto max-w-5xl rounded-xl bg-night px-6 py-12 sm:px-12 sm:py-16">
+          <h2 className="font-display text-2xl text-on-night sm:text-3xl">
             {t.devTitle}
           </h2>
-          <p className="mt-4 font-display leading-relaxed text-ink-2">{t.devLead}</p>
+          <p className="mt-4 font-display leading-relaxed text-on-night-soft">{t.devLead}</p>
 
-          <pre className="mt-8 overflow-x-auto rounded-lg bg-ink p-5 font-mono text-sm text-paper-2">
+          <pre className="mt-8 overflow-x-auto rounded-lg bg-night-2 p-5 font-mono text-sm text-on-night">
             <code>{`npm i @cndiv/source-2023    # 2023 全量五级快照
 npm i @cndiv/source-history # GB/T 2260 · 1980–2020
 npm i @cndiv/reader         # 只读查询 API`}</code>
@@ -250,19 +250,19 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
               href={REPO}
-              className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3 hover:text-ink"
+              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
             >
               {t.devRepo}
             </a>
             <a
               href="https://www.npmjs.com/org/cndiv"
-              className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3 hover:text-ink"
+              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
             >
               npm · @cndiv
             </a>
             <a
               href={`${prerendered?.baseUrl ?? BASE}docs/`}
-              className="rounded-md border border-line-2 px-4 py-2 text-sm text-ink-2 transition hover:border-ink-3 hover:text-ink"
+              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
             >
               {t.devDocs}
             </a>
@@ -270,8 +270,9 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
         </div>
       </section>
 
-      <footer className="border-t border-line bg-paper-2/60 px-6 py-12">
-        <div className="mx-auto max-w-5xl text-xs leading-relaxed text-ink-3">
+      {/* 页脚深藏青收束（DESIGN.md footer）：明暗交替节奏的终点，永不反白 */}
+      <footer className="bg-night px-6 py-16 text-on-night-soft">
+        <div className="mx-auto max-w-5xl text-xs leading-relaxed">
           <p>{t.sourceNote}</p>
           <p className="mt-2">{t.footer}</p>
         </div>

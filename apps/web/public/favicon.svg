@@ -1,6 +1,6 @@
 <!-- 与 src/components/BrandMark.tsx 同一图形，改动请同步 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect x="0.5" y="0.5" width="31" height="31" rx="7" fill="#faf9f5" stroke="#cfc5ab"/>
-  <path d="M6 6 H17 V15 H26 V26 H6 Z" fill="#bc5738"/>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="7" fill="#faf9f5" stroke="#d5cec0"/>
+  <path d="M6 6 H17 V15 H26 V26 H6 Z" fill="#cc785c"/>
   <rect x="18.5" y="6" width="7.5" height="7.5" rx="1" fill="#2f6d68"/>
 </svg>
