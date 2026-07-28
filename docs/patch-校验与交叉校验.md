@@ -4,7 +4,7 @@
 
 | 档 | 数据源 | 在哪跑 | 性质 | 状态 |
 |---|---|---|---|---|
-| **structural** | baseline CSV（官方）+ 码工具 | ✅ GitHub Actions（CI 门禁） | 离线、确定性、零合规风险 | ✅ 已实现 |
+| **structural** | baseline CSV（官方）+ 码工具 | GitHub Actions（CI 门禁） | 离线、确定性、零合规风险 | 已实现 |
 | **cross** | 高德/腾讯等商业地图 API | 🖥️ **仅本地维护者手动** | 在线、非确定性、合规灰区 | ⛔ 桩，故意未实现 |
 
 ## 为什么这样切分（First Principles + Inversion）

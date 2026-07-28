@@ -46,7 +46,7 @@ try {
 |---|---|---|
 | `openCache` | `(dbPath?) => CnDivReader` | 打开库；默认 `~/.cndiv/cache.db`、只读；文件不存在/非有效库抛友好错误 |
 | `findByCode` | `(code, year) => Division \| null` | 按码查某年快照 |
-| `findByName` | `(name, year) => Division[]` | 按精确名查（⚠️ name 无索引，全表扫描） |
+| `findByName` | `(name, year) => Division[]` | 按精确名查（name 无索引，全表扫描） |
 | `getChildren` | `(parentCode, year, opts?) => Division[]` | 直接子级；`skipPlaceholder` 穿透占位层 |
 | `getDescendants` | `(code, year) => Division[]` | 递归全部后代（不含自身） |
 | `getParent` | `(code, year) => Division \| null` | 直接父节点；省级返回 null |

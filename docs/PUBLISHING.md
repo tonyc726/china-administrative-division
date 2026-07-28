@@ -7,7 +7,7 @@
 | 代码包 | `@cndiv/core` · `data-protocol` · `cli` · `crawler` · `extractor` · `reader` | **changesets 自动（CI）** | `dist` 由 CI `pnpm build` 重建 |
 | 数据包 | `@cndiv/source-2023` · `source-history` · `source-postal` | **本地 `npm publish`** | CSV 源数据（NBS 冷母本 / `legacy/data`）不在 git、CI 无法重建 |
 
-> ⚠️ 数据包被 `.changeset/config.json` 的 `ignore: ["@cndiv/source-*"]` **完全排除出 changesets**（版本与发布均手动管理）；
+> 数据包被 `.changeset/config.json` 的 `ignore: ["@cndiv/source-*"]` **完全排除出 changesets**（版本与发布均手动管理）；
 > CI 的 changesets/action 不会碰任何 `source-*`——避免 CI 无 CSV 时发出缺数据的坏包。
 
 ---
@@ -21,7 +21,7 @@
 5. **本地 `npm login`** —— 数据包本地发布需要。
 6. 确认本机 **Node 22 LTS**（`nvm use` 读 `.nvmrc`）。
 
-> ⚠️ **本机 registry 是淘宝镜像（只读）**：全局 `~/.npmrc` 设了 `registry=https://registry.npmmirror.com`，直接 `npm publish` 会失败。本仓库各包已在 `package.json` 的 `publishConfig.registry` 钉死 `https://registry.npmjs.org/`，故 `npm publish` / `changeset publish` 会走官方源、不受镜像影响。CI 侧由 `release.yml` 的 `setup-node registry-url` 保证。
+> **本机 registry 是淘宝镜像（只读）**：全局 `~/.npmrc` 设了 `registry=https://registry.npmmirror.com`，直接 `npm publish` 会失败。本仓库各包已在 `package.json` 的 `publishConfig.registry` 钉死 `https://registry.npmjs.org/`，故 `npm publish` / `changeset publish` 会走官方源、不受镜像影响。CI 侧由 `release.yml` 的 `setup-node registry-url` 保证。
 >
 > 🔒 **安全**：`~/.npmrc` 若存过明文 `_authToken`，务必用 Automation token 且定期轮换；token 一旦外泄立即在 npmjs.com Revoke。
 
@@ -79,7 +79,7 @@ cndiv hydrate --year=2023      # 从 npm 拉取 → 注水到 ~/.cndiv/cache.db
 cndiv hydrate --year=history   # @cndiv/source-history
 ```
 
-注水日志出现 `Integrity: manifest SHA-512 verified ✅` 即闭环成功。
+注水日志出现 `Integrity: manifest SHA-512 verified` 即闭环成功。
 
 ---
 
