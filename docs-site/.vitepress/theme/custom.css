@@ -448,6 +448,16 @@ h1.title {
   border-radius: 8px;
   font-size: 20px !important;
   filter: saturate(0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.VPFeature .icon svg {
+  color: var(--claude-coral);
+  display: block;
+}
+.dark .VPFeature .icon svg {
+  color: var(--vp-c-brand-1);
 }
 
 /* ============================================================
