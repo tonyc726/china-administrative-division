@@ -4,7 +4,7 @@
   <title>cndiv · 中国行政区划数据基础设施</title>
   <!-- 外框：暖纸底 + hairline 描边 -->
   <rect x="0.5" y="0.5" width="33" height="33" rx="8" fill="#faf9f5" stroke="#d5cec0"/>
-  <!-- 珊瑚橙印面：与 --color-clay #cc785c 一致 -->
+  <!-- 珊瑚橙印面：与品牌色 cc785c 一致 -->
   <rect x="4.5" y="4.5" width="25" height="25" rx="2.5" fill="#cc785c"/>
   <!-- 州 · 多宝塔法度 -->
   <g fill="#faf9f5">
