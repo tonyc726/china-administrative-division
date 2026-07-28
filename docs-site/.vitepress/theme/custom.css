@@ -302,6 +302,7 @@ h1.title {
 .VPNavBar {
   background: rgba(250, 249, 245, 0.78) !important;
 }
+.dark .VPNavBar.has-sidebar .content-body,
 .dark .VPNavBar {
   background: rgba(24, 23, 21, 0.78) !important;
 }
