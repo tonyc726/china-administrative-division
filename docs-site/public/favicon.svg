@@ -1,5 +1,5 @@
 <!-- 与 apps/web/public/favicon.svg 同源 v8 多宝塔法度 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34">
+<svg width="34" height="34" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34">
   <rect x="0.5" y="0.5" width="33" height="33" rx="8" fill="#faf9f5" stroke="#d5cec0"/>
   <rect x="4.5" y="4.5" width="25" height="25" rx="2.5" fill="#cc785c"/>
   <g fill="#faf9f5">
