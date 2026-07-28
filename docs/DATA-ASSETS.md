@@ -109,10 +109,10 @@
 
 | # | 问题 | 状态 | 处置 |
 |---|---|---|---|
-| 1 | `NBS.2015.sqlite` = 0 字节损坏 | ✅ 已修复 | 由幸存的 `data/stats.gov.cn/2015.json` 经 `scripts/rebuild-nbs-sqlite.ts` 忠实重建（schema 与兄弟库逐字一致，`integrity_check=ok`）。详见 §八。 |
-| 2 | `NBS.2022/2023.sqlite` 无对应原始 JSON（`stats.gov.cn/*.json` 止于 2021），溯源链缺失 | ✅ 已闭合 | 确认原始年度 JSON 止于 2021；2022/2023 sqlite 为直采成品、无中间 JSON。已由 `scripts/export-nbs-json.ts` 反导出 `data/stats.gov.cn/derived/{2022,2023}.json`（往返重建村数与源一致：619,503 / 620,573），闭合 sqlite↔JSON 往返。**派生声明**：反导出产物非独立源采集、无 `categoryCode`，溯源仍以 sqlite 为准（见 `derived/README.md`）。 |
-| 3 | 数据字典称「NBS village 含台港澳」 | ✅ 已证伪并订正 | 硬核验：`NBS.2023.sqlite` village 表 71/81/82 前缀 **0 条**（省级亦无）。NBS 五级全量**完全不含台港澳**。已订正 `SQLITE_DATA_README.md` 两处误述（L154/L255）。注：GB2260 历史自 2013 起收录台港澳省级（710000/810000/820000），是另一数据源，勿混。 |
-| 4 | categoryCodes 城乡分类码覆盖 | ✅ 已厘清 | 独立 `categoryCodes.*.json` 文件仅 2009–2014（6 个）；但城乡分类码在**年度嵌套 JSON 内联** `categoryCode` 字段中覆盖 2009–2021（实测 2016/2020/2021 均含）。**NBS sqlite 成品未保留城乡分类码列**（village 表无 categoryCode）。已在数据字典厘清。 |
+| 1 | `NBS.2015.sqlite` = 0 字节损坏 | Resolved | 由幸存的 `data/stats.gov.cn/2015.json` 经 `scripts/rebuild-nbs-sqlite.ts` 忠实重建（schema 与兄弟库逐字一致，`integrity_check=ok`）。详见 §八。 |
+| 2 | `NBS.2022/2023.sqlite` 无对应原始 JSON（`stats.gov.cn/*.json` 止于 2021），溯源链缺失 | Resolved | 确认原始年度 JSON 止于 2021；2022/2023 sqlite 为直采成品、无中间 JSON。已由 `scripts/export-nbs-json.ts` 反导出 `data/stats.gov.cn/derived/{2022,2023}.json`（往返重建村数与源一致：619,503 / 620,573），闭合 sqlite↔JSON 往返。**派生声明**：反导出产物非独立源采集、无 `categoryCode`，溯源仍以 sqlite 为准（见 `derived/README.md`）。 |
+| 3 | 数据字典称「NBS village 含台港澳」 | Resolved | 硬核验：`NBS.2023.sqlite` village 表 71/81/82 前缀 **0 条**（省级亦无）。NBS 五级全量**完全不含台港澳**。已订正 `SQLITE_DATA_README.md` 两处误述（L154/L255）。注：GB2260 历史自 2013 起收录台港澳省级（710000/810000/820000），是另一数据源，勿混。 |
+| 4 | categoryCodes 城乡分类码覆盖 | Resolved | 独立 `categoryCodes.*.json` 文件仅 2009–2014（6 个）；但城乡分类码在**年度嵌套 JSON 内联** `categoryCode` 字段中覆盖 2009–2021（实测 2016/2020/2021 均含）。**NBS sqlite 成品未保留城乡分类码列**（village 表无 categoryCode）。已在数据字典厘清。 |
 
 > **重建 NBS.2015 的口径说明**：幸存 `2015.json` 遍历得 省31/市346/县3172/乡40480/村667519，去重入库后 **省31/市346/县3138/乡39959/村667519**。低于本文旧版 NBS 逐年表记录的 2015 口径（县3218/乡41127/村673804）——原始 sqlite 已丢失无从比对，此为**唯一可用源的忠实结果**，不追旧数、不臆造完整性。
 
@@ -148,7 +148,7 @@ tsx src/scripts/build-source.ts \
 - 🔴 **P0 提醒**：冷母本目前**仅维护者本地单点持有**。务必至少执行一次异地副本（外置盘 / 对象存储），
   否则一次磁盘故障即永久丢失（上游 stats.gov.cn 已死，不可再生）。源数据包发布到 npm（M4）后将获得第二重持久化。
 
-## 八、NBS.2015 重建记录（✅ 已完成）
+## 八、NBS.2015 重建记录（已完成）
 
 `NBS.2015.sqlite` 曾 0 字节损坏，已由幸存的 `data/stats.gov.cn/2015.json`（119.2MB，见 §二）重建：
 

@@ -12,14 +12,14 @@ dmfw 全量快照 ─(crawlAll)→ Division[] ─(loadBaselineCsv 对齐基线 +
 
 另有一条独立支线：`cndiv-postal` 抓 ip138 邮编/区号，产出 `@cndiv/source-postal` 数据包（CSV + 确定性 manifest）。
 
-## ⚠️ 头号坑：dmfw 与 NBS 层级口径不一致（差分前务必读）
+## 头号坑：dmfw 与 NBS 层级口径不一致（差分前务必读）
 
 - **层级建模差异（最易踩）**：dmfw 扁平直挂（市直接挂街道/乡镇），NBS/GB2260 在直辖市、省直管等处保留「市辖区 / 省直管」占位中间层。两者直接差分，会把这层口径差异误判成**大量伪变更**（首跑实测 48 直辖市区 + 5 省直管市假 `move`）。**`diffToPatch` 已内置归一化，调用方无需再处理**：`normalize.canonicalizeParent` 以 12 位码结构派生父码（`getParentCode`）覆盖 dmfw 上报的扁平父码，对基线/当前两侧施加（对 NBS 幂等），假 `move` 归零、真·新增自动落到占位层下；`normalize.isPlaceholder` 识别「市辖区 / 省直辖县级行政区划」占位层并在 remove 分支豁免（独立于 `--removes` 总开关），占位层不产假 remove。本工具另按「抓取根省前缀 + 实际抓到的层级」自动收窄差分范围。
 - **默认抑制 remove**：dmfw 覆盖范围 < NBS（无村级 level5、无开发区/管委会等乡级特殊单位），"基线有、dmfw 无" 多是口径差异而非真实撤销。故 `cndiv-crawl` 默认 `--removes=off`；被抑制的 remove 数量会打印（不静默丢弃），需人工复核时显式 `--removes=on`。
 - **空名跳过**：dmfw 偶发 `name=null` 节点，无法产出合法 add/update（schema 要求 name 非空），差分时跳过并计入 `skippedEmptyName`（不静默丢弃）。
 - **断点续爬**：抓取结果按 `--cache` 目录落盘，**相同 `--cache` 目录重跑即跳过已抓节点续跑**；失败节点会打印 code，可直接重跑补齐。
 
-## ⚠️ 二号坑：乡级（level 4）码位在 NBS / dmfw 之间**不可对齐**
+## 二号坑：乡级（level 4）码位在 NBS / dmfw 之间**不可对齐**
 
 两个源给**同一个乡镇街道**分配的顺序号不同 —— 昆明五华区的三条街道：
 
@@ -35,7 +35,7 @@ dmfw 全量快照 ─(crawlAll)→ Division[] ─(loadBaselineCsv 对齐基线 +
 
 时间线只需要县级，故用 `--maxLevel=3`：请求数从 ~4 万降到 ~340，且天然避开这个坑。
 
-## ⚠️ 三号坑：dmfw 抖动会「静默」吞掉整棵子树
+## 三号坑：dmfw 抖动会「静默」吞掉整棵子树
 
 dmfw 会以 **HTTP 200 + 空 `children`** 的形式抖动。这类响应在缓存里与「此节点真的是叶子」**完全无法分辨**，一旦写入，断点续爬就把这次抖动**永久固化**了。
 
@@ -187,7 +187,7 @@ const { patch, skippedEmptyName } = diffToPatch(baseline, divisions, {
   apply_after: '2023-baseline',
 });
 
-// ⚠️ patch.operations 是草稿，写盘前须经 @cndiv/data-protocol 的 validatePatch 守门，
+// patch.operations 是草稿，写盘前须经 @cndiv/data-protocol 的 validatePatch 守门，
 // 建议再过 cndiv-verify 结构性门禁。占位层归一化已由 diffToPatch 内部处理，无需手动对齐。
 console.log(patch.operations.length, '个操作，跳过空名', skippedEmptyName, '失败', failures.length);
 ```

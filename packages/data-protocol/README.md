@@ -51,7 +51,7 @@ if (result.success) {
   // result.data: Patch（meta 缺省字段已被 Zod 默认值填充）
   applyOperations(result.data.operations);
 } else {
-  // ⚠️ result.error 是 Zod 序列化后的字符串（issues 的 JSON），不是人类友好文案
+  // result.error 是 Zod 序列化后的字符串（issues 的 JSON），不是人类友好文案
   console.error(result.error);
 }
 ```
@@ -114,7 +114,7 @@ const r = PatchSchema.safeParse(data);
 if (!r.success) for (const issue of r.error.issues) console.log(issue.path, issue.message);
 ```
 
-> ⚠️ **返回形态不一致**：本包两个校验函数刻意不同——`validatePatch` 返回**自定义形状** `{ success, data } | { success, error: string }`（且 `error` 是 Zod 序列化串）；`validatePostalRecord` 返回 **Zod 原生 `SafeParseReturnType`**（`{ success, data } | { success, error: ZodError }`）。互相不能套用，按各自形状解构。
+> **返回形态不一致**：本包两个校验函数刻意不同——`validatePatch` 返回**自定义形状** `{ success, data } | { success, error: string }`（且 `error` 是 Zod 序列化串）；`validatePostalRecord` 返回 **Zod 原生 `SafeParseReturnType`**（`{ success, data } | { success, error: ZodError }`）。互相不能套用，按各自形状解构。
 
 ## Database
 
