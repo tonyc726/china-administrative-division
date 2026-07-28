@@ -267,16 +267,25 @@ h1.title {
   color: var(--vp-c-brand-1);
 }
 
-/* 代码块：深藏青底 + 柔边，模仿 Claude 产品 code-window-card */
+/* 代码块：亮色模式暖底 + Shiki 浅色主题适配，暗色模式深底 */
 .vp-doc div[class*='language-'] {
-  background: var(--claude-surface-dark);
-  border: 1px solid var(--vp-c-border);
+  background: var(--claude-surface-soft);
+  border: 1px solid var(--claude-hairline);
   border-radius: 8px;
   box-shadow: var(--vp-shadow-1);
+}
+/* Shiki 代码块内文本：亮底用暗墨，保证 github-light 主题对比度 */
+.vp-doc div[class*='language-'] pre,
+.vp-doc div[class*='language-'] code {
+  color: var(--claude-ink);
 }
 .dark .vp-doc div[class*='language-'] {
   background: #1b1b19;
   border-color: var(--vp-c-border);
+}
+.dark .vp-doc div[class*='language-'] pre,
+.dark .vp-doc div[class*='language-'] code {
+  color: var(--claude-on-dark);
 }
 .vp-doc div[class*='language-'] .lang {
   color: var(--vp-c-text-3);
