@@ -2,7 +2,7 @@
      favicon 环境不用 CSS 变量，hex 与 v8 概念页一致。
      36/34 grid，16px 下完整外框仍可识别。
      改动请同步 BrandMark.tsx。 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34">
+<svg width="34" height="34" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34">
   <!-- 外框：暖纸底 -->
   <rect x="0.5" y="0.5" width="33" height="33" rx="8" fill="#faf9f5" stroke="#d5cec0"/>
   <!-- 珊瑚橙印面：与 --color-clay #cc785c 一致 -->

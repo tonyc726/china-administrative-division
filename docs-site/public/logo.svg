@@ -1,6 +1,6 @@
 <!-- 九州印章 v8 · 多宝塔法度 · 与 apps/web/src/components/BrandMark.tsx 同源
      硬编码 hex（VitePress 环境无 CSS 变量），改动请同步 BrandMark.tsx 及 favicon.svg -->
-<svg viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cndiv · 九州印章">
+<svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cndiv · 九州印章">
   <title>cndiv · 中国行政区划数据基础设施</title>
   <!-- 外框：暖纸底 + hairline 描边 -->
   <rect x="0.5" y="0.5" width="33" height="33" rx="8" fill="#faf9f5" stroke="#d5cec0"/>
