@@ -374,7 +374,7 @@ h1.title {
 
 /* hero 底部减距 + 地图作背景层 */
 .VPHero.VPHomeHero {
-  padding-bottom: 48px;
+  padding-bottom: 0;
 }
 .VPHero .image {
   z-index: 0;
