@@ -21,26 +21,32 @@ features:
     details: 国家统计局 stats.gov.cn 自 2024 年停更、2026 转向国家地名信息库。v2 以 2023 五级全量为不可变基线，村级 620,572 条冻结留档。
     link: /data/snapshots
     linkText: 下载历年快照
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
   - title: 社区 Patch 增量
     details: 撤县设区、更名、新设社区等变更以 JSON Patch 提交，validatePatch 结构性门禁 ＋ CI 自动校验，逐年可追溯、可回放。
     link: /guide/contributing-patch
     linkText: 贡献 Patch
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 012 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
   - title: 用户侧零爬虫
     details: cndiv hydrate 从 NPM 拉取数据包注水到本地 SQLite，标准 SQLite 可直接 SQL 查询，大数据不进 git。
     link: /guide/getting-started
     linkText: CLI 注水
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
   - title: 纯函数码工具
     details: "@cndiv/core 零依赖：校验、解析 12 位区划码（2＋2＋2＋3＋3），判级、取父码、补零。TS 严格类型，浏览器 / Node / 边缘皆可跑。"
     link: /reference/core
     linkText: 码工具 API
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H7a2 2 0 00-2 2v5a2 2 0 002 2h1"/><path d="M16 21h1a2 2 0 002-2v-5a2 2 0 00-2-2h-1"/><path d="M8 21H7a2 2 0 01-2-2v-5c0-1.1.9-2 2-2h1"/><path d="M16 3h1a2 2 0 012 2v5c0 1.1-.9 2-2 2h-1"/></svg>
   - title: 只读查询 API
     details: "@cndiv/reader 薄封装 better-sqlite3，自动屏蔽复合主键 (code, year) 与直辖市「市辖区」占位层两个坑。"
     link: /reference/reader
     linkText: 查询 API
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
   - title: 增量采集引擎
     details: "@cndiv/crawler 对接国家地名信息库（dmfw）逐层 BFS 采集，canonicalizeParent 归一化占位层消解假 move，差分产出 Patch。"
     link: /reference/crawler
     linkText: 采集引擎
+    icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 010 20 14.5 14.5 0 010-20"/><path d="M2 12h20"/></svg>
 ---
 
 ## 三行上手

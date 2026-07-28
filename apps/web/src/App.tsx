@@ -153,7 +153,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
               className="hidden text-ink-3 transition hover:text-ink sm:block"
             >
               <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M3 2a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V6h-3.5a.5.5 0 01-.5-.5V2H3zm1 3.5h8v1H4v-1zm0 3h8v1H4v-1zm0 3h5v1H4v-1z" clipRule="evenodd" />
+                <path d="M1 2.5A1.5 1.5 0 012.5 1H3v13h-.5A1.5 1.5 0 011 12.5v-10zM4 1h9.5A1.5 1.5 0 0115 2.5v10a1.5 1.5 0 01-1.5 1.5H4V1zm1 1.5v10h8.5a.5.5 0 00.5-.5v-10a.5.5 0 00-.5-.5H5zm1 1h6v1H6v-1zm0 2h6v1H6v-1zm0 2h3v1H6v-1z" />
               </svg>
             </a>
             <a
