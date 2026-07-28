@@ -78,8 +78,8 @@ async function draw() {
     return [lng * s + ox, h - (lat * s - minY * s + pad)];
   }
 
-  const fill = 'rgba(204,120,92,0.07)';
-  const stroke = 'rgba(204,120,92,0.30)';
+  const fill = 'rgba(204,120,92,0.04)';
+  const stroke = 'rgba(204,120,92,0.18)';
 
   for (const p of provs) {
     ctx.beginPath();
@@ -130,7 +130,7 @@ function insets(
   const ss = Math.min(ix / rangeX, iy / rangeY);
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(204,120,92,0.22)';
+  ctx.strokeStyle = 'rgba(204,120,92,0.14)';
   ctx.lineWidth = 0.8;
   ctx.strokeRect(rx, ry, ix, iy);
 
@@ -158,9 +158,9 @@ function insets(
       }
     }
     ctx.closePath();
-    ctx.fillStyle = 'rgba(204,120,92,0.08)';
+    ctx.fillStyle = 'rgba(204,120,92,0.05)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(204,120,92,0.18)';
+    ctx.strokeStyle = 'rgba(204,120,92,0.12)';
     ctx.lineWidth = 0.4;
     ctx.stroke();
   }

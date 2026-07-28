@@ -372,6 +372,17 @@ h1.title {
   max-height: 240px;
 }
 
+/* hero 底部减距 + 地图作背景层 */
+.VPHero.VPHomeHero {
+  padding-bottom: 48px;
+}
+.VPHero .image {
+  z-index: 0;
+}
+.VPHero .image .image-bg {
+  opacity: 0.28;
+}
+
 /* 主 CTA：珊瑚橙实心（品牌色保留，双模式白字可读）；次 CTA：暖底描边 */
 .VPButton.brand {
   background: var(--claude-coral);
