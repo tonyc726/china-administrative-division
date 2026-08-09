@@ -189,11 +189,16 @@ function saveOut(
     );
 }
 
-/** upper 模式说明：口径、缺失、直辖市特例 */
-const UPPER_NOTE =
-  '上层行政区划坐标（stname/listPub 21200/21300/21400）。' +
-  '按 31 个 NBS 省份码分别查询；直辖市（11/12/31/50）无 21300 地级记录。' +
-  '县级 21400（2849）比 NBS 2023 L3（2975）少 126 条，缺失的多为开发区/新区/管理区/管委会。';
+/** upper 模式说明：口径、缺失、直辖市特例（动态取自 stats，避免数字漂移） */
+function buildUpperNote(stats: UpperStats): string {
+  const countyGap = Math.max(0, 2975 - stats.county.afterDedup);
+  return (
+    '上层行政区划坐标（stname/listPub 21200/21300/21400）。' +
+    '按 31 个 NBS 省份码分别查询；直辖市（11/12/31/50）无 21300 地级记录。' +
+    `县级 21400 共 ${stats.county.beforeDedup} 条、去重后 ${stats.county.afterDedup} 条，` +
+    `比 NBS 2023 L3（2975）少 ${countyGap} 条，缺失的多为开发区/新区/管理区/管委会。`
+  );
+}
 
 /** upper 单条记录：附加查询用的省份码，方便续跑与溯源 */
 interface UpperRecord {
@@ -278,17 +283,17 @@ function computeUpperStats(
     province: {
       beforeDedup: data.provinces.length,
       afterDedup: provinces.length,
-      coordMissing: coordMissingOf(data.provinces),
+      coordMissing: coordMissingOf(provinces),
     },
     city: {
       beforeDedup: data.cities.length,
       afterDedup: cities.length,
-      coordMissing: coordMissingOf(data.cities),
+      coordMissing: coordMissingOf(cities),
     },
     county: {
       beforeDedup: data.counties.length,
       afterDedup: counties.length,
-      coordMissing: coordMissingOf(data.counties),
+      coordMissing: coordMissingOf(counties),
     },
     failures: failureCount,
   };
@@ -320,17 +325,66 @@ async function loadUpperData(outPath: string): Promise<UpperData> {
   }
 }
 
+interface UpperMutation {
+  newRecords: UpperRecord[];
+  bucket: UpperBucket;
+  completedKey?: string;
+}
+
 let upperSaveChain: Promise<void> = Promise.resolve();
 
-/** 原子写 upper.json：tmp + rename，崩溃不留半文件。串行化避免并发 rename 冲突。 */
-async function saveUpperData(outPath: string, data: UpperData): Promise<void> {
+/** 原子写 upper.json：tmp + rename，崩溃不留半文件。串行化避免并发 rename 冲突。
+ *  成功写盘后才把新记录与 completed 应用到内存状态，避免检查点与数据不一致。 */
+async function saveUpperData(
+  outPath: string,
+  data: UpperData,
+  completed: Set<string>,
+  options: {
+    mutation?: UpperMutation;
+    failureCount?: number;
+  } = {}
+): Promise<void> {
   const tmp = `${outPath}.tmp.${Date.now()}.${Math.random()
     .toString(36)
     .slice(2)}`;
   const work = upperSaveChain.then(async () => {
+    // 构建下一状态（不修改内存中的 data/completed）
+    const nextData: UpperData = {
+      meta: data.meta,
+      completed: data.completed,
+      provinces: data.provinces,
+      cities: data.cities,
+      counties: data.counties,
+    };
+    if (options.mutation) {
+      const { newRecords, bucket, completedKey } = options.mutation;
+      nextData[bucket] = dedupUpperRecords([
+        ...nextData[bucket],
+        ...newRecords,
+      ]);
+      if (completedKey) {
+        nextData.completed = [...new Set([...completed, completedKey])];
+      }
+    }
+    const stats = computeUpperStats(nextData, options.failureCount ?? 0);
+    nextData.meta = {
+      fetchedAt: new Date().toISOString(),
+      note: buildUpperNote(stats),
+      stats,
+    };
     await mkdir(path.dirname(outPath), { recursive: true });
-    await writeFile(tmp, JSON.stringify(data, null, 2), 'utf-8');
+    await writeFile(tmp, JSON.stringify(nextData, null, 2), 'utf-8');
     await rename(tmp, outPath);
+
+    // 写盘成功后，再把状态同步回内存
+    if (options.mutation) {
+      data[options.mutation.bucket] = nextData[options.mutation.bucket];
+      if (options.mutation.completedKey) {
+        completed.add(options.mutation.completedKey);
+        data.completed = nextData.completed;
+      }
+    }
+    data.meta = nextData.meta;
   });
   // 链继续（无论本次成败），但把真实结果抛给调用方
   upperSaveChain = work.catch(() => {
@@ -374,30 +428,29 @@ async function runUpper(options: {
   const failures: Array<{ provinceCode: string; type: string; error: string }> =
     [];
   const startedAt = Date.now();
-  let jitter = 0;
   let done = 0;
 
   await mapPool(tasks, options.concurrency, async ({ provinceCode, type }) => {
     try {
       const rows = await fetchStnameStable(provinceCode, type, {
         delayMs: options.delayMs,
-        onJitter: () => jitter++,
       });
       const bucket = bucketForType(type);
-      for (const row of rows) {
-        data[bucket].push({ provinceCode, row });
-      }
-      // 成功即完成；空结果仅在合法预期空时标记，防止抖动空被固化
-      if (rows.length > 0 || isExpectedEmpty(provinceCode, type)) {
-        completed.add(taskKey(provinceCode, type));
-        data.completed = [...completed];
-      }
-      data.meta = {
-        fetchedAt: new Date().toISOString(),
-        note: UPPER_NOTE,
-        stats: computeUpperStats(data, failures.length),
-      };
-      await saveUpperData(outPath, data);
+      const newRecords: UpperRecord[] = rows.map((row) => ({
+        provinceCode,
+        row,
+      }));
+      const key = taskKey(provinceCode, type);
+      const shouldComplete =
+        rows.length > 0 || isExpectedEmpty(provinceCode, type);
+      await saveUpperData(outPath, data, completed, {
+        mutation: {
+          newRecords,
+          bucket,
+          completedKey: shouldComplete ? key : undefined,
+        },
+        failureCount: failures.length,
+      });
       done++;
       if (done % 10 === 0 || done === tasks.length) {
         const elapsedSec = (Date.now() - startedAt) / 1000;
@@ -416,12 +469,15 @@ async function runUpper(options: {
     }
   });
 
+  const stats = computeUpperStats(data, failures.length);
   data.meta = {
     fetchedAt: new Date().toISOString(),
-    note: UPPER_NOTE,
-    stats: computeUpperStats(data, failures.length),
+    note: buildUpperNote(stats),
+    stats,
   };
-  await saveUpperData(outPath, data);
+  await saveUpperData(outPath, data, completed, {
+    failureCount: failures.length,
+  });
 
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(0);
   const s = data.meta.stats;
@@ -436,6 +492,7 @@ async function runUpper(options: {
   );
   if (s.failures > 0) {
     console.log(`失败：${s.failures}`);
+    process.exitCode = 1;
     for (const f of failures.slice(0, 20)) {
       console.log(`  ${f.provinceCode}@${f.type}: ${f.error}`);
     }
