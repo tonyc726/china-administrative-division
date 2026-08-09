@@ -39,6 +39,7 @@
  */
 import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import path from 'path';
+import { pathToFileURL } from 'url';
 import { PROVINCE_CODES } from '@cndiv/core';
 import { crawlAll } from './crawl-all.js';
 import {
@@ -201,27 +202,27 @@ function buildUpperNote(stats: UpperStats): string {
 }
 
 /** upper 单条记录：附加查询用的省份码，方便续跑与溯源 */
-interface UpperRecord {
+export interface UpperRecord {
   provinceCode: string;
   row: StnameRow;
 }
 
-type UpperBucket = 'provinces' | 'cities' | 'counties';
+export type UpperBucket = 'provinces' | 'cities' | 'counties';
 
-interface UpperTypeStats {
+export interface UpperTypeStats {
   beforeDedup: number;
   afterDedup: number;
   coordMissing: number;
 }
 
-interface UpperStats {
+export interface UpperStats {
   province: UpperTypeStats;
   city: UpperTypeStats;
   county: UpperTypeStats;
   failures: number;
 }
 
-interface UpperData {
+export interface UpperData {
   meta: {
     fetchedAt: string;
     note: string;
@@ -233,7 +234,7 @@ interface UpperData {
   counties: UpperRecord[];
 }
 
-function bucketForType(type: string): UpperBucket {
+export function bucketForType(type: string): UpperBucket {
   if (type === '21200') return 'provinces';
   if (type === '21300') return 'cities';
   if (type === '21400') return 'counties';
@@ -245,13 +246,13 @@ function taskKey(provinceCode: string, type: string): string {
 }
 
 /** 某些 (provinceCode, type) 组合合法为空，应标记完成避免无限重试 */
-function isExpectedEmpty(provinceCode: string, type: string): boolean {
+export function isExpectedEmpty(provinceCode: string, type: string): boolean {
   // 直辖市无地级行政区
   return type === '21300' && ['11', '12', '31', '50'].includes(provinceCode);
 }
 
 /** 按 9 位码 + 名称 + place_type_code 去重（21400 存在 6 位码冲突） */
-function dedupUpperRecords(records: UpperRecord[]): UpperRecord[] {
+export function dedupUpperRecords(records: UpperRecord[]): UpperRecord[] {
   const seen = new Set<string>();
   return records.filter((r) => {
     const key = `${r.row.area}@${r.row.standard_name}@${r.row.place_type_code}`;
@@ -270,7 +271,7 @@ function emptyUpperStats(): UpperStats {
   };
 }
 
-function computeUpperStats(
+export function computeUpperStats(
   data: UpperData,
   failureCount: number
 ): UpperStats {
@@ -299,7 +300,7 @@ function computeUpperStats(
   };
 }
 
-async function loadUpperData(outPath: string): Promise<UpperData> {
+export async function loadUpperData(outPath: string): Promise<UpperData> {
   try {
     const raw = JSON.parse(await readFile(outPath, 'utf-8'));
     if (!raw || typeof raw !== 'object') throw new Error('invalid');
@@ -665,7 +666,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.stack : String(err));
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((err: unknown) => {
+    console.error(err instanceof Error ? err.stack : String(err));
+    process.exit(1);
+  });
+}
