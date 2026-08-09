@@ -301,19 +301,42 @@ function computeUpperStats(
 
 async function loadUpperData(outPath: string): Promise<UpperData> {
   try {
-    const raw = JSON.parse(await readFile(outPath, 'utf-8')) as UpperData;
+    const raw = JSON.parse(await readFile(outPath, 'utf-8'));
     if (!raw || typeof raw !== 'object') throw new Error('invalid');
-    return {
-      meta: raw.meta ?? {
-        fetchedAt: '',
-        note: '',
-        stats: emptyUpperStats(),
-      },
-      completed: Array.isArray(raw.completed) ? raw.completed : [],
-      provinces: Array.isArray(raw.provinces) ? raw.provinces : [],
-      cities: Array.isArray(raw.cities) ? raw.cities : [],
-      counties: Array.isArray(raw.counties) ? raw.counties : [],
+    if (
+      !Array.isArray(raw.provinces) ||
+      !Array.isArray(raw.cities) ||
+      !Array.isArray(raw.counties) ||
+      !Array.isArray(raw.completed)
+    ) {
+      throw new Error('invalid upper data shape');
+    }
+    const data: UpperData = {
+      meta:
+        raw.meta && typeof raw.meta === 'object'
+          ? {
+              fetchedAt: String(raw.meta.fetchedAt ?? ''),
+              note: String(raw.meta.note ?? ''),
+              stats:
+                raw.meta.stats && typeof raw.meta.stats === 'object'
+                  ? (raw.meta.stats as UpperStats)
+                  : emptyUpperStats(),
+            }
+          : {
+              fetchedAt: '',
+              note: '',
+              stats: emptyUpperStats(),
+            },
+      completed: raw.completed,
+      provinces: raw.provinces,
+      cities: raw.cities,
+      counties: raw.counties,
     };
+    // 对旧缓存中已存在的重复项做一次清理（即使本次无新任务也会保证产物无重复）
+    data.provinces = dedupUpperRecords(data.provinces);
+    data.cities = dedupUpperRecords(data.cities);
+    data.counties = dedupUpperRecords(data.counties);
+    return data;
   } catch {
     return {
       meta: { fetchedAt: '', note: '', stats: emptyUpperStats() },
@@ -366,6 +389,10 @@ async function saveUpperData(
         nextData.completed = [...new Set([...completed, completedKey])];
       }
     }
+    // 最终写盘前对所有 bucket 无条件去重，防止旧缓存中的重复项在续跑空任务时残留
+    nextData.provinces = dedupUpperRecords(nextData.provinces);
+    nextData.cities = dedupUpperRecords(nextData.cities);
+    nextData.counties = dedupUpperRecords(nextData.counties);
     const stats = computeUpperStats(nextData, options.failureCount ?? 0);
     nextData.meta = {
       fetchedAt: new Date().toISOString(),
@@ -469,12 +496,6 @@ async function runUpper(options: {
     }
   });
 
-  const stats = computeUpperStats(data, failures.length);
-  data.meta = {
-    fetchedAt: new Date().toISOString(),
-    note: buildUpperNote(stats),
-    stats,
-  };
   await saveUpperData(outPath, data, completed, {
     failureCount: failures.length,
   });
