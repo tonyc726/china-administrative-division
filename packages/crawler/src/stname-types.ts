@@ -35,8 +35,8 @@ export interface StnameRow {
   province_name?: string;
   city_name?: string;
   area_name?: string;
-  /** 9 位乡级码（6 位县级 + 3 位乡级，可用于 join 乡级） */
-  area?: string;
+  /** 9 位行政区划码（省级/地级/县级为 xxxxxx999，乡级为 6 位县码 + 3 位乡级码） */
+  area: string;
 }
 
 /** stname/listPub 分页响应（字段名 records，2026-07-18 实测） */
@@ -55,6 +55,17 @@ export interface StnameResponse {
  * 实测同名记录坐标距离中位数 0m。详见规格 §4。
  */
 export const KEEP_TYPES: ReadonlySet<string> = new Set(['21610', '21620']);
+
+/**
+ * 上层行政区划类型码：21200(省级) / 21300(地级) / 21400(县级)。
+ *
+ * 与 KEEP_TYPES（村/社区）互补，用于 --upper 坐标采集。
+ */
+export const UPPER_TYPES: ReadonlySet<string> = new Set([
+  '21200',
+  '21300',
+  '21400',
+]);
 
 /** stname 抓取失败（带 code + placeTypeCode 上下文），供上层部分容错 */
 export class StnameError extends Error {

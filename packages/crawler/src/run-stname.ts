@@ -12,9 +12,13 @@
  *   # 3. 全量
  *   pnpm --filter @cndiv/crawler crawl:stname -- --concurrency=2 --cache-dir=.cache/stname --out=coords.json
  *
+ *   # 4. 上层行政区划坐标（省/市/县）
+ *   pnpm --filter @cndiv/crawler crawl:stname -- --upper
+ *
  * 选项：
  *   --probe                 探针模式：只请求一个县一页，打印原始响应，不聚合不缓存
  *   --code=<6位码>          探针用的县级码（默认 330282 慈溪市）
+ *   --upper                 采集上层坐标：按 31 个 NBS 省份码抓取 21200/21300/21400
  *   --limit=<N>             只跑前 N 个县（样本试探）
  *   --concurrency=<N>       并发请求数（对 dmfw 的实际并发），默认 2
  *   --delay=<ms>            每请求间隔（礼貌限速），默认 800
@@ -35,6 +39,7 @@
  */
 import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import path from 'path';
+import { PROVINCE_CODES } from '@cndiv/core';
 import { crawlAll } from './crawl-all.js';
 import {
   mapPool,
@@ -43,7 +48,7 @@ import {
   fetchStnameStable,
   filterByKeptTypes,
 } from './stname.js';
-import { KEEP_TYPES, type StnameRow } from './stname-types.js';
+import { KEEP_TYPES, UPPER_TYPES, type StnameRow } from './stname-types.js';
 
 const args = process.argv.slice(2);
 const get = (key: string): string | undefined =>
@@ -52,6 +57,14 @@ const has = (key: string): boolean => args.includes(`--${key}`);
 
 /** 县级 level=3（用字面量避免引入 core 枚举依赖；与 DIVISION_LEVEL.COUNTY 等价） */
 const COUNTY_LEVEL = 3;
+
+/** upper 模式默认产物路径 */
+const UPPER_OUT_DEFAULT = '.cache/upper.json';
+
+/** 31 个 NBS 省份码（排除港澳台 71/81/82 及统计局未收录 90） */
+const NBS_PROVINCE_CODES = Object.keys(PROVINCE_CODES)
+  .filter((code) => !['71', '81', '82', '90'].includes(code))
+  .sort((a, b) => Number(a) - Number(b));
 
 interface RunStats {
   counties: number;
@@ -176,9 +189,272 @@ function saveOut(
     );
 }
 
+/** upper 模式说明：口径、缺失、直辖市特例 */
+const UPPER_NOTE =
+  '上层行政区划坐标（stname/listPub 21200/21300/21400）。' +
+  '按 31 个 NBS 省份码分别查询；直辖市（11/12/31/50）无 21300 地级记录。' +
+  '县级 21400（2849）比 NBS 2023 L3（2975）少 126 条，缺失的多为开发区/新区/管理区/管委会。';
+
+/** upper 单条记录：附加查询用的省份码，方便续跑与溯源 */
+interface UpperRecord {
+  provinceCode: string;
+  row: StnameRow;
+}
+
+type UpperBucket = 'provinces' | 'cities' | 'counties';
+
+interface UpperTypeStats {
+  beforeDedup: number;
+  afterDedup: number;
+  coordMissing: number;
+}
+
+interface UpperStats {
+  province: UpperTypeStats;
+  city: UpperTypeStats;
+  county: UpperTypeStats;
+  failures: number;
+}
+
+interface UpperData {
+  meta: {
+    fetchedAt: string;
+    note: string;
+    stats: UpperStats;
+  };
+  completed: string[];
+  provinces: UpperRecord[];
+  cities: UpperRecord[];
+  counties: UpperRecord[];
+}
+
+function bucketForType(type: string): UpperBucket {
+  if (type === '21200') return 'provinces';
+  if (type === '21300') return 'cities';
+  if (type === '21400') return 'counties';
+  throw new Error(`unknown upper type ${type}`);
+}
+
+function taskKey(provinceCode: string, type: string): string {
+  return `${provinceCode}@${type}`;
+}
+
+/** 某些 (provinceCode, type) 组合合法为空，应标记完成避免无限重试 */
+function isExpectedEmpty(provinceCode: string, type: string): boolean {
+  // 直辖市无地级行政区
+  return type === '21300' && ['11', '12', '31', '50'].includes(provinceCode);
+}
+
+/** 按 9 位码 + 名称 + place_type_code 去重（21400 存在 6 位码冲突） */
+function dedupUpperRecords(records: UpperRecord[]): UpperRecord[] {
+  const seen = new Set<string>();
+  return records.filter((r) => {
+    const key = `${r.row.area}@${r.row.standard_name}@${r.row.place_type_code}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function emptyUpperStats(): UpperStats {
+  return {
+    province: { beforeDedup: 0, afterDedup: 0, coordMissing: 0 },
+    city: { beforeDedup: 0, afterDedup: 0, coordMissing: 0 },
+    county: { beforeDedup: 0, afterDedup: 0, coordMissing: 0 },
+    failures: 0,
+  };
+}
+
+function computeUpperStats(
+  data: UpperData,
+  failureCount: number
+): UpperStats {
+  const provinces = dedupUpperRecords(data.provinces);
+  const cities = dedupUpperRecords(data.cities);
+  const counties = dedupUpperRecords(data.counties);
+  const coordMissingOf = (list: UpperRecord[]) =>
+    list.filter((r) => !r.row.gdm).length;
+  return {
+    province: {
+      beforeDedup: data.provinces.length,
+      afterDedup: provinces.length,
+      coordMissing: coordMissingOf(data.provinces),
+    },
+    city: {
+      beforeDedup: data.cities.length,
+      afterDedup: cities.length,
+      coordMissing: coordMissingOf(data.cities),
+    },
+    county: {
+      beforeDedup: data.counties.length,
+      afterDedup: counties.length,
+      coordMissing: coordMissingOf(data.counties),
+    },
+    failures: failureCount,
+  };
+}
+
+async function loadUpperData(outPath: string): Promise<UpperData> {
+  try {
+    const raw = JSON.parse(await readFile(outPath, 'utf-8')) as UpperData;
+    if (!raw || typeof raw !== 'object') throw new Error('invalid');
+    return {
+      meta: raw.meta ?? {
+        fetchedAt: '',
+        note: '',
+        stats: emptyUpperStats(),
+      },
+      completed: Array.isArray(raw.completed) ? raw.completed : [],
+      provinces: Array.isArray(raw.provinces) ? raw.provinces : [],
+      cities: Array.isArray(raw.cities) ? raw.cities : [],
+      counties: Array.isArray(raw.counties) ? raw.counties : [],
+    };
+  } catch {
+    return {
+      meta: { fetchedAt: '', note: '', stats: emptyUpperStats() },
+      completed: [],
+      provinces: [],
+      cities: [],
+      counties: [],
+    };
+  }
+}
+
+let upperSaveChain: Promise<void> = Promise.resolve();
+
+/** 原子写 upper.json：tmp + rename，崩溃不留半文件。串行化避免并发 rename 冲突。 */
+async function saveUpperData(outPath: string, data: UpperData): Promise<void> {
+  const tmp = `${outPath}.tmp.${Date.now()}.${Math.random()
+    .toString(36)
+    .slice(2)}`;
+  const work = upperSaveChain.then(async () => {
+    await mkdir(path.dirname(outPath), { recursive: true });
+    await writeFile(tmp, JSON.stringify(data, null, 2), 'utf-8');
+    await rename(tmp, outPath);
+  });
+  // 链继续（无论本次成败），但把真实结果抛给调用方
+  upperSaveChain = work.catch(() => {
+    /* swallow to keep chain alive */
+  });
+  return work;
+}
+
+/** --upper 模式：按省采集 21200/21300/21400 上层坐标 */
+async function runUpper(options: {
+  concurrency: number;
+  delayMs: number;
+  outPath: string;
+  limit?: number;
+}): Promise<void> {
+  const provinceCodes = options.limit
+    ? NBS_PROVINCE_CODES.slice(0, options.limit)
+    : NBS_PROVINCE_CODES;
+  const types = [...UPPER_TYPES];
+
+  const outPath = options.outPath;
+  const data = await loadUpperData(outPath);
+  const completed = new Set(data.completed);
+
+  const tasks: Array<{ provinceCode: string; type: string }> = [];
+  for (const provinceCode of provinceCodes) {
+    for (const type of types) {
+      const key = taskKey(provinceCode, type);
+      if (!completed.has(key)) tasks.push({ provinceCode, type });
+    }
+  }
+
+  console.log(
+    `upper 采集：${provinceCodes.length} 省 × ${types.length} 类型 = ${
+      provinceCodes.length * types.length
+    } 任务`
+  );
+  console.log(`已完成 ${completed.size} 个，本次待跑 ${tasks.length} 个`);
+  console.log(`产物：${outPath}`);
+
+  const failures: Array<{ provinceCode: string; type: string; error: string }> =
+    [];
+  const startedAt = Date.now();
+  let jitter = 0;
+  let done = 0;
+
+  await mapPool(tasks, options.concurrency, async ({ provinceCode, type }) => {
+    try {
+      const rows = await fetchStnameStable(provinceCode, type, {
+        delayMs: options.delayMs,
+        onJitter: () => jitter++,
+      });
+      const bucket = bucketForType(type);
+      for (const row of rows) {
+        data[bucket].push({ provinceCode, row });
+      }
+      // 成功即完成；空结果仅在合法预期空时标记，防止抖动空被固化
+      if (rows.length > 0 || isExpectedEmpty(provinceCode, type)) {
+        completed.add(taskKey(provinceCode, type));
+        data.completed = [...completed];
+      }
+      data.meta = {
+        fetchedAt: new Date().toISOString(),
+        note: UPPER_NOTE,
+        stats: computeUpperStats(data, failures.length),
+      };
+      await saveUpperData(outPath, data);
+      done++;
+      if (done % 10 === 0 || done === tasks.length) {
+        const elapsedSec = (Date.now() - startedAt) / 1000;
+        console.log(
+          `  进度 ${done}/${tasks.length} | ` +
+            `省 ${data.provinces.length} 市 ${data.cities.length} 县 ${data.counties.length} | ` +
+            `${elapsedSec.toFixed(0)}s`
+        );
+      }
+    } catch (err) {
+      failures.push({
+        provinceCode,
+        type,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
+  data.meta = {
+    fetchedAt: new Date().toISOString(),
+    note: UPPER_NOTE,
+    stats: computeUpperStats(data, failures.length),
+  };
+  await saveUpperData(outPath, data);
+
+  const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(0);
+  const s = data.meta.stats;
+  console.log(`\n=== upper 完成 (${elapsedSec}s) ===`);
+  console.log(
+    `省：${s.province.afterDedup}（去重前 ${s.province.beforeDedup}）`
+  );
+  console.log(`市：${s.city.afterDedup}（去重前 ${s.city.beforeDedup}）`);
+  console.log(`县：${s.county.afterDedup}（去重前 ${s.county.beforeDedup}）`);
+  console.log(
+    `坐标缺失：省${s.province.coordMissing} 市${s.city.coordMissing} 县${s.county.coordMissing}`
+  );
+  if (s.failures > 0) {
+    console.log(`失败：${s.failures}`);
+    for (const f of failures.slice(0, 20)) {
+      console.log(`  ${f.provinceCode}@${f.type}: ${f.error}`);
+    }
+    if (failures.length > 20) console.log(`  ... 共 ${failures.length} 条`);
+  }
+}
+
 async function main(): Promise<void> {
   if (has('probe')) {
     await probe(get('code') ?? '330282', get('type') ?? '21610');
+    return;
+  }
+
+  if (has('upper')) {
+    const concurrency = Number(get('concurrency') ?? 2);
+    const delayMs = Number(get('delay') ?? 800);
+    const limit = get('limit') ? Number(get('limit')) : undefined;
+    const outPath = get('out') ?? UPPER_OUT_DEFAULT;
+    await runUpper({ concurrency, delayMs, outPath, limit });
     return;
   }
 
