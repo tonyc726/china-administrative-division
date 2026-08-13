@@ -3,3 +3,17 @@ packages:
   # legacy 已归档为只读参考（不再是 workspace 成员，其依赖/构建不参与 monorepo）。
   # GB2260 1980-2021 历史经 `cndiv migrate --input=legacy/data/GB2260` 入 v2 真相源；
   # 文件仍在 git 中（非 filter-repo）供考古。详见 legacy/README.md。
+
+# pnpm 11 不再读取 package.json#pnpm；overrides / allowBuilds 写在这里。
+overrides:
+  brace-expansion: ^5.0.9
+  js-yaml@3: ^3.15.0
+  js-yaml@4: ^4.3.0
+  nanoid@3: ^3.3.17
+  postcss: ^8.5.26
+  undici: ^7.29.0
+
+# pnpm 10+ 默认不跑依赖 lifecycle；原生/二进制包须显式放行。
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true

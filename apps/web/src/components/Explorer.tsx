@@ -11,7 +11,14 @@
  * 分片里同时带着该县 1980–2020 的名称谱系（h）——
  * 宏大叙事在这里落到个人身上：「1985 年起，余姚县改记为余姚市」。
  */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type JSX,
+  type ReactNode,
+} from 'react';
 import type { Division, Shard, TreeRow } from '../types';
 import { COPY, type Lang } from '../i18n';
 import { ShareCard } from './ShareCard';

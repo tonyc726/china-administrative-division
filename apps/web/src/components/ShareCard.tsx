@@ -7,7 +7,7 @@
  *
  * 用 canvas 而非 html2canvas：零依赖、无跨域字体问题、导出即所见。
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import type { Division, LineageEvent } from '../types';
 import { COPY, type Lang } from '../i18n';
 

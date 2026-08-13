@@ -8,7 +8,7 @@
  *
  * 坐标系:存储 CGCS2000(≈WGS84),跳转高德前转 GCJ-02(规格 §7.4)。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import type { Division } from '../types';
 
 const BASE = import.meta.env.BASE_URL;

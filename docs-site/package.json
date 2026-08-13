@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Documentation site for @cndiv (China administrative division infrastructure). Standalone — installed with --ignore-workspace so VitePress deps do not touch the monorepo lockfile.",
+  "description": "Documentation site for @cndiv (China administrative division infrastructure). Nested workspace — VitePress deps stay out of the monorepo lockfile.",
+  "packageManager": "pnpm@11.21.0",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",

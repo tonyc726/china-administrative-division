@@ -1,7 +1,7 @@
 # Netlify 部署配置。
 # 在 Netlify 站点设置里将 "Base directory" 设为 docs-site，Netlify 会 cd 到此目录后读取本文件。
 [build]
-  command = "pnpm install --ignore-workspace && pnpm build"
+  command = "pnpm install && pnpm build"
   publish = ".vitepress/dist"
 
 [build.environment]
