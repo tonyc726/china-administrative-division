@@ -14,7 +14,13 @@
  *  2. 游标不归 React 管：Hero 的那一条 rAF 每帧直接写它的 style.left（见 headRef）。
  *     每帧 setState 会把整棵树重渲染一次，代价白付。
  */
-import { useRef, useState, type MutableRefObject, type RefObject } from 'react';
+import {
+  useRef,
+  useState,
+  type JSX,
+  type MutableRefObject,
+  type RefObject,
+} from 'react';
 import type { Timeline as TimelineData } from '../types';
 import { COPY, type Lang } from '../i18n';
 
@@ -24,16 +30,23 @@ interface Props {
   /** 连续的年份坐标（浮点）—— 键盘操作要读它的当前值 */
   posRef: MutableRefObject<number>;
   /** 游标：Hero 的 rAF 每帧写它的 style.left */
-  headRef: RefObject<HTMLDivElement>;
+  headRef: RefObject<HTMLDivElement | null>;
   /** 轨道：Hero 的 rAF 每帧写它的 aria-valuenow —— 无障碍也得跟着走，不能只动像素 */
-  trackRef: RefObject<HTMLDivElement>;
+  trackRef: RefObject<HTMLDivElement | null>;
   onSeek: (pos: number) => void;
 }
 
 /** 柱区的视口高度（横向被拉满，纵向是真实的） */
 const VH = 44;
 
-export function Scrubber({ data, lang, posRef, headRef, trackRef, onSeek }: Props): JSX.Element {
+export function Scrubber({
+  data,
+  lang,
+  posRef,
+  headRef,
+  trackRef,
+  onSeek,
+}: Props): JSX.Element {
   const t = COPY[lang];
   const { years, milestones } = data;
   const last = years.length - 1;
@@ -41,7 +54,9 @@ export function Scrubber({ data, lang, posRef, headRef, trackRef, onSeek }: Prop
   const dragging = useRef(false);
 
   /** 每一年消失了多少个县 —— 时间轴的形状就是它 */
-  const vol = new Map<number, number>(data.changes.map((c) => [c.y, c.out.length]));
+  const vol = new Map<number, number>(
+    data.changes.map((c) => [c.y, c.out.length])
+  );
   const peak = Math.max(1, ...vol.values());
 
   /** 第 i 年在轨道上的百分比位置 */
@@ -126,7 +141,11 @@ export function Scrubber({ data, lang, posRef, headRef, trackRef, onSeek }: Prop
         }}
         onPointerMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
-          setHover(Math.round(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * last));
+          setHover(
+            Math.round(
+              Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * last
+            )
+          );
           if (dragging.current) seekAt(e.clientX);
         }}
         onPointerLeave={() => {
@@ -207,7 +226,12 @@ export function Scrubber({ data, lang, posRef, headRef, trackRef, onSeek }: Prop
                 key={`l${y}`}
                 style={{
                   left: `${pct(i)}%`,
-                  transform: i === 0 ? 'none' : i === last ? 'translateX(-100%)' : 'translateX(-50%)',
+                  transform:
+                    i === 0
+                      ? 'none'
+                      : i === last
+                        ? 'translateX(-100%)'
+                        : 'translateX(-50%)',
                 }}
                 className="absolute top-0"
               >

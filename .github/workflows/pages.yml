@@ -56,16 +56,17 @@ jobs:
           tar -xzf /tmp/cndiv-source-history-*.tgz -C /tmp/srchist
           cp /tmp/srchist/package/data/divisions.csv packages/source-history/data/divisions.csv
 
-      # apps/web 独立于 workspace（--ignore-workspace），部署到 GH Pages 项目页需要 /<repo>/ 前缀
+      # apps/web 是嵌套 workspace（自有 lockfile，不进 monorepo）；部署到 GH Pages 项目页需要 /<repo>/ 前缀
       - name: Build web (homepage)
         working-directory: apps/web
         env:
           WEB_BASE: /china-administrative-division/
         run: |
-          pnpm install --ignore-workspace
+          pnpm install
           pnpm run build
 
-      # docs-site 现在是主站的辅助链接，挂在 /docs/ 子路径；DOCS_HOME_URL 让它反向链回主站
+      # docs-site 是嵌套 workspace（自有 pnpm-workspace.yaml + allowBuilds.esbuild），
+      # 不要加 --ignore-workspace，否则 pnpm 11 会忽略 allowBuilds 并因 esbuild 脚本未放行而失败。
       - name: Build docs-site (auxiliary, under /docs/)
         working-directory: docs-site
         env:
@@ -73,7 +74,7 @@ jobs:
           DOCS_SITE_URL: ${{ env.SITE_URL }}/docs
           DOCS_HOME_URL: ${{ env.SITE_URL }}/
         run: |
-          pnpm install --ignore-workspace
+          pnpm install
           pnpm build
 
       - name: Combine into one Pages artifact

@@ -27,14 +27,14 @@
   "dependencies": {
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "csv-parse": "^7.0.0",
     "glob": "^13.0.6",
     "got": "^15.0.6",
     "tar-stream": "^3.2.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/tar-stream": "^3.1.4"
   },
   "keywords": [

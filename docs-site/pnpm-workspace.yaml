@@ -1,0 +1,7 @@
+# Nested workspace: keeps VitePress deps out of the monorepo lockfile.
+# CI/local run `pnpm install` here (do not pass --ignore-workspace, or allowBuilds is ignored).
+packages:
+  - '.'
+
+allowBuilds:
+  esbuild: true
