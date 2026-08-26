@@ -38,7 +38,7 @@
     "@cndiv/extractor": "workspace:*",
     "@cndiv/reader": "workspace:^",
     "cheerio": "^1.2.0",
-    "got": "^15.0.6",
+    "got": "^15.1.0",
     "iconv-lite": "^0.7.2"
   },
   "keywords": [
