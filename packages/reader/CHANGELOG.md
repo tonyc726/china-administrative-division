@@ -1,5 +1,11 @@
 # @cndiv/reader
 
+## 0.2.1
+
+### Patch Changes
+
+- c90fb88: Bump `better-sqlite3` from 12 to 13 (N-API rewrite; JS query API unchanged). Consumers still open `cache.db` the same way.
+
 ## 0.2.0
 
 ### Minor Changes
