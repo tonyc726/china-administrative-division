@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/reader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Minimal read-only query API over the hydrated cache.db (China administrative divisions)",
   "type": "module",
   "main": "dist/index.js",
