@@ -30,7 +30,7 @@
     "better-sqlite3": "^13.0.3",
     "csv-parse": "^7.0.0",
     "glob": "^13.0.6",
-    "got": "^15.0.6",
+    "got": "^15.1.0",
     "tar-stream": "^3.2.0"
   },
   "devDependencies": {
