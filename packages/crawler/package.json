@@ -38,7 +38,7 @@
     "@cndiv/extractor": "workspace:*",
     "@cndiv/reader": "workspace:^",
     "cheerio": "^1.2.0",
-    "got": "^15.0.6",
+    "got": "^15.1.0",
     "iconv-lite": "^0.7.2"
   },
   "keywords": [
@@ -50,8 +50,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "better-sqlite3": "^12.11.1"
+    "@types/better-sqlite3": "^9.6.0",
+    "better-sqlite3": "^13.0.3"
   },
   "repository": {
     "type": "git",

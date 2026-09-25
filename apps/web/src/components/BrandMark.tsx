@@ -1,3 +1,5 @@
+import type { JSX } from 'react';
+
 /**
  * 站标 —— 九州印章（v8 · 多宝塔法度）。
  *

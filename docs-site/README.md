@@ -4,7 +4,7 @@ VitePress 静态文档站，用于对外推广与集成参考。
 
 ## 设计约束
 
-- **独立于 monorepo workspace**：`packages/*` 才是 workspace 成员，本目录不是。安装一律用 `--ignore-workspace`，让 VitePress（Vite 5）的依赖树与主仓（Vite 8）的 lockfile / `tsc -b` 完全隔离。
+- **独立于 monorepo workspace**：根仓 `packages/*` 才是主 workspace 成员。本目录是嵌套 workspace（自有 `pnpm-workspace.yaml`），`pnpm install` 会把 VitePress（Vite 5）的依赖树与主仓（Vite 8）的 lockfile / `tsc -b` 完全隔离。不要加 `--ignore-workspace`：pnpm 11 会因此忽略 `allowBuilds`，esbuild 的 install 脚本无法放行。
 - **单一真相源**：包参考页与运维/规则页用 VitePress `<!--@include-->` 直接引用 `../packages/*/README.md` 与 `../docs/*.md`，站点**不复制**内容，避免两处漂移。改内容改源文件即可。
 - **多平台可部署**：`base` 由环境变量 `DOCS_BASE` 控制——GitHub Pages 用 `/china-administrative-division/`，Vercel/Netlify/Cloudflare 用根 `/`（默认）。
 
@@ -12,7 +12,7 @@ VitePress 静态文档站，用于对外推广与集成参考。
 
 ```bash
 cd docs-site
-pnpm install --ignore-workspace
+pnpm install
 pnpm dev        # http://localhost:5173
 pnpm build      # 产物 → .vitepress/dist
 pnpm preview    # 预览构建产物
@@ -33,7 +33,7 @@ Dashboard → Pages → Connect Git，构建设置：
 | 项 | 值 |
 |---|---|
 | Root directory | `docs-site` |
-| Build command | `pnpm install --ignore-workspace && pnpm build` |
+| Build command | `pnpm install && pnpm build` |
 | Build output directory | `.vitepress/dist` |
 | Environment variable | `NODE_VERSION=22` |
 

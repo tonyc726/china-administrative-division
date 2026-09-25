@@ -16,7 +16,7 @@
  *
  * 「时代词」是本站的归类而非官方定义，页面必须如实声明（见 eraDisclaimer）。
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import type { Names } from '../types';
 import { COPY, type Lang } from '../i18n';
 

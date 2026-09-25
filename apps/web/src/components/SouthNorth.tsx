@@ -18,7 +18,7 @@
  * 3. 省份的排序不是我们指定的：按「北方通名密度 − 南方通名密度」排（seriation），
  *    从北到南的谱是数据自己排出来的。不画地图（规避地图审核），矩阵一样能说清。
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import type { Names } from '../types';
 import { COPY, type Lang } from '../i18n';
 

@@ -1,0 +1,4 @@
+# Nested workspace: keeps React/Vite deps out of the monorepo lockfile.
+# CI/local run `pnpm install` here (do not pass --ignore-workspace).
+packages:
+  - '.'

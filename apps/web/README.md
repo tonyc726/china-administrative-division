@@ -5,7 +5,7 @@
 ## 快速开始
 
 ```bash
-pnpm install --ignore-workspace
+pnpm install
 
 # 快速开发（无坐标功能，够用）
 pnpm dev
@@ -87,7 +87,7 @@ GitHub Pages CI 构建时，由于 `coords.json` 不在仓库中，会自动降�
 
 ## 技术栈
 
-- React 18
-- Vite 6
+- React 19
+- Vite 8
 - Tailwind CSS 4
 - 纯静态零后端（所有数据预构建为 JSON 分片）

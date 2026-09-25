@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --ignore-workspace && pnpm build",
+  "buildCommand": "pnpm install && pnpm build",
   "outputDirectory": ".vitepress/dist",
   "framework": null,
   "cleanUrls": true

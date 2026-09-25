@@ -28,7 +28,7 @@
  * 数据自洽：逐年烧掉 826 个县，长出 185 个，826 − 185 = 641，与头条严丝合缝。
  * 后继不明的（如「上饶县」实为更名广信区，词根对不上）就只烧、不长 —— 绝不编造去向。
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import type { Geo, Timeline as TimelineData } from '../types';
 import { COPY, type Lang } from '../i18n';
 import { Scrubber } from './Scrubber';

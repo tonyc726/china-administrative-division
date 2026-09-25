@@ -3,7 +3,7 @@
  * → 名册全景 → 开发者转化（npm）。
  * 寻根紧跟曲线：宏大叙事之后立刻让用户查自己的家乡，情绪不冷场。
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type JSX } from 'react';
 import type { Geo, Names, Stats, Timeline as TimelineData } from './types';
 import { COPY, type Lang } from './i18n';
 import { BrandMark } from './components/BrandMark';

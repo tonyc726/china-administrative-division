@@ -6,7 +6,7 @@
  *
  * 配色属于纸面：赤陶橙（县，消逝的主角）、墨松绿（区）、暗金（市）。
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import type { Timeline as TimelineData } from '../types';
 import { COPY, type Lang } from '../i18n';
 
