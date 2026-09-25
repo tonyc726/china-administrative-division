@@ -4,6 +4,8 @@
  *
  * 数据源：
  *   - packages/crawler/.cache/coords.json  stname 抓取的村级坐标(按 6 位县级码聚合)
+ *   - packages/crawler/.cache/upper.json   stname --upper 抓取的省/市/县自身坐标
+ *   - apps/web/public/data/tree.json      build-data 产物(NBS L1-L3 12 位码树,upper join 用)
  *   - apps/web/public/data/shards/         build-data 产物(12 位码村级树,用于 join)
  *
  * 为什么读 shards/ 而非 cache.db(reader)：apps/web 用 --ignore-workspace 安装,不在 pnpm
@@ -17,20 +19,29 @@
  *
  * 产物(place-info-panel §5.1)：
  *   coords/shards/<县级12位码>.json  该县下辖村/社区坐标(CoordRow 数组)
- *   coords/upper.json                省+市级坐标(gap:run-stname 未抓省/市级自身,占位待补)
- *   coords/join-report.json          join 损耗量化报告
+ *   coords/upper.json                省/市/县自身坐标(21200/21300/21400 join NBS 12 位码)
+ *   coords/join-report.json          join 损耗量化报告(村级 + upper 两段)
+ *
+ * upper join 说明(stname-upper-plan 阶段 2;规格 §7 原把县级自身坐标并入分片,
+ * 计划改为统一进 upper.json provinces[]/cities[]/counties[],前端一次 fetch 查三级):
+ *   匹配策略:码精确(area 截前 4/6 位补零成 12 位码 + 名称一致)→ 上级范围内名称兜底
+ *   未匹配/未覆盖如实记录(开发区/新区/管委会 NBS 有而地名库无,反向亦然),不臆造
+ *   输出按 NBS 12 位码去重(地名库缓存曾有重复项残留,如奎文区)
  *
  * 详见 specs/2026-07-18-dmfw-stname-coords-design.md §6/§7 + .claude/plans/build-coords-design.md
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 
 const ROOT = new URL('../../../', import.meta.url).pathname;
 const OUT = `${ROOT}apps/web/public/data/coords`;
 const COORDS_JSON = `${ROOT}packages/crawler/.cache/coords.json`;
+const UPPER_JSON = `${ROOT}packages/crawler/.cache/upper.json`;
+const TREE_JSON = `${ROOT}apps/web/public/data/tree.json`;
 const SHARDS_DIR = `${ROOT}apps/web/public/data/shards`;
 
 /** 坐标行(place-info-panel §5.2) */
-interface CoordRow {
+export interface CoordRow {
   /** 项目 12 位村级码 */
   code: string;
   /** standard_name(地名库原名) */
@@ -42,12 +53,12 @@ interface CoordRow {
   source: 'dmfw-stname';
 }
 
-/** coords.json 单条记录(按 stname-types.ts 实测字段,只取 join 用到的) */
-interface StnameRow {
+/** stname 单条记录(按 stname-types.ts 实测字段,只取 join 用到的;coords.json 与 upper.json 共用) */
+export interface StnameRow {
   standard_name: string;
   place_type_code: string;
   gdm: { type: string; coordinates: number[][] } | null;
-  /** 9 位乡级码(6 位县级 + 3 位乡级) */
+  /** 9 位码:coords.json 为乡级码(6 位县级+3 位乡级);upper.json 为省/市/县级自身码(后缀 999) */
   area: string | null;
 }
 
@@ -56,6 +67,22 @@ interface CoordsFile {
   meta: { stats: Record<string, number> };
   coords: Record<string, StnameRow[]>; // key = 6 位县级码
 }
+
+/** upper.json(.cache) 单条:按省查询产物,记录挂在 provinceCode 下 */
+export interface UpperEntry {
+  provinceCode: string;
+  row: StnameRow;
+}
+
+/** upper.json(.cache) 顶层结构(run-stname --upper 产物,meta/completed 略) */
+export interface UpperFile {
+  provinces: UpperEntry[];
+  cities: UpperEntry[];
+  counties: UpperEntry[];
+}
+
+/** tree.json 行: [12 位码, 名称, 层级, 父 12 位码, 拼音, 缩写] */
+export type TreeRow = [string, string, number, string, string, string];
 
 /** shards/<县级码>.json 的树结构(build-data 产物,只取 t 树) */
 interface ShardFile {
@@ -69,6 +96,28 @@ interface VillageRef {
   name: string;
 }
 
+/** upper 单层 join 统计(计划阶段 2:matched / unmatched / duplicate-code) */
+export interface UpperLevelStats {
+  matched: number;
+  unmatched: number;
+  /** 同一 NBS 12 位码被多条地名库记录命中(输出按码去重,保留首条) */
+  duplicates: number;
+  /** 命中码但 gdm 坐标缺失(理论防御,当前数据为 0) */
+  coordMissing: number;
+}
+
+/** joinUpper 结果:三级 CoordRow + 统计 */
+export interface UpperJoinResult {
+  provinces: CoordRow[];
+  cities: CoordRow[];
+  counties: CoordRow[];
+  stats: { provinces: UpperLevelStats; cities: UpperLevelStats; counties: UpperLevelStats };
+  /** 未匹配样例(前 20 条,「层级 省码 area 名称」) */
+  unmatchedSamples: string[];
+  /** NBS 有而地名库 21300/21400 无对应记录的条数(开发区/新区/管委会等,如实记录) */
+  nbsUncovered: { l2: number; l3: number };
+}
+
 interface JoinReport {
   totalRows: number;
   joined: number;
@@ -80,6 +129,15 @@ interface JoinReport {
   shardCount: number;
   emptyShardCount: number;
   missByCountyTop: Array<[string, number]>;
+  /** upper join(省/市/县自身坐标);available=false 为降级(源数据缺失,未执行) */
+  upper: {
+    available: boolean;
+    provinces: UpperLevelStats;
+    cities: UpperLevelStats;
+    counties: UpperLevelStats;
+    unmatchedSamples: string[];
+    nbsUncovered: { l2: number; l3: number };
+  };
 }
 
 /**
@@ -117,6 +175,181 @@ function normalizeName(name: string): string {
   return name;
 }
 
+// ── upper join(stname-upper-plan 阶段 2) ─────────────────────────────
+
+/** empty stats 工厂(降级报告用) */
+function emptyUpperStats(): UpperLevelStats {
+  return { matched: 0, unmatched: 0, duplicates: 0, coordMissing: 0 };
+}
+
+/** upper.json 占位(降级用,保持前端 fetch 不 404) */
+function upperPlaceholder(): Record<string, unknown> {
+  return {
+    note: 'upper.json 未找到(run-stname --upper 未跑),省/市/县坐标不可用。本地运行 crawl:stname -- --upper 后重新构建可启用。',
+    provinces: [] as CoordRow[],
+    cities: [] as CoordRow[],
+    counties: [] as CoordRow[],
+  };
+}
+
+function toUpperRow(code: string, e: UpperEntry, coord: number[]): CoordRow {
+  return {
+    code,
+    name: e.row.standard_name,
+    coord: [coord[0], coord[1]],
+    placeTypeCode: e.row.place_type_code,
+    source: 'dmfw-stname',
+  };
+}
+
+function pushSample(samples: string[], tag: string, e: UpperEntry): void {
+  if (samples.length < 20) {
+    samples.push(`${tag} ${e.provinceCode} ${e.row.area ?? '-'} ${e.row.standard_name}`);
+  }
+}
+
+/**
+ * upper join:把 stname 21200/21300/21400 自身坐标匹配到 NBS 12 位码。
+ *
+ * 匹配策略(计划「关键约束」+ 实测数据形态):
+ *   1. 码精确:area 截前 4 位(市级)/6 位(县级)补零成 12 位码,且名称一致
+ *      (6 位码可能冲突——廊坊 131003 曾同时挂安次/广阳——故码命中必须验名)
+ *   2. 名称兜底:码不存在或验名不符时,在市域范围内按名称匹配
+ *      (吸收 area 误标,如武宁县 area=360400999 挂在九江市级码下)
+ *   3. 未匹配:如实记录,不臆造(雄安新区 NBS 无节点;和安县/和康县为 2024 新设)
+ *
+ * 输出按 NBS 12 位码去重(地名库缓存曾残留同码同名重复项,如奎文区),计 duplicates。
+ */
+export function joinUpper(upper: UpperFile, tree: TreeRow[]): UpperJoinResult {
+  // NBS L1-L3 索引
+  const l1ByName = new Map<string, string>(); // 名称 -> 码(省级名称全国唯一)
+  const l2ByCode = new Map<string, string>(); // 12 位码 -> 名称
+  const l2NameInProv = new Map<string, Map<string, string>>(); // 2 位省码 -> 名称 -> 码
+  const l3ByCode = new Map<string, string>();
+  const l3NameInCity = new Map<string, Map<string, string>>(); // 父 12 位码 -> 名称 -> 码
+  let l2Total = 0;
+  let l3Total = 0;
+  for (const [code, name, level, parent] of tree) {
+    if (level === 1) {
+      l1ByName.set(name, code);
+    } else if (level === 2) {
+      l2ByCode.set(code, name);
+      l2Total++;
+      const prov = code.slice(0, 2);
+      if (!l2NameInProv.has(prov)) l2NameInProv.set(prov, new Map());
+      l2NameInProv.get(prov)!.set(name, code);
+    } else if (level === 3) {
+      l3ByCode.set(code, name);
+      l3Total++;
+      if (!l3NameInCity.has(parent)) l3NameInCity.set(parent, new Map());
+      l3NameInCity.get(parent)!.set(name, code);
+    }
+  }
+
+  const samples: string[] = [];
+
+  // 省级:21200 的 area 是「110000999」形态,码无 12 位对应,直接名称匹配
+  const provinces: CoordRow[] = [];
+  const pStats = emptyUpperStats();
+  const seenL1 = new Set<string>();
+  for (const e of upper.provinces) {
+    const code = l1ByName.get(e.row.standard_name);
+    if (!code) {
+      pStats.unmatched++;
+      pushSample(samples, 'P', e);
+      continue;
+    }
+    const coord = e.row.gdm?.coordinates?.[0];
+    if (!coord || coord.length < 2) {
+      pStats.coordMissing++;
+      continue;
+    }
+    if (seenL1.has(code)) {
+      pStats.duplicates++;
+      continue;
+    }
+    seenL1.add(code);
+    provinces.push(toUpperRow(code, e, coord));
+    pStats.matched++;
+  }
+
+  // 市级:area 前 4 位补零成 12 位码精确(验名),失败按省内名称兜底
+  const cities: CoordRow[] = [];
+  const cStats = emptyUpperStats();
+  const seenL2 = new Set<string>();
+  for (const e of upper.cities) {
+    const name = e.row.standard_name;
+    const exact = e.row.area && e.row.area.length >= 4
+      ? e.row.area.slice(0, 4).padEnd(12, '0')
+      : null;
+    let code: string | undefined;
+    if (exact && l2ByCode.get(exact) === name) code = exact;
+    if (!code) code = l2NameInProv.get(e.provinceCode)?.get(name);
+    if (!code) {
+      cStats.unmatched++;
+      pushSample(samples, 'C', e);
+      continue;
+    }
+    const coord = e.row.gdm?.coordinates?.[0];
+    if (!coord || coord.length < 2) {
+      cStats.coordMissing++;
+      continue;
+    }
+    if (seenL2.has(code)) {
+      cStats.duplicates++;
+      continue;
+    }
+    seenL2.add(code);
+    cities.push(toUpperRow(code, e, coord));
+    cStats.matched++;
+  }
+
+  // 县级:area 前 6 位 + '000000' 精确(验名),失败按市域范围内名称兜底
+  const counties: CoordRow[] = [];
+  const kStats = emptyUpperStats();
+  const seenL3 = new Set<string>();
+  for (const e of upper.counties) {
+    const name = e.row.standard_name;
+    const exact = e.row.area && e.row.area.length >= 6
+      ? e.row.area.slice(0, 6) + '000000'
+      : null;
+    let code: string | undefined;
+    if (exact && l3ByCode.get(exact) === name) code = exact;
+    if (!code) {
+      const cityScope = e.row.area && e.row.area.length >= 4
+        ? e.row.area.slice(0, 4).padEnd(12, '0')
+        : null;
+      code = cityScope ? l3NameInCity.get(cityScope)?.get(name) : undefined;
+    }
+    if (!code) {
+      kStats.unmatched++;
+      pushSample(samples, 'K', e);
+      continue;
+    }
+    const coord = e.row.gdm?.coordinates?.[0];
+    if (!coord || coord.length < 2) {
+      kStats.coordMissing++;
+      continue;
+    }
+    if (seenL3.has(code)) {
+      kStats.duplicates++;
+      continue;
+    }
+    seenL3.add(code);
+    counties.push(toUpperRow(code, e, coord));
+    kStats.matched++;
+  }
+
+  return {
+    provinces,
+    cities,
+    counties,
+    stats: { provinces: pStats, cities: cStats, counties: kStats },
+    unmatchedSamples: samples,
+    nbsUncovered: { l2: l2Total - seenL2.size, l3: l3Total - seenL3.size },
+  };
+}
+
 async function main(): Promise<void> {
   await mkdir(`${OUT}/shards`, { recursive: true });
 
@@ -130,12 +363,7 @@ async function main(): Promise<void> {
         '⚠️  coords.json 不存在，输出空坐标分片（CI 环境或未运行 crawler:stname 时正常）'
       );
       // 输出占位产物，让前端 fetch 不 404
-      const upper = {
-        note: 'coords.json 未找到，坐标功能不可用。本地运行 crawler:stname 后重新构建可启用。',
-        provinces: [] as CoordRow[],
-        cities: [] as CoordRow[],
-      };
-      await writeFile(`${OUT}/upper.json`, JSON.stringify(upper));
+      await writeFile(`${OUT}/upper.json`, JSON.stringify(upperPlaceholder()));
       const report: JoinReport = {
         totalRows: 0,
         joined: 0,
@@ -147,6 +375,14 @@ async function main(): Promise<void> {
         shardCount: 0,
         emptyShardCount: 0,
         missByCountyTop: [],
+        upper: {
+          available: false,
+          provinces: emptyUpperStats(),
+          cities: emptyUpperStats(),
+          counties: emptyUpperStats(),
+          unmatchedSamples: [],
+          nbsUncovered: { l2: 0, l3: 0 },
+        },
       };
       await writeFile(`${OUT}/join-report.json`, JSON.stringify(report, null, 2));
       console.log('✅ build-coords 完成（降级模式，无坐标数据）');
@@ -255,15 +491,29 @@ async function main(): Promise<void> {
     else emptyShardCount++;
   }
 
-  // 3. upper.json 占位(gap:run-stname 未抓省/市级自身坐标)
-  const upper = {
-    note: 'gap:run-stname 仅抓县级下村级(21610/21620),省/市级自身坐标未采集。待扩展 run-stname 后填充。',
-    provinces: [] as CoordRow[],
-    cities: [] as CoordRow[],
-  };
-  await writeFile(`${OUT}/upper.json`, JSON.stringify(upper));
+  // 3. upper join:省/市/县自身坐标(stname 21200/21300/21400 → NBS 12 位码)
+  //    .cache/upper.json 或 tree.json 缺失(CI 未跑 crawler)时保持占位降级,不阻断
+  let upperJoin: UpperJoinResult | null = null;
+  try {
+    const upperFile = JSON.parse(await readFile(UPPER_JSON, 'utf-8')) as UpperFile;
+    const tree = JSON.parse(await readFile(TREE_JSON, 'utf-8')) as TreeRow[];
+    upperJoin = joinUpper(upperFile, tree);
+    await writeFile(
+      `${OUT}/upper.json`,
+      JSON.stringify({
+        provinces: upperJoin.provinces,
+        cities: upperJoin.cities,
+        counties: upperJoin.counties,
+      })
+    );
+  } catch (err) {
+    if ((err as { code?: string }).code !== 'ENOENT') throw err;
+    await writeFile(`${OUT}/upper.json`, JSON.stringify(upperPlaceholder()));
+    console.log('⚠️  upper.json 或 tree.json 未找到，upper 保持占位（降级模式）');
+  }
 
-  // 4. join 损耗报告(规格 §12 最大不确定性)
+  // 4. join 损耗报告(规格 §12 最大不确定性;upper 段为计划阶段 2 口径)
+  const u = upperJoin?.stats;
   const report: JoinReport = {
     totalRows,
     joined,
@@ -277,6 +527,14 @@ async function main(): Promise<void> {
     missByCountyTop: [...missByCounty.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 20),
+    upper: {
+      available: upperJoin !== null,
+      provinces: u?.provinces ?? emptyUpperStats(),
+      cities: u?.cities ?? emptyUpperStats(),
+      counties: u?.counties ?? emptyUpperStats(),
+      unmatchedSamples: upperJoin?.unmatchedSamples ?? [],
+      nbsUncovered: upperJoin?.nbsUncovered ?? { l2: 0, l3: 0 },
+    },
   };
   await writeFile(`${OUT}/join-report.json`, JSON.stringify(report, null, 2));
 
@@ -289,11 +547,27 @@ async function main(): Promise<void> {
   console.log(
     `分片输出: ${shardCount} 个(非空) + ${emptyShardCount} 个(空)`
   );
-  console.log(`upper.json: gap 占位(省/市级坐标待扩展 run-stname)`);
+  if (upperJoin) {
+    const { provinces: ps, cities: cs, counties: ks } = upperJoin.stats;
+    console.log(
+      `upper.json: ${upperJoin.provinces.length} 省 + ${upperJoin.cities.length} 市 + ${upperJoin.counties.length} 县坐标`
+    );
+    console.log(
+      `  upper join: 未匹配 P:${ps.unmatched} C:${cs.unmatched} K:${ks.unmatched} | 重复码 K:${ks.duplicates} | 坐标缺失 P:${ps.coordMissing} C:${cs.coordMissing} K:${ks.coordMissing}`
+    );
+    console.log(
+      `  NBS 未被覆盖: L2 ${upperJoin.nbsUncovered.l2} | L3 ${upperJoin.nbsUncovered.l3}(开发区/新区/管委会等)`
+    );
+  } else {
+    console.log(`upper.json: 占位(降级模式,源数据未就绪)`);
+  }
   console.log(`join 损耗报告: ${OUT}/join-report.json`);
 }
 
-main().catch((e: unknown) => {
-  console.error(e instanceof Error ? e.stack : String(e));
-  process.exit(1);
-});
+// 入口守卫:bun/node 直跑时执行;被测试 import 时不执行(run-stname.ts 同模式)
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  main().catch((e: unknown) => {
+    console.error(e instanceof Error ? e.stack : String(e));
+    process.exit(1);
+  });
+}
