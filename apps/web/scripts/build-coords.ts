@@ -28,7 +28,7 @@
  *   未匹配/未覆盖如实记录(开发区/新区/管委会 NBS 有而地名库无,反向亦然),不臆造
  *   输出按 NBS 12 位码去重(地名库缓存曾有重复项残留,如奎文区)
  *
- * 详见 specs/2026-07-18-dmfw-stname-coords-design.md §6/§7 + .claude/plans/build-coords-design.md
+ * 详见 docs/superpowers/specs/2026-07-18-dmfw-stname-coords-design.md §6/§7 + .claude/plans/build-coords-design.md
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
