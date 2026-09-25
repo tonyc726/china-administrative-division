@@ -28,7 +28,7 @@
     "@cndiv/core": "workspace:*",
     "@cndiv/data-protocol": "workspace:*",
     "better-sqlite3": "^12.11.1",
-    "csv-parse": "^7.0.0",
+    "csv-parse": "^7.0.3",
     "glob": "^13.0.6",
     "got": "^15.0.6",
     "tar-stream": "^3.2.0"
