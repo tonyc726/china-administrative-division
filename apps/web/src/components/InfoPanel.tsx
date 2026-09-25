@@ -1,10 +1,11 @@
 /**
  * 政区信息面板(规格 2026-07-18-place-info-panel-design.md §7)。
  *
- * 当前为降级版:仅展示坐标 + 高德链接(数据来自 coords/shards/,村级有)。
- * 百科摘要/面积/人口待百科抓取(place-info-panel §8.2)后补;省/市/县/乡级
- * 自身坐标待扩展数据源(upper.json gap + run-stname 只抓村级)。无坐标时
- * 降级隐藏(规格 §7.5)。
+ * 当前为降级版:仅展示坐标 + 高德链接。数据源:
+ *   - 村级(L5)来自 coords/shards/<县级码>.json(该县下村/社区坐标)
+ *   - 省/市/县级(L1-L3)来自 coords/upper.json(21200/21300/21400 join NBS 码)
+ *   - 乡级(L4)暂无数据源,降级隐藏(规格 §7.5)
+ * 百科摘要/面积/人口待百科抓取(place-info-panel §8.2)后补。
  *
  * 坐标系:存储 CGCS2000(≈WGS84),跳转高德前转 GCJ-02(规格 §7.4)。
  */
@@ -21,8 +22,30 @@ interface CoordRow {
   source: string;
 }
 
+/** upper.json:省/市/县自身坐标(降级时为占位或无 counties 键,故数组可缺省) */
+interface UpperFile {
+  provinces?: CoordRow[];
+  cities?: CoordRow[];
+  counties?: CoordRow[];
+}
+
 interface Props {
   leaf: Division;
+}
+
+// upper.json ~400KB,会话内只 fetch/解析一次(多节点点击复用);
+// 失败不缓存,下次点击重试
+let upperPromise: Promise<UpperFile> | null = null;
+function loadUpper(): Promise<UpperFile> {
+  if (!upperPromise) {
+    upperPromise = fetch(`${BASE}data/coords/upper.json`)
+      .then((r) => (r.ok ? (r.json() as Promise<UpperFile>) : {}))
+      .catch(() => {
+        upperPromise = null;
+        return {} as UpperFile;
+      });
+  }
+  return upperPromise;
 }
 
 // ── WGS84 -> GCJ-02(规格 §7.4,高德 URI API 接收 GCJ-02) ──
@@ -91,8 +114,20 @@ export function InfoPanel({ leaf }: Props): JSX.Element | null {
         .finally(() => {
           if (!cancelled) setLoading(false);
         });
+    } else if (leaf.level >= 1 && leaf.level <= 3) {
+      // 省/市/县级(level 1-3):upper.json 各级数组按码查
+      loadUpper()
+        .then((u) => {
+          if (cancelled) return;
+          const rows =
+            leaf.level === 1 ? u.provinces : leaf.level === 2 ? u.cities : u.counties;
+          setCoord((rows ?? []).find((r) => r.code === leaf.code) ?? null);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
     } else {
-      // 乡/县/市/省级自身坐标暂缺(run-stname 只抓村级 + upper.json gap)
+      // 乡级(level 4)暂无坐标数据源,降级隐藏(规格 §7.5)
       setLoading(false);
     }
     return () => {
