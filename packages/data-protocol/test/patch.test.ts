@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePatch } from '../dist/index.js';
+import { parseBaselineYear, validatePatch } from '../dist/index.js';
 
 const meta = { author: 't' };
 const patch = (op: unknown) => ({ meta, operations: [op] });
@@ -56,5 +56,26 @@ describe('validatePatch — 复用 core 枚举的 nativeEnum 约束 (M2)', () =>
         operations: [{ op: 'remove', code: '110000000000' }],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('parseBaselineYear — apply_after 年份提取（按年选基线的门禁前提）', () => {
+  it('约定形态 "<YYYY>-baseline" 提取年', () => {
+    expect(parseBaselineYear('2023-baseline')).toBe(2023);
+    expect(parseBaselineYear('2020-baseline')).toBe(2020);
+  });
+
+  it('缺省值/schema 默认形态同样可解析', () => {
+    expect(parseBaselineYear('2023-baseline')).toBe(2023);
+  });
+
+  it('无 4 位年份返回 null（调用方须显式处理，绝不臆造回退）', () => {
+    expect(parseBaselineYear('baseline')).toBeNull();
+    expect(parseBaselineYear('latest')).toBeNull();
+    expect(parseBaselineYear('')).toBeNull();
+  });
+
+  it('年份不在开头也能取到首个 4 位数字（apply_after 是自由字符串）', () => {
+    expect(parseBaselineYear('自 2021 年起')).toBe(2021);
   });
 });

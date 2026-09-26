@@ -15,16 +15,31 @@
 ## structural（CI 门禁）
 
 ```bash
-# CI / 本地：对 patches/ 全量门禁
+# CI / 本地：对 patches/ 全量门禁（按年选基线——patch 的 apply_after 声明哪年，就喂哪年码集）
 pnpm --filter @cndiv/crawler build
-node packages/crawler/dist/run-verify.js --mode=structural \
-  --patch=patches --baseline=packages/source-2023/data/divisions.csv
+node packages/crawler/dist/run-verify.js --mode=structural --patch=patches \
+  --baselines=2020=packages/source-history/data/divisions.csv,2023=packages/source-2023/data/divisions.csv
 
-# 或开发期直接跑源码
+# 单 patch 校验（全部 patch 共用一个码集的本地场景）
 pnpm --filter @cndiv/crawler verify -- --patch=patches/2025/xxx.json
 # 无 baseline 只做纯码结构自洽（跳过引用完整性）
 pnpm --filter @cndiv/crawler verify -- --patch=patches/xxx.json --baseline=off
 ```
+
+### 基线按 apply_after 年选择（2026-09 事故的根治）
+
+**事故**：曾全年份 patch 共用单一 2023 码集，`apply_after: 2020-baseline` 的 patch（如 `patches/2021`）被拿 2023 名册校验，必然误报 `ADD_DUPLICATE`/`TARGET_MISSING`（40 个存量 error）；而 baseline CSV 又被 gitignore，CI 里静默降级为纯码自洽——**引用完整性规则从未在 CI 真跑过，门禁形同虚设**。
+
+**契约**（`--baselines` 模式）：
+
+- patch 的 `apply_after`（经 `parseBaselineYear`）命中 map 的哪年，就载入该 CSV **按 year 列过滤**后的码集。多年 CSV（source-history）与单年 CSV（source-2023）同一逻辑。
+- **fail-hard 三连**：缺该年基线 / CSV 路径不存在 / 过滤后码集为空（单年 CSV 拿错年）→ 一律 exit 1，**绝不静默退回别的年份或降级**。显式传入的 `--baseline` 路径缺失同样 exit 1；只有未传参且默认路径缺失才降级（本地新 clone 的合理体验）。
+- `--baseline` 与 `--baselines` 互斥。
+- 未来出现新基线年（如 `2025-baseline`）：hard error 会明确提示，在命令里补一条 `2025=<csv>` 即可。
+
+### CI 物化 baseline（`fetch-data-csvs` composite action）
+
+CSV 体积大被 gitignore，CI 无法本地重建。`.github/actions/fetch-data-csvs` 从**已发布的 npm 包**（`@cndiv/source-2023` / `@cndiv/source-history`——唯一可复现的权威数据源）拉取物化，并对照仓库内 `manifest.json` 的 **SHA-512 锚点**复核内容（registry 传输完整性之外再锚内容，防包错发/篡改）。ci.yml（verify 门禁）与 pages.yml（web/docs 构建）共用。
 
 **规则清单**（任一 `error` → 退出码 1 门禁不通过；`warning` 打印不阻断）：
 

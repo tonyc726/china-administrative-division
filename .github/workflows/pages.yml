@@ -46,15 +46,8 @@ jobs:
       # apps/web 的 build-data.ts 直接读 packages/source-*/data/divisions.csv（monorepo 相对路径）。
       # 这两个 CSV 体积大，仓库里 gitignore 掉了，CI 无法本地重新生成——改从已发布的 npm 包里取，
       # 这正是 @cndiv/source-2023 / @cndiv/source-history 存在的意义（唯一可复现的数据源）。
-      - name: Fetch source data CSVs from npm
-        run: |
-          mkdir -p /tmp/src2023 /tmp/srchist packages/source-2023/data packages/source-history/data
-          npm pack @cndiv/source-2023 --silent --pack-destination /tmp
-          tar -xzf /tmp/cndiv-source-2023-*.tgz -C /tmp/src2023
-          cp /tmp/src2023/package/data/divisions.csv packages/source-2023/data/divisions.csv
-          npm pack @cndiv/source-history --silent --pack-destination /tmp
-          tar -xzf /tmp/cndiv-source-history-*.tgz -C /tmp/srchist
-          cp /tmp/srchist/package/data/divisions.csv packages/source-history/data/divisions.csv
+      # composite action 同时做 manifest SHA-512 复核，与 ci.yml 的 verify 门禁共用。
+      - uses: ./.github/actions/fetch-data-csvs
 
       # apps/web 是嵌套 workspace（自有 lockfile，不进 monorepo）；部署到 GH Pages 项目页需要 /<repo>/ 前缀
       - name: Build web (homepage)
