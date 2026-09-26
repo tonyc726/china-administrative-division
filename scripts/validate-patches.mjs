@@ -25,6 +25,9 @@ function walk(dir) {
       continue;
     }
     if (!entry.endsWith('.json')) continue;
+    // merge-patches 的冲突 sidecar（<out>.conflicts.json）是数组格式的报告文件，
+    // 不是 patch——契约见 packages/cli/src/merge-patches.ts 头注。跳过，不算入总数。
+    if (entry.endsWith('.conflicts.json')) continue;
 
     count++;
     let data;

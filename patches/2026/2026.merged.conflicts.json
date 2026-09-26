@@ -1,0 +1,30 @@
+[
+  {
+    "code": "653132000000",
+    "dropped": {
+      "op": "add",
+      "code": "653132000000",
+      "name": "岑岭县",
+      "level": 3,
+      "parent_code": "653100000000"
+    },
+    "losingPipeline": "dmfw",
+    "winningPipeline": "xzqh",
+    "reason": "lower-priority",
+    "origin": "650000000000-dmfw-2026.json"
+  },
+  {
+    "code": "659013000000",
+    "dropped": {
+      "op": "add",
+      "code": "659013000000",
+      "name": "草湖市",
+      "level": 3,
+      "parent_code": "659000000000"
+    },
+    "losingPipeline": "dmfw",
+    "winningPipeline": "xzqh",
+    "reason": "lower-priority",
+    "origin": "650000000000-dmfw-2026.json"
+  }
+]

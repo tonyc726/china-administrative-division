@@ -6,7 +6,7 @@
     "apply_after": "2023-baseline",
     "source_pipeline": "xzqh",
     "created_at": "2026-07-14T07:57:13.480Z",
-    "notes": "xzqh 2026 县级以上行政区划变更"
+    "notes": "xzqh 2026 县级以上行政区划变更。岑岭县（2026-03-26 设立）公告时官方码未发布、落 unresolved；2026-09 复核 dmfw 现势（getList code=653100000000）确认官方码 653132000000，人工补 add，非臆造"
   },
   "operations": [
     {
@@ -15,6 +15,13 @@
       "name": "草湖市",
       "level": 3,
       "parent_code": "659000000000"
+    },
+    {
+      "op": "add",
+      "code": "653132000000",
+      "name": "岑岭县",
+      "level": 3,
+      "parent_code": "653100000000"
     }
   ]
 }

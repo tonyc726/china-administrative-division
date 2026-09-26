@@ -145,7 +145,7 @@ interface Copy {
 const zh: Copy = {
   brand: '中国行政区划时光机',
   brandSub: '1980–2026 · 五级名册',
-  tagline: '四十年，652 个县从名册上消失',
+  tagline: '四十年，651 个县从名册上消失',
   heroKicker: '1980 → 2026',
   heroSuffix: '个县，从名册上消失',
   heroLead: (lost, district, city) =>
@@ -281,7 +281,7 @@ const zh: Copy = {
 const en: Copy = {
   brand: 'China Division Time Machine',
   brandSub: '1980–2026 · five-level registry',
-  tagline: '652 counties vanished in 40 years',
+  tagline: '651 counties vanished in 40 years',
   heroKicker: '1980 → 2026',
   heroSuffix: 'counties vanished',
   heroLead: (lost, district, city) =>
