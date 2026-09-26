@@ -27,11 +27,17 @@ const DEFAULT_BASELINE = 'packages/source-2023/data/divisions.csv';
 async function collectPatchFiles(target: string): Promise<string[]> {
   const st = await stat(target).catch(() => null);
   if (!st) return [];
-  if (st.isFile()) return target.endsWith('.json') ? [target] : [];
+  // merge-patches 的冲突 sidecar（*.conflicts.json）是数组格式报告，不是 patch（契约见
+  // packages/cli/src/merge-patches.ts 头注），单文件/目录两种入口都排除。
+  if (st.isFile())
+    return target.endsWith('.json') && !target.endsWith('.conflicts.json')
+      ? [target]
+      : [];
   // 目录：递归收集 *.json
   const out: string[] = [];
   const walk = async (dir: string): Promise<void> => {
     for (const entry of await readdir(dir)) {
+      if (entry.endsWith('.conflicts.json')) continue;
       const full = path.join(dir, entry);
       const s = await stat(full);
       if (s.isDirectory()) await walk(full);

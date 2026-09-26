@@ -78,9 +78,10 @@ type Kind = '县' | '区' | '市' | '旗' | '其他';
 //   2020 全量名册 ──施加民政部《县级以上行政区划变更情况》官方法令──> 2021…2026
 // 全程同一个口径（只算法定县级政区），台阶自然不存在。
 //
-// 这条推演已被独立验证：从 1980 血脉推出的 2026 名册（2846 个县，零 dmfw 数据参与），
+// 这条推演已被独立验证：从 1980 血脉推出的 2026 名册（2847 个县，零 dmfw 数据参与），
 // 与国家地名信息库(dmfw)实测的 2026 名册**逐码逐名完全一致**——
-// 交集 2846、仅血脉有 0、仅 dmfw 有 0、同码不同名 0。
+// 交集 2847、仅血脉有 0、仅 dmfw 有 0、同码不同名 0（2026-07 首测 2846；2026-09 复测
+// 2847——岑岭县官方码 653132 发布，dmfw 与推演同步 +1，收敛不破）。
 // 两条数据源、采集方式、失败模式都无关的路径收敛到同一个名册，这条时间线才敢画到 2026。
 
 /** patch 里的一条操作（只取时间线用得上的字段） */
@@ -134,7 +135,8 @@ async function applyYearPatches(
 
   let applied = 0;
   const sources: string[] = [];
-  for (const f of files.sort()) {
+  // merge-patches 的冲突 sidecar（*.conflicts.json）是数组格式报告，不是 patch，跳过
+  for (const f of files.filter((x) => !x.endsWith('.conflicts.json')).sort()) {
     const patch: Patch = JSON.parse(await readFile(`${dir}/${f}`, 'utf-8'));
 
     const pipeline = patch.meta.source_pipeline;
@@ -405,15 +407,9 @@ async function main(): Promise<void> {
         method: '民政部《县级以上行政区划变更情况》官方法令逐年推演',
         source: 'xzqh.mca.gov.cn',
         crossCheck:
-          '国家地名信息库(dmfw)实测 2026 县级名册 2846 个，与推演结果逐码逐名一致（差异 0）',
+          '国家地名信息库(dmfw)实测 2026 县级名册 2847 个（2026-09-26 复测），与推演结果逐码逐名一致（差异 0）',
       },
-      pending: [
-        {
-          name: '岑岭县',
-          date: '2026-03-26',
-          note: '新疆维吾尔自治区公告设立，由喀什地区管辖；官方区划码尚未发布，故未计入名册（绝不臆造码）',
-        },
-      ],
+      pending: [],
     },
     source: 'GB/T 2260 (@cndiv/source-history) + 民政部变更法令 (xzqh.mca.gov.cn)',
   };
@@ -766,7 +762,15 @@ async function main(): Promise<void> {
     ['apps/web/src/i18n.ts', await readFile(`${ROOT}apps/web/src/i18n.ts`, 'utf-8')],
     ['apps/web/src/App.tsx', await readFile(`${ROOT}apps/web/src/App.tsx`, 'utf-8')],
   ];
-  const stale = guarded.filter(([, src]) => !src.includes(String(lost)));
+  const stale = guarded.filter(([f, src]) => {
+    if (!src.includes(String(lost))) return true;
+    // og:description 里区/市增量同样是硬编码（实测漂过：454/275 → 真值 459/285），一并卡死
+    if (f === 'apps/web/index.html') {
+      if (!src.includes(String(timeline.headline.districtGained))) return true;
+      if (!src.includes(String(timeline.headline.cityGained))) return true;
+    }
+    return false;
+  });
   if (stale.length > 0) {
     console.error(
       `\n❌ 文案里的「县消失数」与数据不符。真值 = ${lost}，但下列文件没有出现这个数字：`

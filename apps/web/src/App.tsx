@@ -196,7 +196,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
           <p className="font-mono text-sm tracking-[0.2em] text-clay">{t.heroKicker}</p>
           <h1 className="mt-8 flex flex-wrap items-baseline gap-x-5 gap-y-2">
             <span className="font-display text-[clamp(5rem,17vw,10.5rem)] leading-none tracking-tight tabular-nums text-clay">
-              652
+              651
             </span>
             <span className="font-display text-2xl text-ink sm:text-4xl">
               {t.heroSuffix}
