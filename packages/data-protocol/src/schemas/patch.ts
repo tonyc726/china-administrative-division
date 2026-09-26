@@ -124,3 +124,15 @@ export function validatePatch(
   }
   return { success: false, error: result.error.message };
 }
+
+/**
+ * 从 apply_after 提取基线年（如 "2023-baseline" → 2023）。
+ *
+ * apply_after 是自由字符串（生产者约定形如 "<YYYY>-baseline"），年份取**首个** 4 位数字。
+ * 无 4 位年份（非法声明）返回 null——调用方（如 cndiv-verify 按年选基线）应显式处理，
+ * 绝不臆造回退年份。
+ */
+export function parseBaselineYear(applyAfter: string): number | null {
+  const m = /(\d{4})/.exec(applyAfter);
+  return m ? Number(m[1]) : null;
+}

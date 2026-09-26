@@ -1,0 +1,30 @@
+name: 'Fetch source data CSVs'
+description: >-
+  从已发布的 npm 数据包（@cndiv/source-2023 / @cndiv/source-history）物化
+  packages/source-*/data/divisions.csv（体积大被 gitignore，CI 无法本地重建），
+  并对照仓库内 manifest.json 的 SHA-512 锚点复核内容——registry 传输完整性之外
+  再锚内容，npm 包被篡改/错发时在此拦截。供 cndiv-verify 引用完整性门禁与
+  apps/web / docs-site 构建共用。
+runs:
+  using: composite
+  steps:
+    - name: Fetch source data CSVs from npm
+      shell: bash
+      run: |
+        set -euo pipefail
+        # npm pack 走 registry 下载完整 tarball（比 install 元数据更多一份完整性保障）
+        fetch() {
+          local pkg="$1"
+          mkdir -p "/tmp/extract-${pkg}" "packages/${pkg}/data"
+          npm pack "@cndiv/${pkg}" --silent --pack-destination /tmp
+          tar -xzf "/tmp/cndiv-${pkg}-"*.tgz -C "/tmp/extract-${pkg}"
+          cp "/tmp/extract-${pkg}/package/data/divisions.csv" "packages/${pkg}/data/divisions.csv"
+          echo "物化 ${pkg}: $(wc -c < "packages/${pkg}/data/divisions.csv") bytes"
+        }
+        fetch source-2023
+        fetch source-history
+    - name: Verify CSV SHA-512 against manifest
+      shell: bash
+      run: >-
+        python3 "${{ github.action_path }}/verify-manifest.py"
+        packages/source-2023 packages/source-history

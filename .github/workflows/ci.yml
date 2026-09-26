@@ -45,7 +45,16 @@ jobs:
       - name: Validate patch files (schema)
         run: pnpm validate-patches
 
-      # 结构性门禁：码/层级/父级自洽 + 对 2023 baseline 引用完整性（完全离线、确定性，无网络）。
-      # 仅读官方源(baseline CSV)，零合规风险；商业地图交叉校验(cross)不在 CI 跑（见 verify.ts）。
+      # 物化 baseline CSV（gitignore，从已发布 npm 包取 + manifest SHA-512 复核）。
+      # 没有这一步，下面的 verify 会因 baseline 缺失静默降级为纯码自洽——
+      # 引用完整性规则空转、门禁形同虚设（2026-09 事故根因，已根治）。
+      - uses: ./.github/actions/fetch-data-csvs
+
+      # 结构性门禁：码/层级/父级自洽 + 引用完整性（完全离线、确定性，无网络）。
+      # 按年选基线：patch 的 apply_after 声明哪年基线就喂哪年码集——
+      # 2020-baseline 用 source-history 2020 快照，2023-baseline 用 source-2023 全量。
+      # 缺年/路径丢失均 fail-hard，不再静默降级。商业地图交叉校验(cross)不在 CI 跑（见 verify.ts）。
       - name: Verify patches (structural gate)
-        run: node packages/crawler/dist/run-verify.js --mode=structural --patch=patches --baseline=packages/source-2023/data/divisions.csv
+        run: >-
+          node packages/crawler/dist/run-verify.js --mode=structural --patch=patches
+          --baselines=2020=packages/source-history/data/divisions.csv,2023=packages/source-2023/data/divisions.csv

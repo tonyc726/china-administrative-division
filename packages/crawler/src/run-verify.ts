@@ -4,19 +4,31 @@
  *
  * structural（默认，CI 门禁）：完全离线、确定性。对 patch 做码/层级/父级自洽 + 对 baseline 的
  * 引用完整性校验（schema 之上的语义层）。任一 error → 退出码 1（门禁不通过）；warning 只打印。
- *   tsx src/run-verify.ts --patch=patches/ --baseline=packages/source-2023/data/divisions.csv
+ *   # 全量按年选基线（CI 门禁形态）：patch 的 apply_after 声明哪年基线，就喂哪年码集。
+ *   # 多年 CSV（如 source-history）按 year 列过滤；缺该年基线 → 报错，绝不静默退回别的年份。
+ *   tsx src/run-verify.ts --patch=patches/ \
+ *     --baselines=2020=packages/source-history/data/divisions.csv,2023=packages/source-2023/data/divisions.csv
+ *   # 单 patch 校验（本地）：全部 patch 共用一个码集
+ *   tsx src/run-verify.ts --patch=patches/xxx.json --baseline=packages/source-2023/data/divisions.csv
  *   # 无 baseline 时仅做纯码结构自洽（跳过引用完整性）：--patch=patches/xxx.json --baseline=off
  *
  * cross（本地手动、桩）：商业地图源交叉校验。合规红线——不实现网络抓取、不接入 CI、产物不落库。
  * 见 verify.ts::verifyCross 与 docs/patch-校验与交叉校验.md。
  *
- * 选项：--mode(structural|cross) --patch(文件或目录) --baseline(csv 路径 | off)
+ * 选项：--mode(structural|cross) --patch(文件或目录)
+ *       --baseline(csv 路径 | off)        单码集模式（与 --baselines 互斥）
+ *       --baselines=YYYY=csv[,...]        按年选集模式（与 --baseline 互斥）
+ *
+ * 显式传入的 --baseline/--baselines 路径缺失 → 直接退出 1（CI 的门禁路径丢了必须炸，
+ * 静默降级会让引用完整性空转——2026-09 事故根因）。未传 --baseline 走 DEFAULT_BASELINE
+ * 且默认路径缺失 → 仅告警降级（本地新 clone 的合理体验）。
  */
 import { readdir, stat, readFile } from 'fs/promises';
 import path from 'path';
 import { loadBaselineCsv } from './baseline.js';
+import { parseBaselinesArg, loadYearCodes, type BaselineMap } from './baseline-map.js';
 import { verifyStructural, verifyCross, type Issue } from './verify.js';
-import { validatePatch } from '@cndiv/data-protocol';
+import { parseBaselineYear, validatePatch } from '@cndiv/data-protocol';
 
 const args = process.argv.slice(2);
 const get = (key: string): string | undefined =>
@@ -57,19 +69,49 @@ function printIssues(file: string, issues: Issue[]): void {
 
 async function runStructural(): Promise<number> {
   const patchTarget = get('patch') ?? 'patches';
-  const baselineArg = get('baseline') ?? DEFAULT_BASELINE;
+  const baselinesRaw = args.find((a) => a.startsWith('--baselines='))
+    ?.slice('--baselines='.length);
+  const explicitBaseline = get('baseline');
 
-  // baseline 码集：供引用完整性判定；--baseline=off 或文件缺失时降级为纯离线码结构自洽
-  let baselineCodes: Set<string> | undefined;
-  if (baselineArg !== 'off') {
+  if (baselinesRaw && explicitBaseline !== undefined) {
+    console.error('⛔ --baseline 与 --baselines 互斥，只能给一个');
+    return 1;
+  }
+
+  // 按年选集模式：每份 patch 用自己 apply_after 声明年的码集
+  let baselines: BaselineMap | undefined;
+  if (baselinesRaw) {
+    try {
+      baselines = parseBaselinesArg(baselinesRaw);
+    } catch (e) {
+      console.error(`⛔ ${(e as Error).message}`);
+      return 1;
+    }
+  }
+
+  const baselineArg = explicitBaseline ?? DEFAULT_BASELINE;
+
+  // 单码集模式的 baseline 码集：供引用完整性判定。
+  // --baseline=off 或（未显式传且）默认路径缺失 → 降级为纯离线码结构自洽；
+  // 显式传入的路径缺失 → fail-hard（见文件头注释）。
+  let singleCodes: Set<string> | undefined;
+  if (baselines) {
+    const years = [...baselines.keys()].sort((a, b) => a - b).join(', ');
+    console.log(`按年选基线模式：${years}（apply_after 命中即用，缺年报错）`);
+  } else if (baselineArg !== 'off') {
     const exists = await stat(baselineArg).then(
       () => true,
       () => false
     );
     if (exists) {
       const divisions = await loadBaselineCsv(baselineArg);
-      baselineCodes = new Set(divisions.map((d) => d.code));
-      console.log(`加载 baseline: ${baselineArg}（${baselineCodes.size} 码）`);
+      singleCodes = new Set(divisions.map((d) => d.code));
+      console.log(`加载 baseline: ${baselineArg}（${singleCodes.size} 码）`);
+    } else if (explicitBaseline !== undefined) {
+      console.error(
+        `⛔ baseline 不存在: ${baselineArg}（显式传入的路径缺失，fail-hard 不降级）`
+      );
+      return 1;
     } else {
       console.warn(
         `⚠️ baseline 不存在: ${baselineArg} → 降级为纯码结构自洽（跳过引用完整性）。如无需 baseline 传 --baseline=off 静默此告警`
@@ -78,6 +120,9 @@ async function runStructural(): Promise<number> {
   } else {
     console.log('baseline=off → 仅做纯码结构自洽（不查引用完整性）');
   }
+
+  // 按年码集缓存：同一年只装一次
+  const yearCodesCache = new Map<number, Set<string>>();
 
   const files = await collectPatchFiles(patchTarget);
   if (files.length === 0) {
@@ -107,6 +152,42 @@ async function runStructural(): Promise<number> {
       totalErrors++;
       filesWithError++;
       continue;
+    }
+
+    // 按年选集：apply_after 声明哪年，就喂哪年码集；缺年 = 门禁不通过（绝不静默退回）
+    let baselineCodes = singleCodes;
+    if (baselines) {
+      const year = parseBaselineYear(schema.data.meta.apply_after);
+      if (year === null) {
+        console.error(
+          `⛔ ${file}: apply_after「${schema.data.meta.apply_after}」无法解析出基线年`
+        );
+        totalErrors++;
+        filesWithError++;
+        continue;
+      }
+      if (!baselines.has(year)) {
+        console.error(
+          `⛔ ${file}: 需要 ${year} 基线，但 --baselines 未提供（值里补一条 ${year}=<csv>）`
+        );
+        totalErrors++;
+        filesWithError++;
+        continue;
+      }
+      let codes = yearCodesCache.get(year);
+      if (!codes) {
+        const loaded = await loadYearCodes(baselines, year);
+        if (!loaded.ok) {
+          console.error(`⛔ ${file}: ${loaded.reason}`);
+          totalErrors++;
+          filesWithError++;
+          continue;
+        }
+        codes = loaded.codes;
+        yearCodesCache.set(year, codes);
+        console.log(`加载 ${year} baseline（${codes.size} 码）`);
+      }
+      baselineCodes = codes;
     }
 
     const report = verifyStructural(schema.data, { baselineCodes });
