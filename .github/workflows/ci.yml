@@ -30,6 +30,13 @@ jobs:
         # 级别 low:任何漏洞阻断 CI;如需放宽改 --audit-level=moderate。
         run: pnpm audit --audit-level=low
 
+      - name: Audit nested workspaces (apps/web, docs-site)
+        # 根 audit 只覆盖 monorepo lockfile；两个嵌套 workspace 各有独立 lockfile，
+        # 同样 low 级阻断（overrides 已同步至各自 pnpm-workspace.yaml）。
+        run: |
+          pnpm --dir apps/web audit --audit-level=low
+          pnpm --dir docs-site audit --audit-level=low
+
       - name: Build (tsc -b, project references)
         run: pnpm build
 
