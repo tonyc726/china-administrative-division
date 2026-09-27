@@ -2,7 +2,8 @@ packages:
   - 'packages/*'
   # legacy 已归档为只读参考（不再是 workspace 成员，其依赖/构建不参与 monorepo）。
   # GB2260 1980-2021 历史经 `cndiv migrate --input=legacy/data/GB2260` 入 v2 真相源；
-  # 文件仍在 git 中（非 filter-repo）供考古。详见 legacy/README.md。
+  # git 中仅保留 LICENSE / README / 3 个参考脚本（legacy/data 未入库；
+  # 本地残留 114M 待迁移完整性核验后可删）。详见 legacy/README.md。
 
   # pnpm 11 不再读取 package.json#pnpm；overrides / allowBuilds 写在这里。
 overrides:
