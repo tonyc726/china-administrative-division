@@ -55,7 +55,7 @@ jobs:
         env:
           WEB_BASE: /china-administrative-division/
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm run build
 
       # docs-site 是嵌套 workspace（自有 pnpm-workspace.yaml + allowBuilds.esbuild），
@@ -67,7 +67,7 @@ jobs:
           DOCS_SITE_URL: ${{ env.SITE_URL }}/docs
           DOCS_HOME_URL: ${{ env.SITE_URL }}/
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm build
 
       - name: Combine into one Pages artifact
