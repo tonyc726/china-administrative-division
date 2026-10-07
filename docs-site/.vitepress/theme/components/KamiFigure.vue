@@ -3,15 +3,17 @@
 // insight 标题必须陈述判断（非「XX 分布图」），caption 给图外信息（Kami anti-pattern #17/#26）。
 defineProps<{
   eyebrow?: string;
-  title: string;
+  title?: string;
   caption?: string;
 }>();
 </script>
 
 <template>
   <figure class="kami-figure">
-    <div v-if="eyebrow" class="kf-eyebrow">{{ eyebrow }}</div>
-    <div class="kf-title">{{ title }}</div>
+    <slot name="header">
+      <div v-if="eyebrow" class="kf-eyebrow">{{ eyebrow }}</div>
+      <div v-if="title" class="kf-title">{{ title }}</div>
+    </slot>
     <div class="kf-canvas"><slot /></div>
     <figcaption v-if="caption" class="kf-caption">{{ caption }}</figcaption>
   </figure>

@@ -6,10 +6,11 @@
  * - hero-initial.json：抽样的第一条，供 SSR 首屏
  * - level-counts.json：1980–2023 各级条数。没有这一级的年份是 null，不补 0
  *
- * 历史 CSV 里 2021 年只有县级残片。省、地、县改用 Release 里的
- * GB2260.2021.sqlite。乡、村用同一 Release 的 NBS 年度库（2009–2022）；
- * 2023 年仍用已发布的 source-2023 CSV。GB2260 与上一年字节相同的年份
- * （2008、2022）不当作新的省地县快照。
+ * 历史 CSV 里 2021 年只有县级残片。省、地、县图用 Release 里的 GB2260
+ * 年度库，1980–2023 每年都有柱。2008、2022 与上一年字节相同，沿用上一年
+ * 的条数（当年没有公布变更）。乡、村用 NBS 年度库（2009–2022）；
+ * 2023 年乡、村仍用已发布的 source-2023 CSV。2023 年省、地、县不改用
+ * NBS 县级，避免和 GB2260 接成假台阶。
  */
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -44,6 +45,13 @@ const RANKS = [
   { level: 4, label: '乡级', short: '乡', hint: '乡/镇/街道' },
   { level: 5, label: '村级', short: '村', hint: '村委会/居委会' },
 ];
+
+/** 省级条数发生变化、且能在历史 CSV 的省名里对上的年份。 */
+const PROVINCE_EVENTS = {
+  1988: '海南建省',
+  1997: '重庆直辖',
+  2013: '含台港澳',
+};
 
 const CUTS = [2, 4, 6, 9, 12];
 
@@ -327,6 +335,23 @@ export function applyReleaseCounts(levelCounts, release) {
     }
   }
 
+  const carried = [];
+  for (const dup of release.gb2260.duplicates ?? []) {
+    const index = at(dup.year);
+    const source = release.gb2260.years[String(dup.sameAs)];
+    if (!source || index < 0 || index >= span) continue;
+    const upperMissing = [0, 1, 2].every(
+      (level) => levels[level].counts[index] == null
+    );
+    if (upperMissing) {
+      for (let level = 0; level < 3; level += 1) {
+        const n = source.counts[level] ?? 0;
+        levels[level].counts[index] = n > 0 ? n : null;
+      }
+    }
+    carried.push({ year: dup.year, sameAs: dup.sameAs });
+  }
+
   const filled = new Set(gb2260FilledYears);
   const csvFragments = levelCounts.omitted.filter((item) =>
     filled.has(item.year)
@@ -339,11 +364,75 @@ export function applyReleaseCounts(levelCounts, release) {
     }
   }
 
+  const gbAdminAt = (year) => {
+    const direct = release.gb2260.years[String(year)];
+    if (direct) return direct.counts.slice(0, 3);
+    const dup = (release.gb2260.duplicates ?? []).find(
+      (item) => item.year === year
+    );
+    if (!dup) return null;
+    const source = release.gb2260.years[String(dup.sameAs)];
+    return source ? source.counts.slice(0, 3) : null;
+  };
+
+  const adminCounts = [[], [], []];
+  for (let year = levelCounts.startYear; year <= levelCounts.endYear; year += 1) {
+    const counts = gbAdminAt(year);
+    if (!counts || counts.some((count) => !(count > 0))) {
+      throw new Error(`GB2260 ${year} 年省、地、县不完整`);
+    }
+    counts.forEach((count, level) => adminCounts[level].push(count));
+  }
+
+  const events = [];
+  for (let year = levelCounts.startYear + 1; year <= levelCounts.endYear; year += 1) {
+    const label = PROVINCE_EVENTS[year];
+    if (!label) continue;
+    const index = year - levelCounts.startYear;
+    if (adminCounts[0][index] === adminCounts[0][index - 1]) continue;
+    events.push({ year, label });
+  }
+
+  const localFrom = 2009;
+  const localCounts = [[], []];
+  for (let year = localFrom; year <= levelCounts.endYear; year += 1) {
+    const index = at(year);
+    const township = levels[3].counts[index];
+    const village = levels[4].counts[index];
+    if (!(township > 0) || !(village > 0)) {
+      throw new Error(`NBS ${year} 年乡、村不完整`);
+    }
+    localCounts[0].push(township);
+    localCounts[1].push(village);
+  }
+
+  const snapIndex = at(levelCounts.snapshotYear);
+  const chart = {
+    adminStart: levelCounts.startYear,
+    adminEnd: levelCounts.endYear,
+    admin: [0, 1, 2].map((level) => ({
+      ...RANKS[level],
+      counts: adminCounts[level],
+    })),
+    localStart: localFrom,
+    localEnd: levelCounts.endYear,
+    local: [0, 1].map((offset) => ({
+      ...RANKS[offset + 3],
+      counts: localCounts[offset],
+    })),
+    carried,
+    events,
+    publishedAdmin2023: [0, 1, 2].map(
+      (level) => levels[level].counts[snapIndex]
+    ),
+  };
+
   return {
     ...levelCounts,
     levels,
     omitted,
     emptyYears,
+    chart,
     sources: {
       release: release.release,
       nbsTownshipYears: nbsTownshipYears.sort((a, b) => a - b),
