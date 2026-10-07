@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import KamiFigure from './KamiFigure.vue';
 import levelCounts from '../data/generated/level-counts.json';
 
@@ -35,16 +35,23 @@ const data = levelCounts as {
   provinceGap: ProvinceGap | null;
 };
 
-const H = 48;
-const plotW = ref(520);
-const charts = ref<HTMLElement | null>(null);
-const hoverIndex = ref<number | null>(null);
-const keyIndex = ref<number | null>(null);
-let observer: ResizeObserver | undefined;
-
+const H = 248;
+const padL = 48;
+const padR = 8;
+const padT = 8;
+const padB = 26;
+const plotH = H - padT - padB;
+const MIN_BAR = 2;
 const yearCount = data.endYear - data.startYear + 1;
 const defaultIndex = data.snapshotYear - data.startYear;
 const omittedByYear = new Map(data.omitted.map((item) => [item.year, item]));
+
+const frameW = ref(768);
+const frameEl = ref<HTMLElement | null>(null);
+const scrollEl = ref<HTMLElement | null>(null);
+const hoverIndex = ref<number | null>(null);
+const keyIndex = ref<number | null>(null);
+let observer: ResizeObserver | undefined;
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
@@ -52,41 +59,21 @@ function yearAt(index: number) {
   return data.startYear + index;
 }
 
-function xOf(index: number, width: number) {
-  if (yearCount <= 1) return width / 2;
-  const pad = 8;
-  return pad + (index / (yearCount - 1)) * (width - pad * 2);
+function totalAt(index: number) {
+  let sum = 0;
+  let any = false;
+  for (const series of data.levels) {
+    const count = series.counts[index];
+    if (count != null) {
+      sum += count;
+      any = true;
+    }
+  }
+  return any ? sum : null;
 }
 
 function presentValues(counts: (number | null)[]) {
   return counts.filter((count): count is number => count != null);
-}
-
-function yOf(counts: (number | null)[], value: number) {
-  const values = presentValues(counts);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const padY = 7;
-  if (min === max) return H / 2;
-  const slack = (max - min) * 0.22;
-  const lo = min - slack;
-  const hi = max + slack;
-  return padY + ((hi - value) / (hi - lo)) * (H - padY * 2);
-}
-
-function runs(counts: (number | null)[]) {
-  const groups: { index: number; value: number }[][] = [];
-  let current: { index: number; value: number }[] = [];
-  counts.forEach((value, index) => {
-    if (value == null) {
-      if (current.length) groups.push(current);
-      current = [];
-      return;
-    }
-    current.push({ index, value });
-  });
-  if (current.length) groups.push(current);
-  return groups;
 }
 
 function coverage(counts: (number | null)[]) {
@@ -105,119 +92,190 @@ function coverage(counts: (number | null)[]) {
   return parts.join('、');
 }
 
-const rows = computed(() =>
-  data.levels.map((series) => {
-    const values = presentValues(series.counts);
-    let latest: number | null = null;
-    for (let index = series.counts.length - 1; index >= 0; index -= 1) {
-      if (series.counts[index] != null) {
-        latest = series.counts[index]!;
-        break;
-      }
+function tickStep(upper: number) {
+  const rough = upper / 4;
+  if (!(rough > 0)) return 1;
+  const pow = 10 ** Math.floor(Math.log10(rough));
+  const steps = [1, 2, 2.5, 5, 10].map((multiplier) => multiplier * pow);
+  return steps.find((step) => step >= rough) ?? steps[steps.length - 1]!;
+}
+
+function tickLabel(value: number) {
+  if (value === 0) return '0';
+  if (value % 10000 === 0) return `${value / 10000}万`;
+  return fmt(value);
+}
+
+const maxTotal = Math.max(
+  1,
+  ...Array.from({ length: yearCount }, (_, index) => totalAt(index) ?? 0)
+);
+
+const yTicks = computed(() => {
+  const step = tickStep(maxTotal);
+  const ticks: number[] = [];
+  for (let value = 0; value <= maxTotal; value += step) ticks.push(value);
+  return ticks;
+});
+
+const plotWidth = computed(() => {
+  const available = Math.max(0, frameW.value - padL);
+  return available >= 520 ? available : 600;
+});
+const plotPadL = 16;
+const slot = computed(() => (plotWidth.value - padR - plotPadL) / yearCount);
+
+function yOf(value: number) {
+  return padT + plotH - (value / maxTotal) * plotH;
+}
+
+const bars = computed(() => {
+  const gap = slot.value;
+  const barW = Math.max(3, gap * 0.62);
+  return Array.from({ length: yearCount }, (_, index) => {
+    const total = totalAt(index);
+    const x = plotPadL + index * gap + (gap - barW) / 2;
+    const omitted = omittedByYear.get(yearAt(index)) ?? null;
+    if (total == null) {
+      return {
+        index,
+        year: yearAt(index),
+        total: null as number | null,
+        omitted,
+        x,
+        w: barW,
+        segments: [] as {
+          level: number;
+          short: string;
+          label: string;
+          count: number;
+          y: number;
+          h: number;
+        }[],
+      };
     }
-    const groups = runs(series.counts).map((group) =>
-      group.map((point) => ({
-        ...point,
-        x: xOf(point.index, plotW.value),
-        y: yOf(series.counts, point.value),
-        year: yearAt(point.index),
-      }))
-    );
-    const lines = groups
-      .filter((group) => group.length > 1)
-      .map((group) =>
-        group
-          .map(
-            (point, index) =>
-              `${index ? 'L' : 'M'}${point.x.toFixed(1)} ${point.y.toFixed(1)}`
-          )
-          .join(' ')
-      );
-    const dots = groups.flatMap((group) => {
-      if (group.length === 1) return group;
-      return [group[0]!, group[group.length - 1]!].filter(
-        (point) => point.year !== data.snapshotYear
-      );
+    const natural = (total / maxTotal) * plotH;
+    const drawn = Math.max(MIN_BAR, natural);
+    const boost = natural > 0 ? drawn / natural : 1;
+    let cursor = padT + plotH;
+    const segments = data.levels.flatMap((series) => {
+      const count = series.counts[index];
+      if (count == null || count <= 0) return [];
+      const h = (count / maxTotal) * plotH * boost;
+      cursor -= h;
+      return [
+        {
+          level: series.level,
+          short: series.short,
+          label: series.label,
+          count,
+          y: cursor,
+          h,
+        },
+      ];
     });
     return {
-      ...series,
-      latest,
-      min: values.length ? Math.min(...values) : null,
-      max: values.length ? Math.max(...values) : null,
-      lines,
-      dots,
-      groups,
+      index,
+      year: yearAt(index),
+      total,
+      omitted,
+      x,
+      w: barW,
+      segments,
     };
-  })
-);
+  });
+});
+
+const xTicks = computed(() => {
+  const ticks: { year: number; x: number }[] = [];
+  for (let year = data.startYear; year <= data.endYear; year += 1) {
+    if ((year - data.startYear) % 5 !== 0) continue;
+    const bar = bars.value[year - data.startYear];
+    if (!bar) continue;
+    ticks.push({ year, x: bar.x + bar.w / 2 });
+  }
+  return ticks;
+});
 
 const activeIndex = computed(
   () => hoverIndex.value ?? keyIndex.value ?? defaultIndex
 );
-const activeYear = computed(() => yearAt(activeIndex.value));
-const guideLeft = computed(
-  () => `${(xOf(activeIndex.value, plotW.value) / plotW.value) * 100}%`
-);
-
-const ticks = computed(() => {
-  const wanted = [1980, 1990, 2000, 2010, 2020, data.endYear];
-  const placed: { year: number; left: string }[] = [];
-  for (const year of wanted) {
-    if (year < data.startYear || year > data.endYear) continue;
-    const x = xOf(year - data.startYear, plotW.value);
-    const prev = placed[placed.length - 1];
-    const prevX = prev
-      ? xOf(Number(prev.year) - data.startYear, plotW.value)
-      : -Infinity;
-    if (prev && x - prevX < 28) {
-      if (year === data.endYear) placed.pop();
-      else continue;
-    }
-    placed.push({
-      year,
-      left: `${(x / plotW.value) * 100}%`,
-    });
-  }
-  return placed;
-});
-
-const years = computed(() =>
-  Array.from({ length: yearCount }, (_, index) => yearAt(index))
+const activeBar = computed(
+  () => bars.value[activeIndex.value] ?? bars.value[0]!
 );
 
 const title = computed(() => {
-  const spanned = data.levels.filter(
-    (series) => presentValues(series.counts).length > 1
-  );
-  const single = data.levels.filter(
-    (series) => presentValues(series.counts).length === 1
-  );
-  if (!single.length) return '每一级用自己的纵轴，缺的年份留空';
-  const singleYears = [
-    ...new Set(single.flatMap((series) => coverage(series.counts).split('、'))),
-  ].join('、');
-  return `${spanned.map((series) => series.short).join('、')}有连续年份，${single.map((series) => series.label).join('、')}只在 ${singleYears} 有数`;
+  const snap = totalAt(defaultIndex);
+  let priorIndex = -1;
+  for (let index = defaultIndex - 1; index >= 0; index -= 1) {
+    if (totalAt(index) != null) {
+      priorIndex = index;
+      break;
+    }
+  }
+  if (snap == null || priorIndex < 0) return '纵轴按条数线性堆叠';
+  const prior = totalAt(priorIndex)!;
+  const ratio = prior > 0 ? snap / prior : 0;
+  const rounded = ratio >= 10 ? Math.round(ratio).toString() : ratio.toFixed(1);
+  return `${data.snapshotYear} 年五级合计 ${fmt(snap)}，约是 ${yearAt(priorIndex)} 年 ${fmt(prior)} 的 ${rounded} 倍`;
 });
 
+function rangesFrom(years: number[]) {
+  const parts: string[] = [];
+  const sorted = [...years].sort((a, b) => a - b);
+  let cursor = 0;
+  while (cursor < sorted.length) {
+    const from = sorted[cursor]!;
+    let end = cursor;
+    while (end + 1 < sorted.length && sorted[end + 1] === sorted[end]! + 1) {
+      end += 1;
+    }
+    const to = sorted[end]!;
+    parts.push(from === to ? `${from}` : `${from}–${to}`);
+    cursor = end + 1;
+  }
+  return parts.join('、');
+}
+
 const caption = computed(() => {
+  const upperOnly: number[] = [];
+  const withLower: number[] = [];
+  for (let index = 0; index < yearCount; index += 1) {
+    const hasUpper = data.levels.some(
+      (series) => series.level <= 3 && series.counts[index] != null
+    );
+    const hasLower = data.levels.some(
+      (series) => series.level >= 4 && series.counts[index] != null
+    );
+    if (hasUpper && !hasLower) upperOnly.push(yearAt(index));
+    if (hasLower) withLower.push(yearAt(index));
+  }
   const covered = data.levels
     .map((series) => `${series.label} ${coverage(series.counts) || '无'}`)
     .join('；');
+  const historyText = upperOnly.length
+    ? `${rangesFrom(upperOnly)} 只有省、地、县`
+    : '';
+  const snapshotText = withLower.length
+    ? `乡、村只在 ${rangesFrom(withLower)} 有数`
+    : '';
   const omitted = data.omitted
     .map(
       (item) =>
-        `${item.year} 年文件里有 ${fmt(item.rows)} 条${item.label}残片，没有画上`
+        `${item.year} 年文件里有 ${fmt(item.rows)} 条${item.label}残片，留空，不画柱`
     )
     .join('。');
   const empty = data.emptyYears.length
-    ? `${data.emptyYears.join('、')} 年没有快照`
+    ? `${data.emptyYears.join('、')} 年没有快照，同样留空`
     : '';
   const gap = data.provinceGap
     ? `${data.provinceGap.fromYear}–${data.provinceGap.toYear} 年省级是 ${fmt(data.provinceGap.historyCount)}，${data.snapshotYear} 年是 ${fmt(data.provinceGap.snapshotCount)}，多出来的是${data.provinceGap.onlyInHistory.join('、')}`
     : '';
   return [
-    '每一级用自己的纵轴。折线只连接相邻且都有数的年份，空年断开，不补 0，也不跨级比较高低。',
-    `${covered}。`,
+    `纵轴是线性的，柱高和这一年的合计成比例。真高不到 ${MIN_BAR}px 的年份画成 ${MIN_BAR}px，免得在 ${data.snapshotYear} 年旁边消失；柱里各级仍按实数比例分。`,
+    covered ? `${covered}。` : '',
+    historyText ? `${historyText}。` : '',
+    snapshotText ? `${snapshotText}。` : '',
     omitted ? `${omitted}。` : '',
     empty ? `${empty}。` : '',
     gap ? `${gap}。` : '',
@@ -226,35 +284,57 @@ const caption = computed(() => {
     .join('');
 });
 
-const readoutLabel = computed(() => {
-  const parts = data.levels.map((series) => {
-    const count = series.counts[activeIndex.value];
-    return `${series.label} ${count == null ? '无' : fmt(count)}`;
+const tipLines = computed(() => {
+  const bar = activeBar.value;
+  return data.levels.map((series) => {
+    const count = series.counts[bar.index];
+    return {
+      level: series.level,
+      short: series.short,
+      label: series.label,
+      text: count == null ? '—' : fmt(count),
+    };
   });
-  return `${activeYear.value} 年，${parts.join('，')}`;
 });
 
-function countAt(series: LevelSeries) {
-  const count = series.counts[activeIndex.value];
-  return count == null ? '—' : fmt(count);
-}
-
-function pointAt(row: (typeof rows.value)[number]) {
-  for (const group of row.groups) {
-    const point = group.find((item) => item.index === activeIndex.value);
-    if (point) return point;
+const tipNote = computed(() => {
+  const bar = activeBar.value;
+  if (bar.total != null) return '';
+  if (bar.omitted) {
+    return `${bar.omitted.year} 年只有 ${fmt(bar.omitted.rows)} 条${bar.omitted.label}残片，没有画柱`;
   }
-  return null;
-}
+  return `${bar.year} 年没有快照`;
+});
+
+const readoutLabel = computed(() => {
+  if (tipNote.value) return tipNote.value;
+  const parts = tipLines.value.map((line) => `${line.label} ${line.text}`);
+  return `${activeBar.value.year} 年，${parts.join('，')}，合计 ${fmt(activeBar.value.total ?? 0)}`;
+});
 
 function setFromPointer(event: PointerEvent) {
-  const host = charts.value;
-  if (!host || plotW.value <= 0) return;
-  const rect = host.getBoundingClientRect();
-  const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-  const ratio = rect.width === 0 ? 0 : x / rect.width;
-  const index = Math.round(ratio * (yearCount - 1));
+  const svg = scrollEl.value?.querySelector('svg');
+  if (!svg) return;
+  const rect = svg.getBoundingClientRect();
+  if (rect.width <= 0) return;
+  const viewX = ((event.clientX - rect.left) / rect.width) * plotWidth.value;
+  if (viewX < plotPadL || viewX > plotWidth.value - padR) return;
+  const index = Math.floor((viewX - plotPadL) / slot.value);
   hoverIndex.value = Math.min(Math.max(index, 0), yearCount - 1);
+}
+
+function reveal(index: number) {
+  const host = scrollEl.value;
+  const svg = host?.querySelector('svg');
+  const bar = bars.value[index];
+  if (!host || !svg || !bar) return;
+  const scale = svg.clientWidth / plotWidth.value;
+  const center = (bar.x + bar.w / 2) * scale;
+  const left = host.scrollLeft;
+  const right = left + host.clientWidth;
+  if (center < left + 24 || center > right - 24) {
+    host.scrollLeft = center - host.clientWidth / 2;
+  }
 }
 
 function onKey(event: KeyboardEvent) {
@@ -279,13 +359,18 @@ function onKey(event: KeyboardEvent) {
           : yearCount - 1;
   keyIndex.value = next;
   hoverIndex.value = null;
+  reveal(next);
 }
 
+const years = computed(() =>
+  Array.from({ length: yearCount }, (_, index) => yearAt(index))
+);
+
 onMounted(() => {
-  const host = charts.value;
+  const host = frameEl.value;
   if (!host) return;
   const apply = () => {
-    plotW.value = host.clientWidth || plotW.value;
+    frameW.value = host.clientWidth || frameW.value;
   };
   apply();
   observer = new ResizeObserver(apply);
@@ -293,100 +378,133 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => observer?.disconnect());
+
+watch(frameW, () => {
+  if (keyIndex.value != null) reveal(keyIndex.value);
+});
 </script>
 
 <template>
   <KamiFigure
-    :eyebrow="`${data.startYear}–${data.endYear} · 仓库快照里的实数`"
+    :eyebrow="`${data.startYear}–${data.endYear} · 仓库快照里的实数 · 线性`"
     :title="title"
     :caption="caption"
   >
-    <div class="lhc">
-      <div class="lhc-legend">
-        <span><i class="swatch line" />历年，各自纵轴</span>
-        <span><i class="swatch dot" />{{ data.snapshotYear }} 五级全量</span>
-      </div>
-      <p class="lhc-readout">
-        <span class="lhc-year">{{ activeYear }}</span>
-        <span
-          v-for="series in data.levels"
-          :key="series.level"
-          class="lhc-chip"
-        >
-          {{ series.short }} {{ countAt(series) }}
+    <div class="ysc">
+      <div class="ysc-legend">
+        <span v-for="series in data.levels" :key="series.level">
+          <i class="swatch" :class="`seg-${series.level}`" />{{ series.label }}
         </span>
-      </p>
+        <span><i class="swatch empty" />无快照</span>
+      </div>
+      <div class="ysc-tip" role="tooltip">
+        <p class="ysc-tip-year">{{ activeBar.year }}</p>
+        <template v-if="activeBar.total != null">
+          <p v-for="line in tipLines" :key="line.level" class="ysc-tip-row">
+            <i class="swatch" :class="`seg-${line.level}`" />
+            <span>{{ line.short }}</span>
+            <b>{{ line.text }}</b>
+          </p>
+          <p class="ysc-tip-row total">
+            <span>合计</span>
+            <b>{{ fmt(activeBar.total) }}</b>
+          </p>
+        </template>
+        <p v-else class="ysc-tip-note">{{ tipNote }}</p>
+      </div>
       <p class="sr-only" aria-live="polite">{{ readoutLabel }}</p>
-      <div class="lhc-grid">
-        <div class="lhc-labels">
-          <div v-for="row in rows" :key="row.level" class="lhc-label">
-            <span class="lhc-name">{{ row.label }}</span>
-            <span class="lhc-now">{{
-              row.latest == null ? '—' : fmt(row.latest)
-            }}</span>
-            <span
-              v-if="row.min != null && row.max != null && row.min !== row.max"
-              class="lhc-range"
+      <div ref="frameEl" class="ysc-body">
+        <svg
+          class="ysc-axis"
+          :viewBox="`0 0 ${padL} ${H}`"
+          :width="padL"
+          :height="H"
+          aria-hidden="true"
+        >
+          <g class="ysc-grid">
+            <text
+              v-for="tick in yTicks"
+              :key="tick"
+              :x="padL - 6"
+              :y="yOf(tick) + 3"
+              text-anchor="end"
             >
-              {{ fmt(row.min) }}–{{ fmt(row.max) }}
-            </span>
-          </div>
-        </div>
+              {{ tickLabel(tick) }}
+            </text>
+          </g>
+        </svg>
         <div
-          ref="charts"
-          class="lhc-charts"
+          ref="scrollEl"
+          class="ysc-scroll"
           tabindex="0"
           role="group"
-          aria-label="按年份查看各级条数，左右方向键切换年份"
+          aria-label="1980 到 2023 年堆叠条数，左右方向键切换年份"
           @pointerdown="setFromPointer"
           @pointermove="setFromPointer"
           @pointerleave="hoverIndex = null"
           @keydown="onKey"
         >
-          <div class="lhc-guide" :style="{ left: guideLeft }" />
           <svg
-            v-for="row in rows"
-            :key="row.level"
-            class="lhc-svg"
-            :viewBox="`0 0 ${plotW} ${H}`"
-            :aria-hidden="true"
+            class="ysc-svg"
+            :viewBox="`0 0 ${plotWidth} ${H}`"
+            :width="plotWidth"
+            :height="H"
+            aria-hidden="true"
           >
-            <path
-              v-for="(line, index) in row.lines"
-              :key="index"
-              :d="line"
-              class="lhc-line"
+            <g class="ysc-grid">
+              <template v-for="tick in yTicks" :key="tick">
+                <line
+                  :x1="0"
+                  :x2="plotWidth - padR"
+                  :y1="yOf(tick)"
+                  :y2="yOf(tick)"
+                />
+              </template>
+            </g>
+            <rect
+              class="ysc-col"
+              :x="activeBar.x - 1"
+              :y="padT"
+              :width="activeBar.w + 2"
+              :height="plotH"
             />
-            <circle
-              v-for="dot in row.dots"
-              :key="dot.year"
-              :cx="dot.x"
-              :cy="dot.y"
-              :r="dot.year === data.snapshotYear ? 3.6 : 3"
-              :class="dot.year === data.snapshotYear ? 'is-now' : 'is-point'"
-            />
-            <circle
-              v-if="(hoverIndex != null || keyIndex != null) && pointAt(row)"
-              :cx="pointAt(row)!.x"
-              :cy="pointAt(row)!.y"
-              r="3.2"
-              class="is-hover"
-            />
+            <template v-for="bar in bars" :key="bar.year">
+              <g v-if="bar.total == null" class="ysc-empty">
+                <circle
+                  :cx="bar.x + bar.w / 2"
+                  :cy="padT + plotH - 5"
+                  r="2.2"
+                />
+              </g>
+              <g v-else>
+                <rect
+                  v-for="segment in bar.segments"
+                  :key="segment.level"
+                  :class="`seg-${segment.level}`"
+                  :x="bar.x"
+                  :y="segment.y"
+                  :width="bar.w"
+                  :height="Math.max(segment.h, 0)"
+                />
+              </g>
+            </template>
+            <g class="ysc-xaxis">
+              <text
+                v-for="tick in xTicks"
+                :key="tick.year"
+                :x="tick.x"
+                :y="H - 6"
+                text-anchor="middle"
+              >
+                {{ tick.year }}
+              </text>
+            </g>
           </svg>
         </div>
-        <div class="lhc-axis" aria-hidden="true">
-          <span
-            v-for="tick in ticks"
-            :key="tick.year"
-            class="lhc-tick"
-            :style="{ left: tick.left }"
-            >{{ tick.year }}</span
-          >
-        </div>
       </div>
-      <details class="lhc-details">
+      <details class="ysc-details">
         <summary>按年份查看条数</summary>
-        <div class="lhc-table-wrap">
+        <div class="ysc-table-wrap">
           <table>
             <caption class="sr-only">
               {{
@@ -396,7 +514,7 @@ onBeforeUnmount(() => observer?.disconnect());
               {{
                 data.endYear
               }}
-              年省级、地级、县级、乡级、村级条数。横线表示该年没有这一级。
+              年省级、地级、县级、乡级、村级条数。横线表示该年没有这一级。无快照的年份没有画柱。
             </caption>
             <thead>
               <tr>
@@ -408,6 +526,7 @@ onBeforeUnmount(() => observer?.disconnect());
                 >
                   {{ series.label }}
                 </th>
+                <th scope="col">合计</th>
               </tr>
             </thead>
             <tbody>
@@ -416,7 +535,7 @@ onBeforeUnmount(() => observer?.disconnect());
                   {{ year }}
                   <abbr
                     v-if="omittedByYear.get(year)"
-                    class="lhc-flag"
+                    class="ysc-flag"
                     :title="`${omittedByYear.get(year)!.rows} 条${omittedByYear.get(year)!.label}残片未计入`"
                     >残缺</abbr
                   >
@@ -428,6 +547,9 @@ onBeforeUnmount(() => observer?.disconnect());
                       : fmt(series.counts[index]!)
                   }}
                 </td>
+                <td>
+                  {{ totalAt(index) == null ? '—' : fmt(totalAt(index)!) }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -438,12 +560,22 @@ onBeforeUnmount(() => observer?.disconnect());
 </template>
 
 <style scoped>
-.lhc {
-  --lhc-row: 48px;
+.ysc {
+  --seg-1: #c4c0b4;
+  --seg-2: #807d72;
+  --seg-3: #5a5852;
+  --seg-4: #c08532;
+  --seg-5: var(--vp-cursor-primary, #f54e00);
   font-variant-numeric: lining-nums tabular-nums;
 }
-.lhc-legend,
-.lhc-readout {
+:global(html.dark) .ysc {
+  --seg-1: #6e6b62;
+  --seg-2: #9a968a;
+  --seg-3: #c9c7bc;
+  --seg-4: #e0b56a;
+  --seg-5: var(--vp-cursor-primary, #ff6b2c);
+}
+.ysc-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -452,172 +584,157 @@ onBeforeUnmount(() => observer?.disconnect());
   color: var(--kami-olive, #5a5852);
   font-size: 0.78rem;
 }
-.lhc-legend span,
-.lhc-chip,
-.lhc-year {
+.ysc-legend span,
+.ysc-tip-row {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.lhc-year {
-  font-family: var(--kami-mono);
-  font-weight: 600;
-  color: var(--kami-near-black, #26251e);
-}
-.lhc-chip {
-  font-family: var(--kami-mono);
-  color: var(--kami-near-black, #26251e);
-}
 .swatch {
   display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
   flex: none;
 }
-.swatch.line {
-  width: 16px;
-  height: 2px;
-  border-radius: 99px;
-  background: var(--kami-near-black, #26251e);
+.swatch.empty,
+.ysc-empty circle {
+  fill: none;
+  stroke: var(--kami-stone, #807d72);
+  stroke-width: 1.25;
 }
-.swatch.dot {
+.swatch.empty {
   width: 8px;
   height: 8px;
+  border: 1.25px solid var(--kami-stone, #807d72);
   border-radius: 99px;
-  background: var(--kami-brand, #f54e00);
+  background: transparent;
+  box-sizing: border-box;
 }
-.lhc-grid {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 12px;
-  align-items: start;
+.seg-1 {
+  fill: var(--seg-1);
+  background: var(--seg-1);
 }
-.lhc-labels,
-.lhc-charts {
-  display: grid;
-  row-gap: 8px;
+.seg-2 {
+  fill: var(--seg-2);
+  background: var(--seg-2);
 }
-.lhc-label {
-  height: var(--lhc-row);
+.seg-3 {
+  fill: var(--seg-3);
+  background: var(--seg-3);
+}
+.seg-4 {
+  fill: var(--seg-4);
+  background: var(--seg-4);
+}
+.seg-5 {
+  fill: var(--seg-5);
+  background: var(--seg-5);
+}
+.ysc-tip {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 4.5rem;
-}
-.lhc-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.2;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--kami-border, #e6e5e0);
+  border-radius: 8px;
+  background: var(--kami-parchment-2, #fafaf7);
   color: var(--kami-near-black, #26251e);
+  font-size: 0.78rem;
 }
-.lhc-now,
-.lhc-range {
+.ysc-tip-year {
+  margin: 0;
   font-family: var(--kami-mono);
-  font-size: 0.68rem;
-  line-height: 1.25;
-  color: var(--kami-stone, #807d72);
-}
-.lhc-now {
-  color: var(--kami-near-black, #26251e);
   font-weight: 600;
 }
-.lhc-charts {
-  position: relative;
+.ysc-tip-row {
+  margin: 0;
+  font-family: var(--kami-mono);
+}
+.ysc-tip-row b {
+  font-weight: 600;
+}
+.ysc-tip-row.total {
+  margin-left: auto;
+}
+.ysc-tip-note {
+  margin: 0;
+  color: var(--kami-olive, #5a5852);
+}
+.ysc-body {
+  display: flex;
+  align-items: flex-start;
+}
+.ysc-axis {
+  flex: none;
+  display: block;
+}
+.ysc-scroll {
+  flex: 1;
   min-width: 0;
+  overflow-x: auto;
   outline: none;
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   cursor: crosshair;
 }
-.lhc-charts:focus-visible {
+.ysc-scroll:focus-visible {
   outline: 2px solid var(--kami-brand, #f54e00);
   outline-offset: 3px;
   border-radius: 6px;
 }
-.lhc-svg {
-  width: 100%;
-  height: var(--lhc-row);
+.ysc-svg {
   display: block;
-  position: relative;
-  z-index: 1;
+  max-width: none;
 }
-.lhc-line {
-  fill: none;
-  stroke: var(--kami-near-black, #26251e);
-  stroke-width: 1.75;
-  stroke-linejoin: round;
-  stroke-linecap: round;
+.ysc-grid line {
+  stroke: var(--kami-border, #e6e5e0);
+  stroke-width: 1;
 }
-.lhc-svg circle.is-point {
-  fill: var(--kami-near-black, #26251e);
-}
-.lhc-svg circle.is-now,
-.lhc-svg circle.is-hover {
-  fill: var(--kami-brand, #f54e00);
-}
-.lhc-guide {
-  position: absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--kami-brand, #f54e00);
-  opacity: 0.7;
-  pointer-events: none;
-  transform: translateX(-50%);
-}
-.lhc-axis {
-  grid-column: 2;
-  position: relative;
-  height: 1.15rem;
-  margin-top: 4px;
-}
-.lhc-tick {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
+.ysc-grid text,
+.ysc-xaxis text {
   font-family: var(--kami-mono);
-  font-size: 0.66rem;
-  line-height: 1;
-  color: var(--kami-stone, #807d72);
-  white-space: nowrap;
+  font-size: 11px;
+  fill: var(--kami-stone, #807d72);
 }
-.lhc-tick:first-child {
-  transform: none;
+.ysc-col {
+  fill: var(--kami-brand, #f54e00);
+  opacity: 0.12;
 }
-.lhc-tick:last-child {
-  transform: translateX(-100%);
-}
-.lhc-details {
+.ysc-details {
   margin-top: 12px;
 }
-.lhc-details summary {
+.ysc-details summary {
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--kami-near-black, #26251e);
 }
-.lhc-table-wrap {
+.ysc-table-wrap {
   overflow-x: auto;
   margin-top: 8px;
 }
-.lhc-details table {
+.ysc-details table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.75rem;
   font-family: var(--kami-mono);
 }
-.lhc-details th,
-.lhc-details td {
+.ysc-details th,
+.ysc-details td {
   padding: 4px 8px;
   border-bottom: 1px solid var(--kami-border, #e6e5e0);
   text-align: right;
   white-space: nowrap;
   font-weight: 500;
 }
-.lhc-details th:first-child,
-.lhc-details tbody th {
+.ysc-details th:first-child,
+.ysc-details tbody th {
   text-align: left;
   color: var(--kami-near-black, #26251e);
 }
-.lhc-flag {
+.ysc-flag {
   margin-left: 4px;
   font-family: var(--kami-sans);
   font-size: 0.66rem;
@@ -638,16 +755,13 @@ onBeforeUnmount(() => observer?.disconnect());
   border: 0;
 }
 @media (max-width: 640px) {
-  .lhc {
-    --lhc-row: 44px;
-  }
-  .lhc-grid {
-    column-gap: 8px;
-  }
-  .lhc-readout,
-  .lhc-legend {
+  .ysc-legend,
+  .ysc-tip {
     font-size: 0.72rem;
     gap: 6px 10px;
+  }
+  .ysc-tip-row.total {
+    margin-left: 0;
   }
 }
 </style>
