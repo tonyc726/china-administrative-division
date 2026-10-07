@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   SAMPLE_SIZE,
+  applyReleaseCounts,
   buildLevelCounts,
   sampleVillages,
 } from './docs-home-data.mjs';
@@ -154,6 +155,62 @@ describe('docs home data matches the source CSVs', () => {
     expect(built.provinceGap?.onlyInHistory.slice().sort()).toEqual(
       onlyInHistory
     );
+
+    const release = JSON.parse(
+      readFileSync('scripts/data/release-level-counts.json', 'utf8')
+    );
+    const merged = applyReleaseCounts(built, release);
+    const at = (year: number) =>
+      merged.levels.map((series) => series.counts[year - START]);
+
+    expect(at(1980)).toEqual([29, 316, 2761, null, null]);
+    expect(at(2009)?.[2]).toBe(raw.get(2009)?.get(3));
+    expect(at(2009)?.[2]).not.toBe(release.nbs.years['2009'][2]);
+    expect(at(2009)?.[3]).toBe(release.nbs.years['2009'][3]);
+    expect(at(2009)?.[4]).toBe(release.nbs.years['2009'][4]);
+    expect(at(2015)?.[4]).toBe(release.nbs.years['2015'][4]);
+    expect(at(2021)).toEqual([
+      release.gb2260.years['2021'].counts[0],
+      release.gb2260.years['2021'].counts[1],
+      release.gb2260.years['2021'].counts[2],
+      release.nbs.years['2021'][3],
+      release.nbs.years['2021'][4],
+    ]);
+    expect(at(2022)).toEqual([
+      null,
+      null,
+      null,
+      release.nbs.years['2022'][3],
+      release.nbs.years['2022'][4],
+    ]);
+    expect(at(2023)).toEqual(y2023);
+    expect(merged.omitted).toEqual([]);
+    expect(merged.emptyYears).toEqual([]);
+    expect(merged.sources.csvFragments).toEqual([
+      { year: 2021, label: '县级', rows: 21 },
+    ]);
+    expect(merged.sources.gb2260Duplicates).toEqual([
+      { year: 2008, sameAs: 2007 },
+      { year: 2022, sameAs: 2021 },
+    ]);
+    expect(merged.sources.nbsTownshipYears[0]).toBe(2009);
+    expect(merged.sources.nbsTownshipYears.at(-1)).toBe(2022);
+    expect(merged.sources.nbsTownshipYears).not.toContain(2023);
+    const sqliteSum = release.nbs.years['2023'].reduce(
+      (sum: number, count: number) => sum + count,
+      0
+    );
+    const csvSum = (y2023 as number[]).reduce((sum, count) => sum + count, 0);
+    const manifest = JSON.parse(
+      readFileSync('packages/source-2023/data/manifest.json', 'utf8')
+    );
+    expect(sqliteSum - csvSum).toBe(manifest.placeholders_skipped);
+    expect(merged.sources.gb2260Extras).toEqual([
+      {
+        year: 2021,
+        names: built.provinceGap?.onlyInHistory,
+      },
+    ]);
   });
 
   it('samples real 2023 village chains without duplicate codes', () => {
