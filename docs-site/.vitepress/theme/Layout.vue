@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme';
-import ChinaMapHero from './components/ChinaMapHero.vue';
+import CodeAnatomy from './components/CodeAnatomy.vue';
 
 const { Layout } = DefaultTheme;
 </script>
@@ -8,7 +8,7 @@ const { Layout } = DefaultTheme;
 <template>
   <Layout>
     <template #home-hero-image>
-      <ChinaMapHero />
+      <CodeAnatomy />
     </template>
   </Layout>
 </template>
