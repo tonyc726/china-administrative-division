@@ -111,20 +111,45 @@ const focusSeries = computed(() =>
     : chart.admin.find((series) => series.level === 3)!
 );
 
+const engaged = computed(
+  () => hoverIndex.value != null || keyIndex.value != null
+);
+
 const headline = computed(() => {
   const series = focusSeries.value;
+  const index = hoverIndex.value ?? keyIndex.value ?? yearCount.value - 1;
+  const value = series.counts[index] ?? 0;
+  const year = view.value.start + index;
+  const previous = index > 0 ? series.counts[index - 1] : null;
+  const delta = previous == null ? null : value - previous;
+  const sign = delta == null ? '' : delta > 0 ? '+' : delta < 0 ? '−' : '';
+  const deltaText =
+    delta == null || previous == null
+      ? ''
+      : `较 ${year - 1} 年 ${sign}${fmt(Math.abs(delta))}`;
   const first = series.counts[0]!;
   const last = series.counts[series.counts.length - 1]!;
-  const delta = last - first;
-  const fromYear = mode.value === 'local' ? chart.localStart : chart.adminStart;
-  const toYear = mode.value === 'local' ? chart.localEnd : chart.adminEnd;
+  const spanDelta = last - first;
+  const fromYear = view.value.start;
+  const toYear = view.value.end;
   const span = toYear - fromYear;
-  const verb = delta === 0 ? '持平' : delta > 0 ? '增加' : '减少';
+  const verb = spanDelta === 0 ? '持平' : spanDelta > 0 ? '增加' : '减少';
   const change =
-    delta === 0 ? '数量持平' : `${verb} ${fmt(Math.abs(delta))} 个`;
+    spanDelta === 0 ? '数量持平' : `${verb} ${fmt(Math.abs(spanDelta))} 个`;
+  const formatted = fmt(value);
+  const glyphs = [...formatted].map((ch, glyphIndex) => ({
+    ch,
+    key: formatted.length - glyphIndex,
+  }));
   return {
-    value: fmt(last),
+    year,
+    value,
     unit: series.label,
+    glyphs,
+    deltaText,
+    spoken: deltaText
+      ? `${year} 年 · ${formatted} 个${series.label}，${deltaText}`
+      : `${year} 年 · ${formatted} 个${series.label}`,
     sentence: `${series.label}从 ${fromYear} 年的 ${fmt(first)} 个到 ${toYear} 年的 ${fmt(last)} 个，${span} 年来${change}。`,
   };
 });
@@ -252,21 +277,67 @@ function reveal(index: number) {
   }
 }
 
-function setFromPointer(event: PointerEvent) {
+let touchStart: { x: number; y: number; index: number } | null = null;
+
+function indexFromPointer(event: PointerEvent) {
   const host = scrollEl.value;
-  if (!host) return;
+  if (!host) return null;
   const columns = host.querySelectorAll<HTMLElement>('.col');
-  if (!columns.length) return;
+  if (!columns.length) return null;
   const box = host.getBoundingClientRect();
   const x = event.clientX - box.left + host.scrollLeft;
   const width = host.scrollWidth;
-  if (width <= 0) return;
-  const index = Math.min(
+  if (width <= 0) return null;
+  return Math.min(
     columns.length - 1,
     Math.max(0, Math.floor((x / width) * columns.length))
   );
+}
+
+function setFromPointer(event: PointerEvent) {
+  const index = indexFromPointer(event);
+  if (index == null) return;
   hoverIndex.value = index;
   keyIndex.value = null;
+}
+
+function onPointerDown(event: PointerEvent) {
+  if (event.pointerType !== 'touch') {
+    setFromPointer(event);
+    return;
+  }
+  const index = indexFromPointer(event);
+  if (index == null) return;
+  touchStart = { x: event.clientX, y: event.clientY, index };
+  try {
+    scrollEl.value?.setPointerCapture(event.pointerId);
+  } catch {
+    /* 非可信指针或浏览器不支持时，点选仍靠 pointerup 完成。 */
+  }
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (event.pointerType === 'touch') return;
+  setFromPointer(event);
+}
+
+function onPointerUp(event: PointerEvent) {
+  if (event.pointerType !== 'touch' || !touchStart) return;
+  const dx = Math.abs(event.clientX - touchStart.x);
+  const dy = Math.abs(event.clientY - touchStart.y);
+  if (dx <= 12 && dy <= 12) {
+    keyIndex.value = indexFromPointer(event) ?? touchStart.index;
+    hoverIndex.value = null;
+  }
+  touchStart = null;
+}
+
+function onPointerCancel() {
+  touchStart = null;
+}
+
+function onPointerLeave() {
+  hoverIndex.value = null;
 }
 
 function onKey(event: KeyboardEvent) {
@@ -296,13 +367,18 @@ function onKey(event: KeyboardEvent) {
 
 function selectMode(next: Mode) {
   if (mode.value === next) return;
+  const wasEngaged = engaged.value;
   const year = activeBar.value.year;
   mode.value = next;
+  hoverIndex.value = null;
+  if (!wasEngaged) {
+    keyIndex.value = null;
+    return;
+  }
   const start = next === 'local' ? chart.localStart : chart.adminStart;
   const end = next === 'local' ? chart.localEnd : chart.adminEnd;
   const clamped = Math.min(end, Math.max(start, year));
   keyIndex.value = clamped - start;
-  hoverIndex.value = null;
 }
 
 const tableRows = computed(() => {
@@ -368,9 +444,40 @@ watch([activeIndex, mode, () => yearCount.value], () => {
             · {{ headline.unit }}
           </p>
           <p class="ysc-num">
-            {{ headline.value }}<span>{{ headline.unit }}</span>
+            <span class="sr-only">{{ headline.spoken }}</span>
+            <span class="ysc-num-visual" aria-hidden="true">
+              <span class="ysc-year">{{ headline.year }} 年</span>
+              <span class="ysc-sep">·</span>
+              <span class="ysc-roll">
+                <span
+                  v-for="glyph in headline.glyphs"
+                  :key="glyph.key"
+                  class="reel"
+                  :class="{ mark: glyph.ch === ',' }"
+                >
+                  <span v-if="glyph.ch === ','" class="reel-mark">,</span>
+                  <span
+                    v-else
+                    class="reel-strip"
+                    :style="{
+                      transform: `translate3d(0, calc(${glyph.ch} * -1em), 0)`,
+                    }"
+                  >
+                    <span v-for="digit in 10" :key="digit">{{
+                      digit - 1
+                    }}</span>
+                  </span>
+                </span>
+              </span>
+              <span class="ysc-unit">个{{ headline.unit }}</span>
+            </span>
           </p>
-          <p class="ysc-insight">{{ headline.sentence }}</p>
+          <p class="ysc-delta" :class="{ 'is-empty': !headline.deltaText }">
+            <template v-if="headline.deltaText">{{
+              headline.deltaText
+            }}</template>
+          </p>
+          <p v-if="!engaged" class="ysc-insight">{{ headline.sentence }}</p>
         </div>
         <div class="ysc-switch" role="tablist" aria-label="切换统计口径">
           <button
@@ -457,9 +564,11 @@ watch([activeIndex, mode, () => yearCount.value], () => {
             tabindex="0"
             role="group"
             :aria-label="`${view.start} 到 ${view.end} 年条数，左右方向键切换年份`"
-            @pointerdown="setFromPointer"
-            @pointermove="setFromPointer"
-            @pointerleave="hoverIndex = null"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerCancel"
+            @pointerleave="onPointerLeave"
             @scroll="placeTip"
             @keydown="onKey"
           >
@@ -588,22 +697,81 @@ watch([activeIndex, mode, () => yearCount.value], () => {
 .ysc-num {
   margin: 0;
   font-family: var(--kami-sans);
-  font-size: clamp(2.35rem, 4.6vw, 3.15rem);
+  font-size: clamp(2.15rem, 4.4vw, 3.05rem);
   font-weight: 600;
   letter-spacing: -0.045em;
-  line-height: 0.95;
+  line-height: 1;
   color: var(--kami-near-black, #26251e);
   font-variant-numeric: lining-nums tabular-nums;
 }
-.ysc-num span {
-  margin-left: 8px;
-  font-size: 0.95rem;
+.ysc-num-visual {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.22em 0.28em;
+  max-width: 100%;
+}
+.ysc-year,
+.ysc-sep,
+.ysc-unit {
+  font-size: 0.46em;
   font-weight: 500;
   letter-spacing: 0;
+  line-height: 1.2;
   color: var(--kami-olive, #5a5852);
 }
+.ysc-roll {
+  display: inline-flex;
+  align-items: flex-end;
+  height: 1em;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
+}
+.reel {
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  overflow: clip;
+  flex: none;
+  contain: paint;
+}
+.reel:not(.mark) {
+  width: 1ch;
+}
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  width: 1ch;
+  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reel-strip span,
+.reel-mark {
+  display: grid;
+  place-items: center;
+  height: 1em;
+  min-height: 1em;
+  line-height: 1;
+  flex: 0 0 1em;
+  font-variant-ligatures: none;
+}
+.reel-mark {
+  width: 0.35em;
+}
+.ysc-delta {
+  min-height: 1.2em;
+  margin: 8px 0 0;
+  font-family: var(--kami-mono);
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--kami-stone, #807d72);
+}
+.ysc-delta.is-empty {
+  visibility: hidden;
+}
 .ysc-insight {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   max-width: 38rem;
   font-size: 0.95rem;
   line-height: 1.5;
@@ -1002,7 +1170,8 @@ watch([activeIndex, mode, () => yearCount.value], () => {
 }
 @media (prefers-reduced-motion: reduce) {
   .stack,
-  .col {
+  .col,
+  .reel-strip {
     transition: none;
   }
 }
