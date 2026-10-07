@@ -17,7 +17,7 @@
 
 码工具（判级、取父码、补零）见 [`@cndiv/core`](/reference/core)。
 
-<LevelScaleChart />
+<LevelHistoryChart />
 
 ## 存储范式：扁平邻接表
 

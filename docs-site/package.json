@@ -6,7 +6,9 @@
   "description": "Documentation site for @cndiv (China administrative division infrastructure). Nested workspace — VitePress deps stay out of the monorepo lockfile.",
   "packageManager": "pnpm@11.21.0",
   "scripts": {
+    "predev": "node ../scripts/docs-home-data.mjs",
     "dev": "vitepress dev",
+    "prebuild": "node ../scripts/docs-home-data.mjs",
     "build": "vitepress build",
     "preview": "vitepress preview"
   },

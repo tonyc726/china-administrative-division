@@ -696,3 +696,5 @@ raw/
 .hallmark/
 # docs-site 本地开发数据（从 apps/web/public/data 拷贝）
 docs-site/public/data/
+# 文档首页抽样码和历年条数，由 scripts/docs-home-data.mjs 在 prebuild 写出
+docs-site/.vitepress/theme/data/generated/

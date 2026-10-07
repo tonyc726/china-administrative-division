@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import {
-  CODE_EXAMPLES,
-  ROTATE_MS,
-  examplePhrase,
-  type CodeExample,
-} from '../data/code-examples';
+import { withBase } from 'vitepress';
+import initialCode from '../data/generated/hero-initial.json';
 
-const cursor = ref(0);
+const RANKS = ['省', '市', '县', '乡', '村'] as const;
+const LENGTHS = [2, 2, 2, 3, 3] as const;
+const ROTATE_MS = 3500;
+const HISTORY_CAP = 40;
+
+interface Entry {
+  code: string;
+  names: readonly string[];
+}
+
+const initialEntry: Entry = {
+  code: initialCode.code,
+  names: initialCode.names,
+};
+
+const history = ref<Entry[]>([initialEntry]);
+const index = ref(0);
+const pool = ref<Entry[] | null>(null);
+const poolReady = ref(false);
 const pinned = ref(4);
 const active = ref(4);
 const hovering = ref(false);
@@ -15,19 +29,31 @@ const focused = ref(false);
 const hidden = ref(false);
 const announcement = ref('');
 
-const current = computed(
-  () => CODE_EXAMPLES[cursor.value] ?? CODE_EXAMPLES[0]!
-);
+const current = computed(() => history.value[index.value] ?? initialEntry);
 const paused = computed(() => hovering.value || focused.value || hidden.value);
+const segments = computed(() => {
+  let offset = 0;
+  return RANKS.map((rank, segmentIndex) => {
+    const length = LENGTHS[segmentIndex]!;
+    const digits = current.value.code.slice(offset, offset + length);
+    offset += length;
+    return {
+      rank,
+      digits,
+      name: current.value.names[segmentIndex] ?? '',
+    };
+  });
+});
 
 const figureLabel = computed(
-  () => `12 位区划码 ${current.value.code}，${current.value.region}`
+  () => `12 位区划码 ${current.value.code}，${current.value.names.join('、')}`
 );
 const groupLabel = computed(
   () => `按省、市、县、乡、村拆开的 ${current.value.code}`
 );
 
 let timer = 0;
+let alive = true;
 
 function stop() {
   window.clearInterval(timer);
@@ -36,27 +62,87 @@ function stop() {
 
 function start() {
   stop();
-  if (paused.value) return;
+  if (paused.value || !poolReady.value) return;
   timer = window.setInterval(() => {
-    go(cursor.value + 1, true, false);
+    next();
   }, ROTATE_MS);
 }
 
-function go(index: number, announce: boolean, resetTimer = true) {
-  const count = CODE_EXAMPLES.length;
-  const next = ((index % count) + count) % count;
-  if (next === cursor.value) return;
-  cursor.value = next;
-  if (announce) announcement.value = examplePhrase(current.value);
-  if (resetTimer && !paused.value) start();
+function phrase(entry: Entry) {
+  return `${entry.code}，${entry.names.join('、')}`;
 }
 
-function pin(index: number) {
-  pinned.value = index;
-  active.value = index;
+function pick(exclude: string) {
+  const list = pool.value;
+  if (!list || list.length < 2) return null;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const choice = list[Math.floor(Math.random() * list.length)]!;
+    if (choice.code !== exclude) return choice;
+  }
+  return list.find((entry) => entry.code !== exclude) ?? null;
 }
 
-function onKey(event: KeyboardEvent, index: number) {
+function push(entry: Entry) {
+  const nextHistory = history.value.slice(0, index.value + 1);
+  nextHistory.push(entry);
+  let nextIndex = nextHistory.length - 1;
+  while (nextHistory.length > HISTORY_CAP) {
+    nextHistory.shift();
+    nextIndex -= 1;
+  }
+  history.value = nextHistory;
+  index.value = Math.max(0, nextIndex);
+}
+
+function next() {
+  if (!poolReady.value) return;
+  if (index.value < history.value.length - 1) {
+    index.value += 1;
+    announcement.value = phrase(current.value);
+    return;
+  }
+  const entry = pick(current.value.code);
+  if (!entry) return;
+  push(entry);
+  announcement.value = phrase(entry);
+}
+
+function prev() {
+  if (index.value <= 0) return;
+  index.value -= 1;
+  announcement.value = phrase(current.value);
+}
+
+function shuffle() {
+  if (!poolReady.value) return;
+  const entry = pick(current.value.code);
+  if (!entry) return;
+  history.value = history.value.slice(0, index.value + 1);
+  push(entry);
+  announcement.value = phrase(entry);
+}
+
+function goNext() {
+  next();
+  if (!paused.value) start();
+}
+
+function goPrev() {
+  prev();
+  if (!paused.value) start();
+}
+
+function goShuffle() {
+  shuffle();
+  if (!paused.value) start();
+}
+
+function pin(level: number) {
+  pinned.value = level;
+  active.value = level;
+}
+
+function onKey(event: KeyboardEvent, level: number) {
   const key = event.key;
   if (
     key !== 'ArrowRight' &&
@@ -67,18 +153,18 @@ function onKey(event: KeyboardEvent, index: number) {
     return;
   }
   event.preventDefault();
-  const count = current.value.segments.length;
-  const next =
+  const count = segments.value.length;
+  const nextLevel =
     key === 'ArrowRight'
-      ? (index + 1) % count
+      ? (level + 1) % count
       : key === 'ArrowLeft'
-        ? (index - 1 + count) % count
+        ? (level - 1 + count) % count
         : key === 'Home'
           ? 0
           : count - 1;
-  pin(next);
+  pin(nextLevel);
   const group = (event.currentTarget as HTMLElement).parentElement;
-  group?.querySelectorAll<HTMLButtonElement>('button')[next]?.focus();
+  group?.querySelectorAll<HTMLButtonElement>('button')[nextLevel]?.focus();
 }
 
 function digitDelay(segmentIndex: number, digitIndex: number) {
@@ -97,22 +183,17 @@ function onPointerLeave(event: PointerEvent) {
 }
 
 function onFocusOut(event: FocusEvent) {
-  const next = event.relatedTarget;
+  const nextTarget = event.relatedTarget;
   if (
-    !(next instanceof Node) ||
-    !(event.currentTarget as HTMLElement).contains(next)
+    !(nextTarget instanceof Node) ||
+    !(event.currentTarget as HTMLElement).contains(nextTarget)
   ) {
     focused.value = false;
   }
 }
 
-function dotLabel(example: CodeExample) {
-  const village = example.segments[4]?.name ?? example.code;
-  return `${example.region}，${village}，${example.code}`;
-}
-
-watch(paused, (isPaused) => {
-  if (isPaused) stop();
+watch([paused, poolReady], () => {
+  if (paused.value || !poolReady.value) stop();
   else start();
 });
 
@@ -123,10 +204,27 @@ function onVisibility() {
 onMounted(() => {
   hidden.value = document.hidden;
   document.addEventListener('visibilitychange', onVisibility);
-  start();
+  fetch(withBase('/data/hero-codes.json'))
+    .then((res) => {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json() as Promise<{ codes?: string[][] }>;
+    })
+    .then((data) => {
+      if (!alive) return;
+      const entries = (data.codes ?? [])
+        .filter((row) => row.length >= 6 && /^\d{12}$/.test(row[0] ?? ''))
+        .map((row) => ({ code: row[0]!, names: row.slice(1, 6) }));
+      if (entries.length < 2) return;
+      pool.value = entries;
+      poolReady.value = true;
+    })
+    .catch(() => {
+      // 抽样没加载到就停在 SSR 的那一条实码上。
+    });
 });
 
 onBeforeUnmount(() => {
+  alive = false;
   document.removeEventListener('visibilitychange', onVisibility);
   stop();
 });
@@ -148,18 +246,18 @@ onBeforeUnmount(() => {
     </figcaption>
     <div class="anatomy-code" role="group" :aria-label="groupLabel">
       <button
-        v-for="(seg, index) in current.segments"
+        v-for="(seg, segmentIndex) in segments"
         :key="seg.rank"
         type="button"
         class="seg"
-        :class="{ on: active === index }"
-        :aria-pressed="pinned === index"
+        :class="{ on: active === segmentIndex }"
+        :aria-pressed="pinned === segmentIndex"
         :aria-label="`${seg.rank} ${seg.digits} ${seg.name}`"
-        @mouseenter="active = index"
+        @mouseenter="active = segmentIndex"
         @mouseleave="active = pinned"
-        @focus="pin(index)"
-        @click="pin(index)"
-        @keydown="onKey($event, index)"
+        @focus="pin(segmentIndex)"
+        @click="pin(segmentIndex)"
+        @keydown="onKey($event, segmentIndex)"
       >
         <span class="digits" aria-hidden="true">
           <span
@@ -170,8 +268,8 @@ onBeforeUnmount(() => {
             <span
               class="reel-strip"
               :style="{
-                transform: `translateY(calc(${ch} * -1em))`,
-                transitionDelay: `${digitDelay(index, digitIndex)}ms`,
+                transform: `translate3d(0, calc(${ch} * -1em), 0)`,
+                transitionDelay: `${digitDelay(segmentIndex, digitIndex)}ms`,
               }"
             >
               <span v-for="n in 10" :key="n">{{ n - 1 }}</span>
@@ -182,7 +280,9 @@ onBeforeUnmount(() => {
         <span class="seg-rank">{{ seg.rank }}</span>
         <span class="seg-name">
           <Transition name="namefade">
-            <span :key="seg.name" class="seg-name-text">{{ seg.name }}</span>
+            <span :key="`${seg.rank}-${seg.name}`" class="seg-name-text">{{
+              seg.name
+            }}</span>
           </Transition>
         </span>
       </button>
@@ -191,27 +291,27 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="step"
+        :disabled="index === 0"
         aria-label="上一个区划码"
-        @click="go(cursor - 1, true)"
+        @click="goPrev"
       >
         ‹
       </button>
-      <div class="dots" role="group" aria-label="选择示例区划码">
-        <button
-          v-for="(example, index) in CODE_EXAMPLES"
-          :key="example.code"
-          type="button"
-          class="dot"
-          :aria-current="index === cursor ? 'true' : undefined"
-          :aria-label="dotLabel(example)"
-          @click="go(index, true)"
-        />
-      </div>
+      <button
+        type="button"
+        class="shuffle"
+        :disabled="!poolReady"
+        aria-label="随机换一个区划码"
+        @click="goShuffle"
+      >
+        换一个
+      </button>
       <button
         type="button"
         class="step"
+        :disabled="!poolReady"
         aria-label="下一个区划码"
-        @click="go(cursor + 1, true)"
+        @click="goNext"
       >
         ›
       </button>
@@ -224,8 +324,8 @@ onBeforeUnmount(() => {
   container-type: inline-size;
   position: relative;
   width: 100%;
-  max-width: 460px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   box-sizing: border-box;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-border);
@@ -305,32 +405,54 @@ onBeforeUnmount(() => {
 
 .digits {
   display: inline-flex;
-  gap: 0.06em;
+  gap: 0;
   height: 1em;
+  overflow: hidden;
   font-family: var(--vp-font-family-mono);
-  font-size: clamp(1.2rem, 6.2cqi, 2.05rem);
+  font-size: clamp(1.05rem, 7.4cqi, 2.05rem);
   font-weight: 500;
   line-height: 1;
   font-variant-numeric: tabular-nums lining-nums;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
   color: var(--vp-c-text-1);
 }
 
 .reel {
+  position: relative;
   width: 1ch;
   height: 1em;
+  line-height: 1;
   overflow: hidden;
+  overflow: clip;
   flex: none;
+  contain: paint;
+  font-variant-ligatures: none;
 }
 
 .reel-strip {
   display: flex;
   flex-direction: column;
+  width: 1ch;
+  will-change: transform;
   transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reel-strip span {
+  display: grid;
+  place-items: center;
+  width: 1ch;
   height: 1em;
+  min-height: 1em;
+  flex: 0 0 1em;
   line-height: 1;
+  overflow: hidden;
+  font-variant-ligatures: none;
+  font-feature-settings:
+    'liga' 0,
+    'calt' 0;
 }
 
 .seg-stem {
@@ -439,9 +561,10 @@ onBeforeUnmount(() => {
 }
 
 .step,
-.dot {
+.shuffle {
   appearance: none;
-  border: 0;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 8px;
   background: transparent;
   color: var(--vp-c-text-2);
   cursor: pointer;
@@ -451,49 +574,34 @@ onBeforeUnmount(() => {
   width: 28px;
   height: 28px;
   flex: none;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
   font-size: 18px;
   line-height: 1;
 }
 
-.step:hover {
+.shuffle {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.step:hover,
+.shuffle:hover {
   border-color: var(--vp-cursor-hairline-strong);
   color: var(--vp-c-text-1);
 }
 
 .step:focus-visible,
-.dot:focus-visible {
+.shuffle:focus-visible {
   outline: 2px solid var(--vp-c-brand-1);
   outline-offset: 2px;
 }
 
-.dots {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-
-.dot {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-}
-
-.dot::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 99px;
-  background: var(--vp-cursor-hairline-strong);
-}
-
-.dot[aria-current='true']::before {
-  width: 14px;
-  background: var(--vp-c-brand-1);
+.step:disabled,
+.shuffle:disabled {
+  opacity: 0.38;
+  cursor: default;
 }
 
 @media (prefers-reduced-motion: reduce) {

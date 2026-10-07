@@ -76,6 +76,6 @@ cn.close();
 
 更多可以复制的例子见 [常见用法](/guide/recipes)。名词见 [术语表](/guide/glossary)。
 
-## 2023 年有多少条
+## 历年各级有多少条
 
-<LevelScaleChart />
+<LevelHistoryChart />

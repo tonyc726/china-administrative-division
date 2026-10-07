@@ -399,27 +399,48 @@
 }
 
 .VPHero.has-image .image {
-  margin: 0 0 12px !important;
+  margin: 0 0 20px !important;
 }
 
 .VPHero .image-container {
-  width: min(100%, 460px) !important;
-  max-width: 460px;
+  width: 100% !important;
+  max-width: none !important;
   height: auto !important;
   transform: none !important;
+  display: block !important;
+  margin: 0 !important;
 }
 
+/* 与下方三列功能卡共用 1152 容器。≥960 时标题占前两列，区划码卡占第三列，
+   列间距 16px，和外沿与功能卡网格对齐。卡片顶和标题顶对齐。 */
 @media (min-width: 960px) {
   .VPHero.has-image .container {
-    align-items: center !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    column-gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .VPHero.has-image .main {
+    grid-column: 1 / span 2;
+    width: auto !important;
+    max-width: none !important;
+    order: 1;
   }
 
   .VPHero.has-image .image {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    grid-column: 3;
+    display: block !important;
+    width: auto !important;
     margin: 0 !important;
     min-height: 0 !important;
+    order: 2;
+  }
+
+  .VPHero.has-image .image-container {
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
   }
 }
 

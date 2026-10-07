@@ -1,6 +1,6 @@
 import DefaultTheme from 'vitepress/theme';
 import type { Theme } from 'vitepress';
-import LevelScaleChart from './components/LevelScaleChart.vue';
+import LevelHistoryChart from './components/LevelHistoryChart.vue';
 import HistoryTrendChart from './components/HistoryTrendChart.vue';
 import HistoryExplorer from './components/HistoryExplorer.vue';
 import KamiFigure from './components/KamiFigure.vue';
@@ -12,7 +12,7 @@ export default {
   extends: DefaultTheme,
   Layout,
   enhanceApp({ app }) {
-    app.component('LevelScaleChart', LevelScaleChart);
+    app.component('LevelHistoryChart', LevelHistoryChart);
     app.component('HistoryTrendChart', HistoryTrendChart);
     app.component('HistoryExplorer', HistoryExplorer);
     app.component('KamiFigure', KamiFigure);
