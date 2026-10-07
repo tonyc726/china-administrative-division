@@ -1,23 +1,55 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+  CODE_EXAMPLES,
+  ROTATE_MS,
+  examplePhrase,
+  type CodeExample,
+} from '../data/code-examples';
 
-/**
- * 2023 年五级实码，核对自 @cndiv/source-2023（year = 2023）：
- * 330000000000 浙江省 → 330100000000 杭州市 → 330102000000 上城区
- * → 330102001000 清波街道 → 330102001051 清波门社区。
- * 市级是杭州市，不是「市辖区」占位层。
- */
-const segments = [
-  { digits: '33', rank: '省', name: '浙江省' },
-  { digits: '01', rank: '市', name: '杭州市' },
-  { digits: '02', rank: '县', name: '上城区' },
-  { digits: '001', rank: '乡', name: '清波街道' },
-  { digits: '051', rank: '村', name: '清波门社区' },
-] as const;
+const cursor = ref(0);
+const pinned = ref(4);
+const active = ref(4);
+const hovering = ref(false);
+const focused = ref(false);
+const hidden = ref(false);
+const announcement = ref('');
 
-const resting = segments.length - 1;
-const pinned = ref(resting);
-const active = ref(resting);
+const current = computed(
+  () => CODE_EXAMPLES[cursor.value] ?? CODE_EXAMPLES[0]!
+);
+const paused = computed(() => hovering.value || focused.value || hidden.value);
+
+const figureLabel = computed(
+  () => `12 位区划码 ${current.value.code}，${current.value.region}`
+);
+const groupLabel = computed(
+  () => `按省、市、县、乡、村拆开的 ${current.value.code}`
+);
+
+let timer = 0;
+
+function stop() {
+  window.clearInterval(timer);
+  timer = 0;
+}
+
+function start() {
+  stop();
+  if (paused.value) return;
+  timer = window.setInterval(() => {
+    go(cursor.value + 1, true, false);
+  }, ROTATE_MS);
+}
+
+function go(index: number, announce: boolean, resetTimer = true) {
+  const count = CODE_EXAMPLES.length;
+  const next = ((index % count) + count) % count;
+  if (next === cursor.value) return;
+  cursor.value = next;
+  if (announce) announcement.value = examplePhrase(current.value);
+  if (resetTimer && !paused.value) start();
+}
 
 function pin(index: number) {
   pinned.value = index;
@@ -35,7 +67,7 @@ function onKey(event: KeyboardEvent, index: number) {
     return;
   }
   event.preventDefault();
-  const count = segments.length;
+  const count = current.value.segments.length;
   const next =
     key === 'ArrowRight'
       ? (index + 1) % count
@@ -46,28 +78,78 @@ function onKey(event: KeyboardEvent, index: number) {
           : count - 1;
   pin(next);
   const group = (event.currentTarget as HTMLElement).parentElement;
-  const target = group?.querySelectorAll<HTMLButtonElement>('button')[next];
-  target?.focus();
+  group?.querySelectorAll<HTMLButtonElement>('button')[next]?.focus();
 }
+
+function digitDelay(segmentIndex: number, digitIndex: number) {
+  const starts = [0, 2, 4, 6, 9];
+  return ((starts[segmentIndex] ?? 0) + digitIndex) * 45;
+}
+
+function onPointerEnter(event: PointerEvent) {
+  if (event.pointerType === 'touch') return;
+  hovering.value = true;
+}
+
+function onPointerLeave(event: PointerEvent) {
+  if (event.pointerType === 'touch') return;
+  hovering.value = false;
+}
+
+function onFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget;
+  if (
+    !(next instanceof Node) ||
+    !(event.currentTarget as HTMLElement).contains(next)
+  ) {
+    focused.value = false;
+  }
+}
+
+function dotLabel(example: CodeExample) {
+  const village = example.segments[4]?.name ?? example.code;
+  return `${example.region}，${village}，${example.code}`;
+}
+
+watch(paused, (isPaused) => {
+  if (isPaused) stop();
+  else start();
+});
+
+function onVisibility() {
+  hidden.value = document.hidden;
+}
+
+onMounted(() => {
+  hidden.value = document.hidden;
+  document.addEventListener('visibilitychange', onVisibility);
+  start();
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisibility);
+  stop();
+});
 </script>
 
 <template>
   <figure
     class="anatomy"
-    aria-label="12 位区划码 330102001051，2023 年浙江省杭州市上城区清波街道清波门社区。33 是省，01 是市，02 是县，001 是乡，051 是村。"
+    :aria-label="figureLabel"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+    @focusin="focused = true"
+    @focusout="onFocusOut"
   >
+    <p class="sr-only" aria-live="polite">{{ announcement }}</p>
     <figcaption class="anatomy-head">
       <span class="anatomy-kicker">12 位区划码</span>
       <span class="anatomy-year">2023</span>
     </figcaption>
-    <div
-      class="anatomy-code"
-      role="group"
-      aria-label="按省、市、县、乡、村拆开的 330102001051"
-    >
+    <div class="anatomy-code" role="group" :aria-label="groupLabel">
       <button
-        v-for="(seg, index) in segments"
-        :key="seg.digits"
+        v-for="(seg, index) in current.segments"
+        :key="seg.rank"
         type="button"
         class="seg"
         :class="{ on: active === index }"
@@ -79,10 +161,59 @@ function onKey(event: KeyboardEvent, index: number) {
         @click="pin(index)"
         @keydown="onKey($event, index)"
       >
-        <span class="seg-digits">{{ seg.digits }}</span>
+        <span class="digits" aria-hidden="true">
+          <span
+            v-for="(ch, digitIndex) in seg.digits"
+            :key="digitIndex"
+            class="reel"
+          >
+            <span
+              class="reel-strip"
+              :style="{
+                transform: `translateY(calc(${ch} * -1em))`,
+                transitionDelay: `${digitDelay(index, digitIndex)}ms`,
+              }"
+            >
+              <span v-for="n in 10" :key="n">{{ n - 1 }}</span>
+            </span>
+          </span>
+        </span>
         <span class="seg-stem" aria-hidden="true" />
         <span class="seg-rank">{{ seg.rank }}</span>
-        <span class="seg-name">{{ seg.name }}</span>
+        <span class="seg-name">
+          <Transition name="namefade">
+            <span :key="seg.name" class="seg-name-text">{{ seg.name }}</span>
+          </Transition>
+        </span>
+      </button>
+    </div>
+    <div class="anatomy-nav">
+      <button
+        type="button"
+        class="step"
+        aria-label="上一个区划码"
+        @click="go(cursor - 1, true)"
+      >
+        ‹
+      </button>
+      <div class="dots" role="group" aria-label="选择示例区划码">
+        <button
+          v-for="(example, index) in CODE_EXAMPLES"
+          :key="example.code"
+          type="button"
+          class="dot"
+          :aria-current="index === cursor ? 'true' : undefined"
+          :aria-label="dotLabel(example)"
+          @click="go(index, true)"
+        />
+      </div>
+      <button
+        type="button"
+        class="step"
+        aria-label="下一个区划码"
+        @click="go(cursor + 1, true)"
+      >
+        ›
       </button>
     </div>
   </figure>
@@ -91,6 +222,7 @@ function onKey(event: KeyboardEvent, index: number) {
 <style scoped>
 .anatomy {
   container-type: inline-size;
+  position: relative;
   width: 100%;
   max-width: 460px;
   margin: 0 auto;
@@ -99,8 +231,20 @@ function onKey(event: KeyboardEvent, index: number) {
   border: 1px solid var(--vp-c-border);
   border-radius: 12px;
   padding: clamp(16px, 4.2cqi, 22px) clamp(10px, 2.6cqi, 16px)
-    clamp(18px, 4.6cqi, 24px);
+    clamp(14px, 3.4cqi, 18px);
   color: var(--vp-c-text-1);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .anatomy-head {
@@ -129,7 +273,7 @@ function onKey(event: KeyboardEvent, index: number) {
 
 .anatomy-code {
   display: grid;
-  grid-template-columns: 2fr 2fr 2fr 3.15fr 3.7fr;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: clamp(2px, 1cqi, 8px);
   margin-top: clamp(14px, 4cqi, 22px);
 }
@@ -141,7 +285,7 @@ function onKey(event: KeyboardEvent, index: number) {
   align-items: center;
   min-width: 0;
   margin: 0;
-  padding: 8px 0 10px;
+  padding: 8px 0 6px;
   border: 0;
   border-radius: 8px;
   background: transparent;
@@ -159,19 +303,39 @@ function onKey(event: KeyboardEvent, index: number) {
   outline-offset: 2px;
 }
 
-.seg-digits {
+.digits {
+  display: inline-flex;
+  gap: 0.06em;
+  height: 1em;
   font-family: var(--vp-font-family-mono);
-  font-size: clamp(1.2rem, 6.6cqi, 2.125rem);
+  font-size: clamp(1.2rem, 6.2cqi, 2.05rem);
   font-weight: 500;
   line-height: 1;
-  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums lining-nums;
   color: var(--vp-c-text-1);
 }
 
+.reel {
+  width: 1ch;
+  height: 1em;
+  overflow: hidden;
+  flex: none;
+}
+
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reel-strip span {
+  height: 1em;
+  line-height: 1;
+}
+
 .seg-stem {
   width: 1px;
-  height: clamp(18px, 6cqi, 32px);
+  height: clamp(18px, 6cqi, 28px);
   margin: 10px 0 8px;
   background: var(--vp-cursor-hairline-strong);
   position: relative;
@@ -199,26 +363,53 @@ function onKey(event: KeyboardEvent, index: number) {
 }
 
 .seg-name {
+  display: grid;
+  width: 100%;
   margin-top: 3px;
-  max-width: 100%;
-  font-size: clamp(11px, 3.15cqi, 13px);
-  font-weight: 500;
+  overflow: hidden;
+  font-size: clamp(10px, 2.7cqi, 13px);
   line-height: 1.35;
+  height: calc(1.35em * 2);
+}
+
+.seg-name-text {
+  grid-area: 1 / 1;
+  width: 100%;
+  font-size: 1em;
+  font-weight: 500;
+  line-height: inherit;
   letter-spacing: -0.01em;
-  white-space: nowrap;
+  text-align: center;
   color: var(--vp-c-text-2);
+}
+
+.namefade-enter-active,
+.namefade-leave-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.namefade-enter-from {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.namefade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
 }
 
 .seg.on {
   background: var(--vp-c-brand-soft);
 }
 
-.seg.on .seg-digits,
+.seg.on .digits,
 .seg.on .seg-rank {
   color: var(--vp-c-brand-1);
 }
 
-.seg.on .seg-name {
+.seg.on .seg-name-text {
   color: var(--vp-c-text-1);
 }
 
@@ -227,9 +418,9 @@ function onKey(event: KeyboardEvent, index: number) {
   background: var(--vp-c-brand-1);
 }
 
-.seg-digits,
+.digits,
 .seg-rank,
-.seg-name,
+.seg-name-text,
 .seg-stem,
 .seg-stem::after {
   transition:
@@ -237,10 +428,92 @@ function onKey(event: KeyboardEvent, index: number) {
     background-color 0.18s ease;
 }
 
+.anatomy-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  min-height: 28px;
+  padding: 0 2px;
+}
+
+.step,
+.dot {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+}
+
+.step {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.step:hover {
+  border-color: var(--vp-cursor-hairline-strong);
+  color: var(--vp-c-text-1);
+}
+
+.step:focus-visible,
+.dot:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--vp-cursor-hairline-strong);
+}
+
+.dot[aria-current='true']::before {
+  width: 14px;
+  background: var(--vp-c-brand-1);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .seg-digits,
+  .reel-strip {
+    transition: none;
+  }
+
+  .namefade-enter-active,
+  .namefade-leave-active {
+    transition: opacity 0.18s linear;
+  }
+
+  .namefade-enter-from,
+  .namefade-leave-to {
+    transform: none;
+  }
+
+  .digits,
   .seg-rank,
-  .seg-name,
+  .seg-name-text,
   .seg-stem,
   .seg-stem::after {
     transition: none;

@@ -46,16 +46,17 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # 物化 baseline CSV（gitignore，从已发布 npm 包取 + manifest SHA-512 复核）。
+      # 放在 test 之前：文档首页轮播码的测试要对照 source-2023 全量断言五级名称。
+      # 没有这一步，下面的 verify 也会因 baseline 缺失静默降级为纯码自洽——
+      # 引用完整性规则空转、门禁形同虚设（2026-09 事故根因，已根治）。
+      - uses: ./.github/actions/fetch-data-csvs
+
       - name: Test
         run: pnpm test
 
       - name: Validate patch files (schema)
         run: pnpm validate-patches
-
-      # 物化 baseline CSV（gitignore，从已发布 npm 包取 + manifest SHA-512 复核）。
-      # 没有这一步，下面的 verify 会因 baseline 缺失静默降级为纯码自洽——
-      # 引用完整性规则空转、门禁形同虚设（2026-09 事故根因，已根治）。
-      - uses: ./.github/actions/fetch-data-csvs
 
       # 结构性门禁：码/层级/父级自洽 + 引用完整性（完全离线、确定性，无网络）。
       # 按年选基线：patch 的 apply_after 声明哪年基线就喂哪年码集——
