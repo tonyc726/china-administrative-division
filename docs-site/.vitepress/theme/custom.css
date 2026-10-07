@@ -1,504 +1,482 @@
-/* ============================================================
-   Claude 设计系统 · VitePress 主题覆盖
-   暖奶油纸底 · 珊瑚橙唯一强调（≤5% 面积）· 衬线扛层级（400 regular，无粗体）
-   暖调灰阶四级 · 深藏青产品面 · 微阴影非硬投影
-   Tokens 源自 getdesign claude + 项目根 DESIGN.md
+/**
+ * Design tokens — DESIGN.md (Cursor design system, same family as china-id-card).
+ * Warm cream canvas (#f7f7f4), warm ink (#26251e), Cursor Orange (#f54e00)
+ * for primary actions and active nav. Inter for UI and display, JetBrains Mono
+ * on every code surface. Cards are white with a hairline; no drop shadows.
+ */
 
-   暗色对比度原则：正文/强调/面/边框一律引用会随主题切换的 --vp-c-*
-   语义变量，切勿直接写固定亮色（否则暗底下近黑字、深珊瑚字不可见）。
-   仅「品牌实心」元素（brand 按钮、hero 光晕）保留 --claude-coral。
-   ============================================================ */
+/* ---------- Token layer ---------- */
 
 :root {
-  /* —— Claude 原始 token —— */
-  --claude-canvas: #faf9f5;        /* 页面底：暖奶油，情绪基底，禁纯白 */
-  --claude-surface-soft: #f5f0e8;  /* 侧栏/次级面 */
-  --claude-surface-card: #efe9de;  /* 卡片/抬起容器 */
-  --claude-surface-cream: #e8e0d2; /* 交互面/按下态 */
-  --claude-coral: #cc785c;         /* 珊瑚橙：唯一彩色 */
-  --claude-coral-active: #a9583e;  /* 珊瑚橙深色：hover/active */
-  --claude-coral-disabled: #e6dfd8;/* 珊瑚橙禁用 */
-  --claude-surface-dark: #181715;  /* 深藏青 */
-  --claude-surface-dark-elevated: #252320; /* 深藏青抬起 */
-  --claude-ink: #141413;           /* 正文主色：最深但非纯黑，暖底 */
-  --claude-body: #3d3d3a;          /* 次级文字 */
-  --claude-muted: #6c6a64;         /* 描述、caption */
-  --claude-muted-soft: #8e8b82;    /* 日期、元信息 */
-  --claude-hairline: #e6dfd8;      /* 边框 */
-  --claude-hairline-soft: #ebe6df; /* 弱边框 */
-  --claude-on-dark: #faf9f5;       /* 深色面文字 */
-  --claude-on-dark-soft: #a09d96;  /* 深色面次级文字 */
-  --claude-accent-teal: #5db8a6;   /* 辅助：青绿 */
-  --claude-accent-amber: #e8a55a;  /* 辅助：琥珀 */
+  --vp-cursor-ink: #26251e;
+  --vp-cursor-canvas: #f7f7f4;
+  --vp-cursor-canvas-soft: #fafaf7;
+  --vp-cursor-body: #5a5852;
+  --vp-cursor-muted: #807d72;
+  --vp-cursor-hairline: #e6e5e0;
+  --vp-cursor-hairline-soft: #efeee8;
+  --vp-cursor-hairline-strong: #cfcdc4;
+  --vp-cursor-primary: #f54e00;
+  --vp-cursor-primary-active: #d04200;
+  --vp-cursor-on-primary: #ffffff;
+  --vp-cursor-success: #1f8a65;
+  --vp-cursor-danger: #cf2d56;
+  /* Single-series chart stroke: timeline-read, deepened so a 2px line reads on cream. */
+  --vp-cursor-series: #5c86c4;
+  --vp-cursor-series-tint: rgba(159, 187, 224, 0.32);
 
-  /* —— 衬线扛层级：系统栈，零字体下载，CJK 回退宋体系 —— */
-  --claude-display: "Tiempos Headline", Georgia, "Songti SC", "STSong",
-    "Noto Serif SC", "Source Han Serif SC", serif;
-  --claude-body-font: "StyreneB", Inter, -apple-system, BlinkMacSystemFont,
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto,
-    sans-serif;
-  --claude-mono: "JetBrains Mono", "SF Mono", "Fira Code", Consolas, Monaco,
-    monospace;
-}
+  --vp-c-brand-1: var(--vp-cursor-primary);
+  --vp-c-brand-2: var(--vp-cursor-primary-active);
+  --vp-c-brand-3: var(--vp-cursor-primary);
+  --vp-c-brand-soft: rgba(245, 78, 0, 0.08);
 
-/* ---------- 字体：正文 sans、层级 serif ---------- */
-:root {
-  --vp-font-family-base: var(--claude-body-font);
-  --vp-font-family-mono: var(--claude-mono);
-}
+  --vp-c-bg: var(--vp-cursor-canvas);
+  --vp-c-bg-alt: var(--vp-cursor-canvas-soft);
+  --vp-c-bg-soft: #ffffff;
+  --vp-c-bg-elv: #ffffff;
 
-/* ---------- 亮色主题：Claude 暖调映射 ---------- */
-:root {
-  --vp-c-bg: var(--claude-canvas);
-  --vp-c-bg-alt: var(--claude-surface-soft);
-  --vp-c-bg-soft: var(--claude-surface-card);
-  --vp-c-bg-elv: var(--claude-surface-card);
+  --vp-c-divider: var(--vp-cursor-hairline);
+  --vp-c-border: var(--vp-cursor-hairline);
+  --vp-c-gutter: var(--vp-cursor-hairline-soft);
 
-  --vp-c-text-1: var(--claude-ink);
-  --vp-c-text-2: var(--claude-body);
-  --vp-c-text-3: var(--claude-muted);
+  --vp-c-text-1: var(--vp-cursor-ink);
+  --vp-c-text-2: var(--vp-cursor-body);
+  --vp-c-text-3: var(--vp-cursor-muted);
 
-  --vp-c-divider: var(--claude-hairline);
-  --vp-c-border: var(--claude-hairline);
-  --vp-c-gutter: var(--claude-hairline-soft);
+  --vp-c-success-1: var(--vp-cursor-success);
+  --vp-c-danger-1: var(--vp-cursor-danger);
+  --vp-c-warning-1: #c08532;
 
-  /* 唯一强调色：珊瑚橙 */
-  --vp-c-brand-1: var(--claude-coral);
-  --vp-c-brand-2: var(--claude-coral-active);
-  --vp-c-brand-3: var(--claude-coral-active);
-  --vp-c-brand-soft: rgba(204, 120, 92, 0.12);
+  --vp-c-gray-1: #e6e5e0;
+  --vp-c-gray-2: #efeee8;
+  --vp-c-gray-3: var(--vp-cursor-canvas-soft);
+  --vp-c-gray-soft: rgba(128, 125, 114, 0.14);
 
-  /* 暖化各 neutral 阶（VitePress 默认是冷灰） */
-  --vp-c-gray-1: #e8e0d2;
-  --vp-c-gray-2: #efe9de;
-  --vp-c-gray-3: var(--claude-surface-soft);
-  --vp-c-gray-soft: rgba(108, 106, 100, 0.12);
+  --vp-font-family-base:
+    'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --vp-font-family-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* 微阴影：warm whisper，非硬投影 */
-  --vp-shadow-1: 0 1px 2px rgba(20, 20, 19, 0.06);
-  --vp-shadow-2: 0 3px 12px rgba(20, 20, 19, 0.08);
-  --vp-shadow-3: 0 8px 24px rgba(20, 20, 19, 0.1);
+  --vp-home-hero-name-color: var(--vp-cursor-ink);
+  --vp-home-hero-name-background: none;
+  --vp-home-hero-image-background-image: none;
+  --vp-home-hero-image-filter: none;
 
-  /* 自定义容器（tip/info/warning）暖化 */
+  --vp-button-brand-border: var(--vp-cursor-primary);
+  --vp-button-brand-text: var(--vp-cursor-on-primary);
+  --vp-button-brand-bg: var(--vp-cursor-primary);
+  --vp-button-brand-hover-border: var(--vp-cursor-primary-active);
+  --vp-button-brand-hover-text: var(--vp-cursor-on-primary);
+  --vp-button-brand-hover-bg: var(--vp-cursor-primary-active);
+  --vp-button-brand-active-border: var(--vp-cursor-primary-active);
+  --vp-button-brand-active-text: var(--vp-cursor-on-primary);
+  --vp-button-brand-active-bg: var(--vp-cursor-primary-active);
+
+  --vp-button-alt-border: var(--vp-cursor-hairline-strong);
+  --vp-button-alt-text: var(--vp-cursor-ink);
+  --vp-button-alt-bg: #ffffff;
+  --vp-button-alt-hover-border: var(--vp-cursor-ink);
+  --vp-button-alt-hover-text: var(--vp-cursor-ink);
+  --vp-button-alt-hover-bg: var(--vp-cursor-canvas-soft);
+  --vp-button-alt-active-border: var(--vp-cursor-ink);
+  --vp-button-alt-active-text: var(--vp-cursor-ink);
+  --vp-button-alt-active-bg: var(--vp-cursor-canvas);
+
+  --vp-code-bg: var(--vp-cursor-hairline-soft);
+  --vp-code-color: var(--vp-cursor-ink);
+  --vp-code-block-bg: #ffffff;
+  --vp-code-tab-divider: var(--vp-cursor-hairline);
+
   --vp-custom-block-tip-border: transparent;
-  --vp-custom-block-tip-text: var(--claude-ink);
-  --vp-custom-block-tip-bg: rgba(204, 120, 92, 0.08);
-  --vp-custom-block-tip-code-bg: rgba(204, 120, 92, 0.14);
-  --vp-custom-block-info-bg: var(--claude-surface-soft);
-  --vp-custom-block-warning-bg: #f0e0d8;
-  --vp-custom-block-warning-text: #8b4513;
+  --vp-custom-block-tip-text: var(--vp-cursor-ink);
+  --vp-custom-block-tip-bg: rgba(245, 78, 0, 0.08);
+  --vp-custom-block-tip-code-bg: rgba(245, 78, 0, 0.12);
+  --vp-custom-block-info-bg: var(--vp-cursor-canvas-soft);
+  --vp-custom-block-warning-bg: rgba(192, 133, 50, 0.12);
+  --vp-custom-block-warning-text: #8a5a1a;
   --vp-custom-block-warning-border: transparent;
 
-  /* 首页 hero：标题珊瑚橙，logo 背后珊瑚→藏青柔光 */
-  --vp-home-hero-name-color: var(--claude-coral);
-  --vp-home-hero-name-background: none;
-  --vp-home-hero-image-background-image: linear-gradient(
-    -45deg,
-    rgba(204, 120, 92, 0.18),
-    rgba(24, 23, 21, 0.08)
-  );
-  --vp-home-hero-image-filter: blur(46px);
+  --vp-shadow-1: none;
+  --vp-shadow-2: none;
+  --vp-shadow-3: none;
+
+  /* Chart aliases. --kami-serif points at the sans stack so older rules
+     cannot reintroduce a display serif. */
+  --kami-ivory: #ffffff;
+  --kami-border: var(--vp-cursor-hairline);
+  --kami-border-soft: var(--vp-cursor-hairline-soft);
+  --kami-sans: var(--vp-font-family-base);
+  --kami-serif: var(--vp-font-family-base);
+  --kami-mono: var(--vp-font-family-mono);
+  --kami-stone: var(--vp-cursor-muted);
+  --kami-olive: var(--vp-cursor-body);
+  --kami-near-black: var(--vp-cursor-ink);
+  --kami-parchment-2: var(--vp-cursor-canvas-soft);
+  --kami-sand: var(--vp-cursor-hairline-soft);
+  --kami-brand: var(--vp-cursor-primary);
+  --kami-on-brand: var(--vp-cursor-on-primary);
+  --kami-series: var(--vp-cursor-series);
+  --kami-tint: var(--vp-cursor-series-tint);
+  --kami-tag: rgba(159, 187, 224, 0.28);
+  --kami-breaking-bg: rgba(245, 78, 0, 0.1);
+  --kami-breaking-fg: var(--vp-cursor-primary-active);
+  --kami-dark-warm: var(--vp-cursor-body);
 }
 
-/* ---------- 暗色主题：深藏青暖炭 ---------- */
 .dark {
-  --vp-c-bg: #181715;              /* surface-dark */
-  --vp-c-bg-alt: #1f1e1b;         /* surface-dark-soft */
-  --vp-c-bg-soft: #252320;        /* surface-dark-elevated */
-  --vp-c-bg-elv: #2a2924;
+  --vp-cursor-ink: #f7f7f4;
+  --vp-cursor-canvas: #1a1914;
+  --vp-cursor-canvas-soft: #26251e;
+  --vp-cursor-body: #c9c7bc;
+  --vp-cursor-muted: #8a877d;
+  --vp-cursor-hairline: #3d3b35;
+  --vp-cursor-hairline-soft: #333128;
+  --vp-cursor-hairline-strong: #4f4c43;
+  --vp-cursor-primary: #ff6b2c;
+  --vp-cursor-primary-active: #ff844d;
+  --vp-cursor-on-primary: #1a1914;
+  --vp-cursor-success: #34d399;
+  --vp-cursor-danger: #f87171;
+  --vp-cursor-series: #9fbbe0;
+  --vp-cursor-series-tint: rgba(159, 187, 224, 0.16);
 
-  --vp-c-text-1: #faf9f5;         /* on-dark */
-  --vp-c-text-2: #c9c6ba;
-  --vp-c-text-3: #a09d96;         /* on-dark-soft */
+  --vp-c-bg-soft: #26251e;
+  --vp-c-bg-elv: #26251e;
+  --vp-c-brand-soft: rgba(255, 107, 44, 0.15);
 
-  --vp-c-divider: #33322d;
-  --vp-c-border: #3a3931;
-  --vp-c-gutter: #252320;
+  --vp-c-gray-1: #3d3b35;
+  --vp-c-gray-2: #26251e;
+  --vp-c-gray-3: #1a1914;
 
-  --vp-c-brand-1: #d49278;        /* 暗底提亮珊瑚，保证链接对比度 */
-  --vp-c-brand-2: #e0aa93;
-  --vp-c-brand-3: #c8846a;
-  --vp-c-brand-soft: rgba(204, 120, 92, 0.16);
+  --vp-button-brand-text: #1a1914;
+  --vp-button-brand-hover-text: #1a1914;
+  --vp-button-brand-active-text: #1a1914;
 
-  --vp-c-gray-1: #33322d;
-  --vp-c-gray-2: #252320;
-  --vp-c-gray-3: #1f1e1b;
+  --vp-button-alt-bg: #1a1914;
+  --vp-button-alt-hover-bg: #26251e;
+  --vp-button-alt-active-bg: #1a1914;
 
-  --vp-custom-block-tip-bg: rgba(204, 120, 92, 0.1);
-  --vp-custom-block-warning-bg: rgba(139, 69, 19, 0.16);
-  --vp-custom-block-warning-text: #d8a878;
+  --vp-code-bg: #38362f;
+  --vp-code-block-bg: #26251e;
 
-  /* hero 主标题在暗底改用提亮珊瑚；柔光加浓一档 */
-  --vp-home-hero-name-color: var(--vp-c-brand-1);
-  --vp-home-hero-image-background-image: linear-gradient(
-    -45deg,
-    rgba(204, 120, 92, 0.26),
-    rgba(24, 23, 21, 0.1)
-  );
-  --vp-home-hero-image-filter: blur(52px);
+  --vp-custom-block-tip-bg: rgba(255, 107, 44, 0.12);
+  --vp-custom-block-warning-bg: rgba(192, 133, 50, 0.16);
+  --vp-custom-block-warning-text: #e0b56a;
+
+  --kami-ivory: #26251e;
+  --kami-parchment-2: #1a1914;
+  --kami-sand: #3d3b35;
+  --kami-tag: rgba(159, 187, 224, 0.18);
+  --kami-breaking-bg: rgba(255, 107, 44, 0.14);
+  --kami-breaking-fg: #ff844d;
 }
 
-/* ============================================================
-   排版：衬线扛层级，weight 400 regular，无斜体标题
-   ============================================================ */
+/* ---------- Typography ---------- */
+
+.VPHero .name,
+.VPHero .text,
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4 {
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.VPHero .text {
+  word-break: keep-all;
+}
+
+.vp-doc {
+  font-weight: 400;
+  color: var(--vp-c-text-2);
+}
 
 .vp-doc h1,
 .vp-doc h2,
 .vp-doc h3,
 .vp-doc h4,
-.VPHero .name,
-.VPHero .text,
-.VPHomeHero .name,
-h1.title {
-  font-family: var(--claude-display);
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-.vp-doc h1 {
-  font-size: 2.1rem;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-}
-.vp-doc h2 {
-  font-size: 1.45rem;
-  line-height: 1.25;
-  margin-top: 3rem;
-  padding-top: 1.6rem;
-  border-top: 1px solid var(--vp-c-divider);
-}
-.vp-doc h3 {
-  font-size: 1.15rem;
-  line-height: 1.3;
-  margin-top: 2rem;
-}
-
-/* 正文：暖调、宽松阅读行高 */
-.vp-doc p,
-.vp-doc li {
-  line-height: 1.72;
-  letter-spacing: 0.01em;
-}
-.vp-doc {
+.vp-doc strong {
   color: var(--vp-c-text-1);
 }
 
-/* 强调：衬线不加粗，用珊瑚橙 + 字重 500 表达 */
 .vp-doc strong {
   font-weight: 600;
-  color: var(--claude-coral);
-}
-.dark .vp-doc strong {
-  color: var(--vp-c-brand-1);
 }
 
-/* 引用块：珊瑚橙左栏 + 衬线，编辑感 */
+.vp-doc h1 {
+  font-size: 2.25em;
+  line-height: 1.15;
+}
+
+.vp-doc h2 {
+  border-top: 1px solid var(--vp-c-divider);
+  padding-top: 1.25rem;
+  margin-top: 2.5rem;
+  font-size: 1.65em;
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.vp-doc h3 {
+  font-size: 1.25em;
+  margin-top: 2rem;
+  font-weight: 500;
+}
+
+.vp-doc p,
+.vp-doc li {
+  line-height: 1.65;
+}
+
+.vp-doc em {
+  font-style: italic;
+  color: var(--vp-c-text-1);
+}
+
 .vp-doc blockquote {
-  border-left: 3px solid var(--claude-coral);
+  border-left: 3px solid var(--vp-cursor-hairline-strong);
   background: var(--vp-c-bg-soft);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 8px 8px 0;
   padding: 0.6rem 1.2rem;
   color: var(--vp-c-text-2);
 }
-.dark .vp-doc blockquote {
-  border-left-color: var(--vp-c-brand-1);
-}
-.vp-doc blockquote p {
-  font-family: var(--claude-display);
-}
-
-/* 禁斜体标题（Claude 不变量），正文内斜体保留为强调手段 */
-.vp-doc em {
-  font-style: italic;
-  color: var(--claude-coral);
-}
-.dark .vp-doc em {
-  color: var(--vp-c-brand-1);
-}
-
-/* ============================================================
-   链接、表格、代码、标签
-   ============================================================ */
 
 .vp-doc a {
+  color: var(--vp-c-text-1);
   font-weight: 500;
-  text-decoration-color: var(--vp-c-divider);
+  text-decoration: underline;
   text-underline-offset: 3px;
-}
-.vp-doc a:hover {
-  text-decoration-color: var(--vp-c-brand-1);
+  text-decoration-color: color-mix(in srgb, var(--vp-c-text-1) 35%, transparent);
+  transition: text-decoration-color 0.15s ease;
 }
 
-/* 表格：暖表头、行分隔线柔和 */
+.vp-doc a:hover {
+  text-decoration-color: var(--vp-c-text-1);
+}
+
+/* ---------- Code ---------- */
+
+.vp-doc div[class*='language-'] {
+  background-color: var(--vp-code-block-bg);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.vp-doc div[class*='language-'] pre,
+.vp-doc div[class*='language-'] code {
+  background-color: transparent;
+  color: var(--vp-c-text-1);
+}
+
+.vp-doc div[class*='language-'] .lang {
+  color: var(--vp-c-text-3);
+}
+
+.vp-doc .vp-code-group {
+  background-color: var(--vp-code-block-bg);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px;
+}
+
+.vp-doc .vp-code-group .tabs {
+  background-color: transparent;
+  border-bottom: 1px solid var(--vp-c-border);
+  margin: 0;
+  padding: 0 8px;
+  border-radius: 0;
+}
+
+.vp-doc .vp-code-group div[class*='language-'] {
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+}
+
+.vp-doc :not(pre) > code {
+  background: var(--vp-code-bg);
+  color: var(--vp-code-color);
+  border-radius: 4px;
+  font-size: 0.86em;
+  font-weight: 500;
+}
+
+/* ---------- Tables ---------- */
+
 .vp-doc table {
   display: table;
   width: 100%;
   border-collapse: collapse;
 }
+
 .vp-doc th {
-  font-family: var(--claude-body-font);
   font-weight: 600;
   font-size: 0.86rem;
-  letter-spacing: 0.02em;
   background: var(--vp-c-bg-alt);
   color: var(--vp-c-text-2);
   border: 1px solid var(--vp-c-border);
 }
+
 .vp-doc td {
   border: 1px solid var(--vp-c-divider);
 }
+
 .vp-doc tr {
   background: transparent;
 }
+
 .vp-doc tr:nth-child(2n) {
-  background: var(--vp-c-bg-soft);
+  background: var(--vp-c-bg-alt);
 }
 
-/* 行内代码：暖 tint 底、珊瑚字 */
-.vp-doc :not(pre) > code {
-  background: rgba(204, 120, 92, 0.1);
-  color: var(--claude-coral-active);
-  border-radius: 4px;
-  font-size: 0.86em;
-  font-weight: 500;
-}
-.dark .vp-doc :not(pre) > code {
-  background: var(--vp-c-brand-soft);
-  color: var(--vp-c-brand-1);
+/* ---------- Nav ---------- */
+
+.VPNav,
+.VPNavBar,
+.VPNavBar.has-sidebar .content-body {
+  background-color: var(--vp-c-bg);
 }
 
-/* 代码块：亮色模式暖底 + Shiki 浅色主题适配，暗色模式深底 */
-.vp-doc div[class*='language-'] {
-  background: var(--claude-surface-soft);
-  border: 1px solid var(--claude-hairline);
-  border-radius: 8px;
-  box-shadow: var(--vp-shadow-1);
-}
-/* Shiki 代码块内文本：亮底用暗墨，保证 github-light 主题对比度 */
-.vp-doc div[class*='language-'] pre,
-.vp-doc div[class*='language-'] code {
-  color: var(--claude-ink);
-}
-.dark .vp-doc div[class*='language-'] {
-  background: #1b1b19;
-  border-color: var(--vp-c-border);
-}
-.dark .vp-doc div[class*='language-'] pre,
-.dark .vp-doc div[class*='language-'] code {
-  color: var(--claude-on-dark);
-}
-.vp-doc div[class*='language-'] .lang {
-  color: var(--vp-c-text-3);
-}
-
-/* ============================================================
-   导航 / 侧栏：细节精修
-   ============================================================ */
-
-.VPNav {
-  backdrop-filter: saturate(1.2) blur(8px);
-}
-.VPNavBar.has-sidebar .content-body,
-.VPNavBar {
-  background: rgba(250, 249, 245, 0.78) !important;
-}
-.dark .VPNavBar.has-sidebar .content-body,
-.dark .VPNavBar {
-  background: rgba(24, 23, 21, 0.78) !important;
-}
-
-/* 站点标题用衬线 */
 .VPNavBarTitle .title {
-  font-family: var(--claude-display);
-  font-weight: 400;
-  letter-spacing: 0;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
-/* 侧栏当前项：珊瑚橙左栏，克制 */
-.VPSidebarItem.is-active > .item .link .text,
-.VPSidebarItem.is-active > .item .text {
-  color: var(--claude-coral) !important;
-  font-weight: 600;
-}
-.dark .VPSidebarItem.is-active > .item .link .text,
-.dark .VPSidebarItem.is-active > .item .text {
+.VPNavBarMenuLink.active,
+.VPNavBarMenuLink.active .text {
   color: var(--vp-c-brand-1) !important;
 }
-.VPSidebarItem .text {
-  font-size: 0.9rem;
+
+.VPSidebarItem.is-active > .item .link .text,
+.VPSidebarItem.is-active > .item .text {
+  color: var(--vp-c-brand-1) !important;
+  font-weight: 600;
 }
+
 .VPSidebarItem.level-0 > .item > .indicator {
-  background-color: var(--claude-coral) !important;
-}
-.dark .VPSidebarItem.level-0 > .item > .indicator {
   background-color: var(--vp-c-brand-1) !important;
 }
 
-/* 搜索按钮：珊瑚描边 */
-.VPNavBarSearch {
-  border-color: var(--claude-hairline);
+.outline-link.active,
+.VPDocAsideOutline .outline-link.active {
+  color: var(--vp-c-brand-1);
 }
 
-/* ============================================================
-   首页 Hero / Features：去 AI 味
-   —— serif 主标题、珊瑚橙、克制卡片、微阴影
-   ============================================================ */
+/* ---------- Hero / features ---------- */
 
-/* 加宽主区，允许中文主标题平衡换行 */
 .VPHero .main {
   max-width: 100%;
 }
+
 .VPHero .name {
-  font-size: 2.7rem;
-  line-height: 1.12;
-  letter-spacing: -0.01em;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   text-wrap: balance;
-}
-.VPHero .text {
-  font-size: 1.5rem;
-  color: var(--vp-c-text-2);
-  line-height: 1.3;
-  margin-top: 0.4rem;
-}
-.VPHero .tagline {
-  font-family: var(--claude-display);
-  color: var(--vp-c-text-2);
-  line-height: 1.6;
-  font-size: 1.05rem;
-}
-/* hero logo 图：不裁切、留白呼吸，柔光在其后 */
-.VPHero .image-src {
-  max-width: 240px;
-  max-height: 240px;
-}
-
-/* hero 底部减距 + 地图作背景层 */
-.VPHero.VPHomeHero {
-  padding-bottom: 0;
-}
-.VPHero .image {
-  z-index: 0;
-}
-.VPHero .image .image-bg {
-  opacity: 0.28;
-}
-
-/* 主 CTA：珊瑚橙实心（品牌色保留，双模式白字可读）；次 CTA：暖底描边 */
-.VPButton.brand {
-  background: var(--claude-coral);
-  border-color: var(--claude-coral);
-  color: #ffffff;
-  font-weight: 500;
-}
-.VPButton.brand:hover {
-  background: var(--claude-coral-active);
-  border-color: var(--claude-coral-active);
-}
-.VPButton.alt {
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-border);
-  color: var(--vp-c-text-2);
-}
-.VPButton.alt:hover {
-  border-color: var(--vp-c-brand-1);
-  color: var(--vp-c-brand-1);
-  background: var(--vp-c-bg-soft);
-}
-
-/* Feature 卡片：抬起面 + 柔边 + whisper 阴影，hover 珊瑚细边 */
-.VPFeature {
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 12px;
-  box-shadow: var(--vp-shadow-1);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-.VPFeature:hover {
-  border-color: var(--claude-coral);
-  box-shadow: var(--vp-shadow-2);
-  transform: translateY(-2px);
-}
-.dark .VPFeature:hover {
-  border-color: var(--vp-c-brand-1);
-}
-.VPFeature .title {
-  font-family: var(--claude-display);
-  font-weight: 400;
-  font-size: 1.15rem;
   color: var(--vp-c-text-1);
 }
+
+.VPHero .text {
+  font-size: 1.35rem;
+  color: var(--vp-c-text-2);
+  line-height: 1.35;
+  margin-top: 0.45rem;
+  font-weight: 400;
+}
+
+.VPHero .tagline {
+  color: var(--vp-c-text-2);
+  line-height: 1.6;
+  font-size: 1.02rem;
+  max-width: 40rem;
+}
+
+.VPHero .image-bg {
+  display: none;
+}
+
+.VPHero .image-container {
+  max-width: 440px;
+}
+
+body .VPButton {
+  border-radius: 8px !important;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+body .VPFeature {
+  background-color: var(--vp-c-bg-soft) !important;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease;
+}
+
+body .VPFeature:hover {
+  border-color: var(--vp-cursor-hairline-strong);
+  transform: none;
+}
+
+.VPFeature .title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--vp-c-text-1);
+}
+
 .VPFeature .details {
   color: var(--vp-c-text-2);
   line-height: 1.6;
   font-size: 0.9rem;
 }
+
 .VPFeature .link-text-value {
-  color: var(--claude-coral);
+  color: var(--vp-c-brand-1);
   font-weight: 500;
 }
-.dark .VPFeature .link-text-value {
-  color: var(--vp-c-brand-1);
-}
-/* feature 图标：珊瑚 tint，去饱和 */
+
 .VPFeature .icon {
-  background: rgba(204, 120, 92, 0.12) !important;
+  background: var(--vp-c-brand-soft) !important;
   border-radius: 8px;
-  font-size: 20px !important;
-  filter: saturate(0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.VPFeature .icon svg {
-  color: var(--claude-coral);
-  display: block;
-}
-.dark .VPFeature .icon svg {
   color: var(--vp-c-brand-1);
 }
 
-/* ============================================================
-   自定义容器：图标换字体层级
-   ============================================================ */
-.vp-doc .custom-block {
-  border-radius: 8px;
-  border: 1px solid var(--vp-c-border);
-}
-.vp-doc .custom-block.tip {
-  border-color: transparent;
-}
-.vp-doc .custom-block-title {
-  font-family: var(--claude-body-font);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+.VPFeature .icon svg {
+  color: var(--vp-c-brand-1);
+  stroke: currentColor;
 }
 
-/* 页脚：深藏青（surface-dark），与主站同调 */
+/* ---------- Misc chrome ---------- */
+
+.vp-doc .custom-block {
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-border);
+  box-shadow: none;
+}
+
+.vp-doc .custom-block-title {
+  font-weight: 600;
+}
+
 .VPFooter {
   border-top: 1px solid var(--vp-c-divider);
-  background: var(--claude-surface-dark);
-}
-.VPFooter .message,
-.VPFooter .copyright {
-  color: var(--claude-on-dark-soft);
-  font-size: 0.82rem;
-}
-.VPFooter .copyright a {
-  color: var(--claude-on-dark);
-}
-/* 亮色主题页脚不受 dark 类控制，需显式覆盖 */
-:root .VPFooter {
-  background: var(--claude-surface-dark);
-}
-:root .VPFooter .message,
-:root .VPFooter .copyright {
-  color: var(--claude-on-dark-soft);
+  background: var(--vp-c-bg) !important;
 }
 
-/* 数字统一 lining/tabular */
+.VPFooter .message,
+.VPFooter .copyright {
+  color: var(--vp-c-text-3);
+  font-size: 0.82rem;
+}
+
+.VPFooter .copyright a {
+  color: var(--vp-c-text-2);
+}
+
 .vp-doc td,
 .vp-doc th,
 .VPHero,

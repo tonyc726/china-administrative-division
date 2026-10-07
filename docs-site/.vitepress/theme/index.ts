@@ -8,7 +8,7 @@ import ChinaMapHero from './components/ChinaMapHero.vue';
 import Layout from './Layout.vue';
 import './custom.css';
 
-// Claude 设计系统：暖奶油纸底 + 珊瑚橙唯一强调 + 衬线扛层级（weight 400）。
+// Cursor 设计系统：暖奶油底 + Cursor Orange + Inter / JetBrains Mono。见仓库 DESIGN.md。
 export default {
   extends: DefaultTheme,
   Layout,

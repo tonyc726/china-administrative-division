@@ -101,7 +101,7 @@ export function SouthNorth({ data, lang }: Props): JSX.Element {
               aria-pressed={mode === m}
               className={`rounded px-2.5 py-1 transition ${
                 mode === m
-                  ? 'bg-ink text-paper'
+                  ? 'bg-clay text-white'
                   : 'text-ink-3 hover:bg-paper-3 hover:text-ink-2'
               }`}
             >

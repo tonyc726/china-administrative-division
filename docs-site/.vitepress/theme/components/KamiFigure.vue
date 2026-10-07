@@ -21,10 +21,9 @@ defineProps<{
 .kami-figure {
   margin: 2rem 0;
   padding: 1.4rem 1.5rem 1.2rem;
-  background: var(--kami-ivory, #faf9f5);
-  border: 1px solid var(--kami-border, #e8e6dc);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(60, 56, 44, 0.06);
+  background: var(--kami-ivory, #ffffff);
+  border: 1px solid var(--kami-border, #e6e5e0);
+  border-radius: 12px;
   font-variant-numeric: lining-nums tabular-nums;
 }
 .kf-eyebrow {
@@ -33,30 +32,24 @@ defineProps<{
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--kami-stone, #6b6a64);
+  color: var(--kami-stone, #807d72);
   margin-bottom: 0.4rem;
 }
 .kf-title {
-  font-family: var(--kami-serif);
+  font-family: var(--kami-sans);
   font-weight: 500;
   font-size: 1.12rem;
   line-height: 1.35;
-  color: var(--kami-near-black, #141413);
+  letter-spacing: -0.01em;
+  color: var(--kami-near-black, #26251e);
   margin-bottom: 1.1rem;
 }
 .kf-caption {
   margin-top: 1rem;
   padding-top: 0.7rem;
-  border-top: 1px solid var(--kami-border-soft, #e5e3d8);
+  border-top: 1px solid var(--kami-border-soft, #efeee8);
   font-size: 0.8rem;
   line-height: 1.55;
-  color: var(--kami-olive, #504e49);
-}
-.dark .kami-figure {
-  background: #201f1d;
-  border-color: #3a3931;
-}
-.dark .kf-title {
-  color: #f2f0e8;
+  color: var(--kami-olive, #5a5852);
 }
 </style>

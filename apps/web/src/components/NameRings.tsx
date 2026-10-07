@@ -188,7 +188,7 @@ export function NameRings({ data, lang, onSearch }: Props): JSX.Element {
             maxLength={1}
             onChange={(e) => setMySur(e.target.value.trim())}
             placeholder={t.surnameYoursPlaceholder}
-            className="w-14 rounded-md border border-line-2 bg-paper px-3 py-1.5 text-center font-display text-lg text-ink outline-none transition placeholder:text-line-2 focus:border-clay"
+            className="w-14 rounded-md border border-line-2 bg-paper-3 px-3 py-1.5 text-center font-display text-lg text-ink outline-none transition placeholder:text-line-2 focus:border-clay"
           />
           {mySur && (
             <p className="font-display text-ink-2">

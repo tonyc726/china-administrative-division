@@ -378,7 +378,7 @@ export function Explorer({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={warmup}
             placeholder={t.searchPlaceholder}
-            className="w-full rounded-md border border-line-2 bg-paper px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
+            className="w-full rounded-md border border-line-2 bg-paper-3 px-4 py-3 text-lg text-ink outline-none transition placeholder:text-ink-3 focus:border-clay"
           />
           <p className="mt-2 text-xs text-ink-3">
             {hasQuery && !canSearchDeep(primaryTerm) ? t.deepHint : t.searchHint}
@@ -502,7 +502,7 @@ export function Explorer({
                     <button
                       type="button"
                       onClick={() => setPath([...path, d])}
-                      className="w-full truncate rounded-md border border-line bg-paper px-3 py-2 text-left text-sm text-ink-2 transition hover:border-clay hover:text-ink"
+                      className="w-full truncate rounded-md border border-line bg-paper-3 px-3 py-2 text-left text-sm text-ink-2 transition hover:border-clay hover:text-ink"
                       title={d.name}
                     >
                       {d.name}

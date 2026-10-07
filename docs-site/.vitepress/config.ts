@@ -29,8 +29,25 @@ export default defineConfig({
   cleanUrls: true,
   metaChunk: true,
 
+  // china-id-card sets `appearance: 'light'`. VitePress 1.6.4 has no `'light'`
+  // string — that value falls through to system `auto` after hydration. The
+  // object form is what both the pre-paint script and useDark honor, so the
+  // site opens light and the toggle still reaches dark.
+  appearance: {
+    initialValue: 'light' as 'dark',
+  },
+
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+      },
+    ],
     ['meta', { name: 'keywords', content: '中国行政区划,行政区划代码,GB2260,统计用区划代码,NBS,城乡划分代码,国家地名信息库,dmfw,邮编,区号,SQLite,行政区划历史数据' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: '中国行政区划数据基础设施 · @cndiv' }],

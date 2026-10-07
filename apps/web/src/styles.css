@@ -1,47 +1,51 @@
 @import 'tailwindcss';
 
 /* Hallmark · redesign: theme-alignment · genre: editorial · macrostructure: Long Document (既有结构保留)
- * design-system: DESIGN.md (claude) · designed-as-app
- * 2026-07-28 · 对齐项目根 DESIGN.md（Claude 设计系统）：珊瑚橙 #cc785c、深藏青节奏、serif display 400。
- * CJK 适配：衬线栈保留宋体系；中文标题字距为 0（负字距只给西文大数字）；pine/gold 是数据系列色，非品牌色。
+ * design-system: DESIGN.md (Cursor) · designed-as-app
+ * 对齐 china-id-card：奶油底 #f7f7f4、Cursor Orange #f54e00、Inter + JetBrains Mono。
+ * 标题与正文同一套无衬线（weight 400–600）。pine / gold 是区、市数据系列色，不是品牌色。
  */
 
 /**
- * 色板锁定于项目根 DESIGN.md（Claude 设计系统）：
- * 暖纸底、墨色文字、珊瑚橙点缀、深藏青产品面、衬线标题、编辑排版。
- * 这是一个关于地方志与家乡记忆的站点，不是仪表盘。
+ * 色板锁定于项目根 DESIGN.md（Cursor 设计系统）。
+ * 暖奶油页面、白卡片、发丝边框、橙色只留给主操作和「县」系列。
  */
 @theme {
-  /* 暖纸面 —— canvas / surface-soft / surface-card */
-  --color-paper: #faf9f5; /* 主纸面 = DESIGN canvas */
-  --color-paper-2: #f5f0e8; /* 交替底 = surface-soft */
-  --color-paper-3: #efe9de; /* 卡片 = surface-card */
-  --color-line: #e6dfd8; /* hairline */
-  --color-line-2: #d5cec0; /* 强边框（输入框、图例、印面描边） */
+  /* 暖奶油 —— canvas / canvas-soft / surface-card */
+  --color-paper: #f7f7f4;
+  --color-paper-2: #fafaf7;
+  --color-paper-3: #ffffff;
+  --color-line: #e6e5e0;
+  --color-line-2: #cfcdc4;
 
-  /* 墨色 —— ink / body / muted（#6c6a64 在纸面上 4.7:1，正文可读性达标） */
-  --color-ink: #141413; /* 主墨 */
-  --color-ink-2: #3d3d3a; /* 次墨 / 正文 */
-  --color-ink-3: #6c6a64; /* 弱墨 / 注释 */
+  /* 墨色 —— ink / body / muted */
+  --color-ink: #26251e;
+  --color-ink-2: #5a5852;
+  --color-ink-3: #807d72;
 
-  /* 珊瑚橙 —— 唯一的品牌强调色（primary / primary-active） */
-  --color-clay: #cc785c;
-  --color-clay-2: #a9583e;
+  /* Cursor Orange —— 品牌强调（primary / primary-active） */
+  --color-clay: #f54e00;
+  --color-clay-2: #d04200;
 
-  /* 深藏青产品面 —— surface-dark 系列：开发者区与页脚的明暗节奏 */
-  --color-night: #181715; /* surface-dark */
-  --color-night-2: #252320; /* surface-dark-elevated */
-  --color-night-3: #34312b; /* 深色面上的 hover 抬升 */
-  --color-on-night: #faf9f5; /* on-dark（与 canvas 同调） */
-  --color-on-night-soft: #a09d96; /* on-dark-soft */
+  /* 暗色画布，与 VitePress .dark 同一套。本站默认亮色。 */
+  --color-night: #1a1914;
+  --color-night-2: #26251e;
+  --color-night-3: #3d3b35;
+  --color-on-night: #f7f7f4;
+  --color-on-night-soft: #8a877d;
 
-  /* 数据系列色（图表语义：区=松绿、市=暗金）—— 非品牌色，不随品牌规则走 */
+  /* 数据系列：区 = pine，市 = timeline gold。县走 --color-clay。 */
   --color-pine: #2f6d68;
-  --color-gold: #a8894e;
+  --color-gold: #c08532;
 
+  --font-sans:
+    'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    system-ui, sans-serif;
   --font-display:
-    Georgia, 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC',
-    serif;
+    'Inter', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    system-ui, sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 /* 曲线入场：从左到右画出，强化「时间流逝」的叙事 */

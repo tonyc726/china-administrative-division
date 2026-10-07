@@ -9,6 +9,24 @@ import { ref, onMounted, onUnmounted } from 'vue';
 
 const canvasEl = ref<HTMLCanvasElement | null>(null);
 let observer: ResizeObserver | null = null;
+let themeObserver: MutationObserver | null = null;
+
+function mapInk() {
+  const dark = document.documentElement.classList.contains('dark');
+  return dark
+    ? {
+        fill: 'rgba(255,107,44,0.07)',
+        stroke: 'rgba(255,107,44,0.32)',
+        inset: 'rgba(255,107,44,0.22)',
+        fallback: 'rgba(255,107,44,0.06)',
+      }
+    : {
+        fill: 'rgba(245,78,0,0.045)',
+        stroke: 'rgba(245,78,0,0.20)',
+        inset: 'rgba(245,78,0,0.16)',
+        fallback: 'rgba(245,78,0,0.04)',
+      };
+}
 
 interface Province {
   c: string;
@@ -80,8 +98,9 @@ async function draw() {
     return [lng * s + ox, h - (lat * s - minY * s + pad)];
   }
 
-  const fill = 'rgba(204,120,92,0.04)';
-  const stroke = 'rgba(204,120,92,0.18)';
+  const ink = mapInk();
+  const fill = ink.fill;
+  const stroke = ink.stroke;
 
   for (const p of provs) {
     ctx.beginPath();
@@ -131,8 +150,9 @@ function insets(
   const rangeY = mxY - mnY || 1;
   const ss = Math.min(ix / rangeX, iy / rangeY);
 
+  const ink = mapInk();
   ctx.save();
-  ctx.strokeStyle = 'rgba(204,120,92,0.14)';
+  ctx.strokeStyle = ink.inset;
   ctx.lineWidth = 0.8;
   ctx.strokeRect(rx, ry, ix, iy);
 
@@ -160,9 +180,9 @@ function insets(
       }
     }
     ctx.closePath();
-    ctx.fillStyle = 'rgba(204,120,92,0.05)';
+    ctx.fillStyle = ink.fill;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(204,120,92,0.12)';
+    ctx.strokeStyle = ink.stroke;
     ctx.lineWidth = 0.4;
     ctx.stroke();
   }
@@ -170,12 +190,22 @@ function insets(
 }
 
 function fallback(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  ctx.fillStyle = 'rgba(204,120,92,0.04)';
+  ctx.fillStyle = mapInk().fallback;
   ctx.fillRect(0, 0, w, h);
 }
 
-onMounted(() => draw());
-onUnmounted(() => observer?.disconnect());
+onMounted(() => {
+  draw();
+  themeObserver = new MutationObserver(() => draw());
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+});
+onUnmounted(() => {
+  observer?.disconnect();
+  themeObserver?.disconnect();
+});
 </script>
 
 <style scoped>
