@@ -6,8 +6,10 @@
  * - hero-initial.json：抽样的第一条，供 SSR 首屏
  * - level-counts.json：1980–2023 各级条数。没有这一级的年份是 null，不补 0
  *
- * 2021 年历史文件只有县级残片（没有省、地）。画成 21 会像县级消失了，
- * 所以整年留空，并在 omitted 里记下残片条数。
+ * 历史 CSV 里 2021 年只有县级残片。省、地、县改用 Release 里的
+ * GB2260.2021.sqlite。乡、村用同一 Release 的 NBS 年度库（2009–2022）；
+ * 2023 年仍用已发布的 source-2023 CSV。GB2260 与上一年字节相同的年份
+ * （2008、2022）不当作新的省地县快照。
  */
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -18,6 +20,10 @@ const SOURCE_2023 = path.join(root, 'packages/source-2023/data/divisions.csv');
 const SOURCE_HISTORY = path.join(
   root,
   'packages/source-history/data/divisions.csv'
+);
+const RELEASE_COUNTS = path.join(
+  root,
+  'scripts/data/release-level-counts.json'
 );
 const PUBLIC_DIR = path.join(root, 'docs-site/public/data');
 const GENERATED_DIR = path.join(
@@ -274,6 +280,83 @@ export function buildLevelCounts(historyText, snapshotText) {
   };
 }
 
+/**
+ * 把 Release 里数出来的条数补进 CSV 图。
+ * 只填 CSV 留空的省、地、县，以及 2023 以外的乡、村。
+ * 不拿 NBS 的省、地、县覆盖 GB2260。
+ */
+export function applyReleaseCounts(levelCounts, release) {
+  const levels = levelCounts.levels.map((series) => ({
+    ...series,
+    counts: series.counts.slice(),
+  }));
+  const span = levels[0].counts.length;
+  const at = (year) => year - levelCounts.startYear;
+
+  const nbsTownshipYears = [];
+  for (const [yearText, counts] of Object.entries(release.nbs.years)) {
+    const year = Number(yearText);
+    const index = at(year);
+    if (!Number.isInteger(year) || index < 0 || index >= span) continue;
+    if (year === levelCounts.snapshotYear) continue;
+    const township = counts[3] ?? 0;
+    const village = counts[4] ?? 0;
+    if (township > 0) levels[3].counts[index] = township;
+    if (village > 0) levels[4].counts[index] = village;
+    if (township > 0 || village > 0) nbsTownshipYears.push(year);
+  }
+
+  const gb2260FilledYears = [];
+  const gb2260Extras = [];
+  for (const [yearText, entry] of Object.entries(release.gb2260.years)) {
+    const year = Number(yearText);
+    const index = at(year);
+    if (!Number.isInteger(year) || index < 0 || index >= span) continue;
+    const upperMissing = [0, 1, 2].every(
+      (level) => levels[level].counts[index] == null
+    );
+    if (!upperMissing) continue;
+    const counts = entry.counts;
+    for (let level = 0; level < 3; level += 1) {
+      const n = counts[level] ?? 0;
+      levels[level].counts[index] = n > 0 ? n : null;
+    }
+    gb2260FilledYears.push(year);
+    if (entry.extraProvinces?.length) {
+      gb2260Extras.push({ year, names: entry.extraProvinces });
+    }
+  }
+
+  const filled = new Set(gb2260FilledYears);
+  const csvFragments = levelCounts.omitted.filter((item) =>
+    filled.has(item.year)
+  );
+  const omitted = levelCounts.omitted.filter((item) => !filled.has(item.year));
+  const emptyYears = [];
+  for (let index = 0; index < span; index += 1) {
+    if (levels.every((series) => series.counts[index] == null)) {
+      emptyYears.push(levelCounts.startYear + index);
+    }
+  }
+
+  return {
+    ...levelCounts,
+    levels,
+    omitted,
+    emptyYears,
+    sources: {
+      release: release.release,
+      nbsTownshipYears: nbsTownshipYears.sort((a, b) => a - b),
+      gb2260FilledYears: gb2260FilledYears.sort((a, b) => a - b),
+      gb2260Extras,
+      csvFragments,
+      gb2260Duplicates: release.gb2260.duplicates,
+      nbsSnapshotSqlite:
+        release.nbs.years[String(levelCounts.snapshotYear)] ?? null,
+    },
+  };
+}
+
 export function sampleVillages(
   snapshotText,
   size = SAMPLE_SIZE,
@@ -313,7 +396,11 @@ export async function buildHomeData() {
     readFile(SOURCE_2023, 'utf8'),
   ]);
   const sample = sampleVillages(snapshotText);
-  const levelCounts = buildLevelCounts(historyText, snapshotText);
+  const release = JSON.parse(await readFile(RELEASE_COUNTS, 'utf8'));
+  const levelCounts = applyReleaseCounts(
+    buildLevelCounts(historyText, snapshotText),
+    release
+  );
   const initial = sample[0];
   return { sample, initial, levelCounts };
 }

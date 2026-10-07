@@ -25,6 +25,21 @@ interface ProvinceGap {
   onlyInHistory: string[];
 }
 
+interface DuplicateYear {
+  year: number;
+  sameAs: number;
+}
+
+interface ReleaseSources {
+  release: string;
+  nbsTownshipYears: number[];
+  gb2260FilledYears: number[];
+  gb2260Extras: { year: number; names: string[] }[];
+  csvFragments: OmittedYear[];
+  gb2260Duplicates: DuplicateYear[];
+  nbsSnapshotSqlite: number[] | null;
+}
+
 const data = levelCounts as {
   startYear: number;
   endYear: number;
@@ -33,16 +48,15 @@ const data = levelCounts as {
   omitted: OmittedYear[];
   emptyYears: number[];
   provinceGap: ProvinceGap | null;
+  sources?: ReleaseSources;
 };
 
-const H = 248;
 const padL = 48;
 const padR = 8;
 const padT = 8;
 const padB = 26;
-const plotH = H - padT - padB;
-const MIN_BAR = 2;
 const yearCount = data.endYear - data.startYear + 1;
+const showLower = ref(false);
 const defaultIndex = data.snapshotYear - data.startYear;
 const omittedByYear = new Map(data.omitted.map((item) => [item.year, item]));
 
@@ -59,10 +73,11 @@ function yearAt(index: number) {
   return data.startYear + index;
 }
 
-function totalAt(index: number) {
+function sumAt(index: number, include: (level: number) => boolean) {
   let sum = 0;
   let any = false;
   for (const series of data.levels) {
+    if (!include(series.level)) continue;
     const count = series.counts[index];
     if (count != null) {
       sum += count;
@@ -72,8 +87,16 @@ function totalAt(index: number) {
   return any ? sum : null;
 }
 
-function presentValues(counts: (number | null)[]) {
-  return counts.filter((count): count is number => count != null);
+function totalAt(index: number) {
+  return sumAt(index, () => true);
+}
+
+function adminAt(index: number) {
+  return sumAt(index, (level) => level <= 3);
+}
+
+function localAt(index: number) {
+  return sumAt(index, (level) => level >= 4);
 }
 
 function coverage(counts: (number | null)[]) {
@@ -106,16 +129,52 @@ function tickLabel(value: number) {
   return fmt(value);
 }
 
-const maxTotal = Math.max(
-  1,
-  ...Array.from({ length: yearCount }, (_, index) => totalAt(index) ?? 0)
-);
-
-const yTicks = computed(() => {
-  const step = tickStep(maxTotal);
+function ticksFor(upper: number) {
+  const step = tickStep(upper);
   const ticks: number[] = [];
-  for (let value = 0; value <= maxTotal; value += step) ticks.push(value);
+  for (let value = 0; value <= upper; value += step) ticks.push(value);
   return ticks;
+}
+
+const adminMax = Math.max(
+  1,
+  ...Array.from({ length: yearCount }, (_, index) => adminAt(index) ?? 0)
+);
+const localMax = Math.max(
+  1,
+  ...Array.from({ length: yearCount }, (_, index) => localAt(index) ?? 0)
+);
+const adminTicks = ticksFor(adminMax);
+const localTicks = ticksFor(localMax);
+
+const geom = computed(() => {
+  if (!showLower.value) {
+    const adminH = 214;
+    return {
+      H: padT + adminH + padB,
+      adminTop: padT,
+      adminH,
+      adminBase: padT + adminH,
+      localTop: padT,
+      localH: 0,
+      localBase: padT,
+      gap: 0,
+    };
+  }
+  const localH = 128;
+  const gap = 22;
+  const adminH = 86;
+  const adminTop = padT + localH + gap;
+  return {
+    H: adminTop + adminH + padB,
+    adminTop,
+    adminH,
+    adminBase: adminTop + adminH,
+    localTop: padT,
+    localH,
+    localBase: padT + localH,
+    gap,
+  };
 });
 
 const plotWidth = computed(() => {
@@ -125,60 +184,80 @@ const plotWidth = computed(() => {
 const plotPadL = 16;
 const slot = computed(() => (plotWidth.value - padR - plotPadL) / yearCount);
 
-function yOf(value: number) {
-  return padT + plotH - (value / maxTotal) * plotH;
+function yAdmin(value: number) {
+  const g = geom.value;
+  return g.adminBase - (value / adminMax) * g.adminH;
+}
+
+function yLocal(value: number) {
+  const g = geom.value;
+  return g.localBase - (value / localMax) * g.localH;
 }
 
 const bars = computed(() => {
   const gap = slot.value;
   const barW = Math.max(3, gap * 0.62);
+  const g = geom.value;
+  const split = showLower.value;
   return Array.from({ length: yearCount }, (_, index) => {
-    const total = totalAt(index);
+    const adminTotal = adminAt(index);
+    const localTotal = localAt(index);
     const x = plotPadL + index * gap + (gap - barW) / 2;
     const omitted = omittedByYear.get(yearAt(index)) ?? null;
-    if (total == null) {
-      return {
-        index,
-        year: yearAt(index),
-        total: null as number | null,
-        omitted,
-        x,
-        w: barW,
-        segments: [] as {
-          level: number;
-          short: string;
-          label: string;
-          count: number;
-          y: number;
-          h: number;
-        }[],
-      };
-    }
-    const natural = (total / maxTotal) * plotH;
-    const drawn = Math.max(MIN_BAR, natural);
-    const boost = natural > 0 ? drawn / natural : 1;
-    let cursor = padT + plotH;
-    const segments = data.levels.flatMap((series) => {
-      const count = series.counts[index];
-      if (count == null || count <= 0) return [];
-      const h = (count / maxTotal) * plotH * boost;
-      cursor -= h;
-      return [
-        {
+    const segments: {
+      level: number;
+      short: string;
+      label: string;
+      count: number;
+      y: number;
+      h: number;
+    }[] = [];
+    if (adminTotal != null) {
+      let cursor = g.adminBase;
+      for (const series of data.levels) {
+        if (series.level > 3) continue;
+        const count = series.counts[index];
+        if (count == null || count <= 0) continue;
+        const h = (count / adminMax) * g.adminH;
+        cursor -= h;
+        segments.push({
           level: series.level,
           short: series.short,
           label: series.label,
           count,
           y: cursor,
           h,
-        },
-      ];
-    });
+        });
+      }
+    }
+    if (split && localTotal != null) {
+      let cursor = g.localBase;
+      for (const series of data.levels) {
+        if (series.level < 4) continue;
+        const count = series.counts[index];
+        if (count == null || count <= 0) continue;
+        const h = (count / localMax) * g.localH;
+        cursor -= h;
+        segments.push({
+          level: series.level,
+          short: series.short,
+          label: series.label,
+          count,
+          y: cursor,
+          h,
+        });
+      }
+    }
+    const drawn = split
+      ? adminTotal != null || localTotal != null
+      : adminTotal != null;
     return {
       index,
       year: yearAt(index),
-      total,
+      adminTotal,
+      localTotal,
       omitted,
+      drawn,
       x,
       w: barW,
       segments,
@@ -205,19 +284,24 @@ const activeBar = computed(
 );
 
 const title = computed(() => {
-  const snap = totalAt(defaultIndex);
+  const snapAdmin = adminAt(defaultIndex);
   let priorIndex = -1;
   for (let index = defaultIndex - 1; index >= 0; index -= 1) {
-    if (totalAt(index) != null) {
+    if (adminAt(index) != null) {
       priorIndex = index;
       break;
     }
   }
-  if (snap == null || priorIndex < 0) return '纵轴按条数线性堆叠';
-  const prior = totalAt(priorIndex)!;
-  const ratio = prior > 0 ? snap / prior : 0;
-  const rounded = ratio >= 10 ? Math.round(ratio).toString() : ratio.toFixed(1);
-  return `${data.snapshotYear} 年五级合计 ${fmt(snap)}，约是 ${yearAt(priorIndex)} 年 ${fmt(prior)} 的 ${rounded} 倍`;
+  const prior = priorIndex >= 0 ? adminAt(priorIndex) : null;
+  const adminLine =
+    snapAdmin != null && prior != null
+      ? `${data.snapshotYear} 年省、地、县 ${fmt(snapAdmin)}，${yearAt(priorIndex)} 年 ${fmt(prior)}`
+      : '省、地、县按条数线性堆叠';
+  if (!showLower.value) return adminLine;
+  const snap = totalAt(defaultIndex);
+  return snap == null
+    ? adminLine
+    : `${data.snapshotYear} 年五级合计 ${fmt(snap)}。上轴是乡、村，下轴是省、地、县`;
 });
 
 function rangesFrom(years: number[]) {
@@ -241,12 +325,8 @@ const caption = computed(() => {
   const upperOnly: number[] = [];
   const withLower: number[] = [];
   for (let index = 0; index < yearCount; index += 1) {
-    const hasUpper = data.levels.some(
-      (series) => series.level <= 3 && series.counts[index] != null
-    );
-    const hasLower = data.levels.some(
-      (series) => series.level >= 4 && series.counts[index] != null
-    );
+    const hasUpper = adminAt(index) != null;
+    const hasLower = localAt(index) != null;
     if (hasUpper && !hasLower) upperOnly.push(yearAt(index));
     if (hasLower) withLower.push(yearAt(index));
   }
@@ -257,28 +337,58 @@ const caption = computed(() => {
     ? `${rangesFrom(upperOnly)} 只有省、地、县`
     : '';
   const snapshotText = withLower.length
-    ? `乡、村只在 ${rangesFrom(withLower)} 有数`
+    ? `乡、村在 ${rangesFrom(withLower)} 有数`
     : '';
-  const omitted = data.omitted
+  const ratio = adminMax > 0 ? Math.round(localMax / adminMax) : 0;
+  const scaleText = showLower.value
+    ? `上轴是乡、村（0 到 ${fmt(localMax)}），下轴是省、地、县（0 到 ${fmt(adminMax)}）。两段各自线性，中间断开。`
+    : `现在只画省、地、县，纵轴 0 到 ${fmt(adminMax)}，柱高和这三级的合计成比例。乡、村的峰值大约是这根轴的 ${ratio} 倍，打开「包含乡、村」后分到上面一根轴，而不是压成底线上的一条线。`;
+  const fragments = (data.sources?.csvFragments ?? [])
     .map(
       (item) =>
-        `${item.year} 年文件里有 ${fmt(item.rows)} 条${item.label}残片，留空，不画柱`
+        `${item.year} 年历史 CSV 里有 ${fmt(item.rows)} 条${item.label}残片，没有用；这一年的省、地、县来自 GB2260 年度库`
     )
     .join('。');
-  const empty = data.emptyYears.length
-    ? `${data.emptyYears.join('、')} 年没有快照，同样留空`
-    : '';
+  const duplicates = (data.sources?.gb2260Duplicates ?? [])
+    .map((item) => {
+      const plotted = adminAt(item.year - data.startYear) != null;
+      return plotted
+        ? `${item.year} 年的 GB2260 库与 ${item.sameAs} 字节相同`
+        : `${item.year} 年的 GB2260 库与 ${item.sameAs} 字节相同，省、地、县不另画，乡、村仍用这一年的 NBS 库`;
+    })
+    .join('。');
+  const extras = (data.sources?.gb2260Extras ?? [])
+    .map((item) => {
+      const count = data.levels[0]?.counts[item.year - data.startYear];
+      if (count == null) return '';
+      return `${item.year} 年省级是 ${fmt(count)}，多出来的是${item.names.join('、')}`;
+    })
+    .filter(Boolean)
+    .join('。');
   const gap = data.provinceGap
     ? `${data.provinceGap.fromYear}–${data.provinceGap.toYear} 年省级是 ${fmt(data.provinceGap.historyCount)}，${data.snapshotYear} 年是 ${fmt(data.provinceGap.snapshotCount)}，多出来的是${data.provinceGap.onlyInHistory.join('、')}`
     : '';
+  const sqlite = data.sources?.nbsSnapshotSqlite;
+  let placeholder = '';
+  if (sqlite) {
+    const csvSum = totalAt(defaultIndex) ?? 0;
+    const sqliteSum = sqlite.reduce((sum, count) => sum + count, 0);
+    const delta = sqliteSum - csvSum;
+    if (delta > 0) {
+      placeholder = `${data.snapshotYear} 年五级用的是已发布 CSV，比 NBS sqlite 少 ${fmt(delta)} 条自指向占位`;
+    }
+  }
   return [
-    `纵轴是线性的，柱高和这一年的合计成比例。真高不到 ${MIN_BAR}px 的年份画成 ${MIN_BAR}px，免得在 ${data.snapshotYear} 年旁边消失；柱里各级仍按实数比例分。`,
+    scaleText,
     covered ? `${covered}。` : '',
     historyText ? `${historyText}。` : '',
     snapshotText ? `${snapshotText}。` : '',
-    omitted ? `${omitted}。` : '',
-    empty ? `${empty}。` : '',
+    '乡、村来自 NBS 年度库。1980–2021 的省、地、县来自 GB2260，和 NBS 的县级口径不一样，没有合成一条县级曲线。',
+    fragments ? `${fragments}。` : '',
+    duplicates ? `${duplicates}。` : '',
     gap ? `${gap}。` : '',
+    extras ? `${extras}。` : '',
+    placeholder ? `${placeholder}。` : '',
   ]
     .filter(Boolean)
     .join('');
@@ -286,30 +396,59 @@ const caption = computed(() => {
 
 const tipLines = computed(() => {
   const bar = activeBar.value;
-  return data.levels.map((series) => {
-    const count = series.counts[bar.index];
-    return {
-      level: series.level,
-      short: series.short,
-      label: series.label,
-      text: count == null ? '—' : fmt(count),
-    };
-  });
+  return data.levels
+    .filter((series) => showLower.value || series.level <= 3)
+    .map((series) => {
+      const count = series.counts[bar.index];
+      return {
+        level: series.level,
+        short: series.short,
+        label: series.label,
+        text: count == null ? '—' : fmt(count),
+      };
+    });
 });
 
 const tipNote = computed(() => {
   const bar = activeBar.value;
-  if (bar.total != null) return '';
+  if (bar.drawn) return '';
+  const duplicate = data.sources?.gb2260Duplicates?.find(
+    (item) => item.year === bar.year
+  );
+  if (duplicate) {
+    return `${bar.year} 年没有独立的省、地、县快照，GB2260 库与 ${duplicate.sameAs} 字节相同`;
+  }
   if (bar.omitted) {
     return `${bar.omitted.year} 年只有 ${fmt(bar.omitted.rows)} 条${bar.omitted.label}残片，没有画柱`;
   }
   return `${bar.year} 年没有快照`;
 });
 
+function missingAdmin(year: number) {
+  const item = data.sources?.gb2260Duplicates?.find(
+    (entry) => entry.year === year
+  );
+  if (!item || adminAt(year - data.startYear) != null) return null;
+  return item;
+}
+
+const eyebrow = computed(() =>
+  showLower.value
+    ? `${data.startYear}–${data.endYear} · 两段各自线性`
+    : `${data.startYear}–${data.endYear} · 省、地、县线性`
+);
+
 const readoutLabel = computed(() => {
   if (tipNote.value) return tipNote.value;
+  const bar = activeBar.value;
   const parts = tipLines.value.map((line) => `${line.label} ${line.text}`);
-  return `${activeBar.value.year} 年，${parts.join('，')}，合计 ${fmt(activeBar.value.total ?? 0)}`;
+  const totals = [
+    bar.adminTotal != null ? `省地县 ${fmt(bar.adminTotal)}` : '',
+    showLower.value && bar.localTotal != null
+      ? `乡村 ${fmt(bar.localTotal)}`
+      : '',
+  ].filter(Boolean);
+  return `${bar.year} 年，${parts.join('，')}${totals.length ? `，${totals.join('，')}` : ''}`;
 });
 
 function setFromPointer(event: PointerEvent) {
@@ -385,29 +524,44 @@ watch(frameW, () => {
 </script>
 
 <template>
-  <KamiFigure
-    :eyebrow="`${data.startYear}–${data.endYear} · 仓库快照里的实数 · 线性`"
-    :title="title"
-    :caption="caption"
-  >
+  <KamiFigure :eyebrow="eyebrow" :title="title" :caption="caption">
     <div class="ysc">
       <div class="ysc-legend">
-        <span v-for="series in data.levels" :key="series.level">
+        <span
+          v-for="series in data.levels"
+          :key="series.level"
+          :class="{ 'is-dim': !showLower && series.level >= 4 }"
+        >
           <i class="swatch" :class="`seg-${series.level}`" />{{ series.label }}
         </span>
-        <span><i class="swatch empty" />无快照</span>
+        <span><i class="swatch empty" />无省地县快照</span>
+        <button
+          type="button"
+          class="ysc-toggle"
+          :aria-pressed="showLower"
+          @click="showLower = !showLower"
+        >
+          包含乡、村
+        </button>
       </div>
       <div class="ysc-tip" role="tooltip">
         <p class="ysc-tip-year">{{ activeBar.year }}</p>
-        <template v-if="activeBar.total != null">
+        <template v-if="activeBar.drawn">
           <p v-for="line in tipLines" :key="line.level" class="ysc-tip-row">
             <i class="swatch" :class="`seg-${line.level}`" />
             <span>{{ line.short }}</span>
             <b>{{ line.text }}</b>
           </p>
-          <p class="ysc-tip-row total">
-            <span>合计</span>
-            <b>{{ fmt(activeBar.total) }}</b>
+          <p v-if="activeBar.adminTotal != null" class="ysc-tip-row total">
+            <span>省地县</span>
+            <b>{{ fmt(activeBar.adminTotal) }}</b>
+          </p>
+          <p
+            v-if="showLower && activeBar.localTotal != null"
+            class="ysc-tip-row total"
+          >
+            <span>乡村</span>
+            <b>{{ fmt(activeBar.localTotal) }}</b>
           </p>
         </template>
         <p v-else class="ysc-tip-note">{{ tipNote }}</p>
@@ -416,21 +570,46 @@ watch(frameW, () => {
       <div ref="frameEl" class="ysc-body">
         <svg
           class="ysc-axis"
-          :viewBox="`0 0 ${padL} ${H}`"
+          :viewBox="`0 0 ${padL} ${geom.H}`"
           :width="padL"
-          :height="H"
+          :height="geom.H"
           aria-hidden="true"
         >
           <g class="ysc-grid">
             <text
-              v-for="tick in yTicks"
-              :key="tick"
+              v-for="tick in adminTicks"
+              :key="`a-${tick}`"
               :x="padL - 6"
-              :y="yOf(tick) + 3"
+              :y="yAdmin(tick) + 3"
               text-anchor="end"
             >
               {{ tickLabel(tick) }}
             </text>
+            <template v-if="showLower">
+              <text
+                v-for="tick in localTicks"
+                :key="`l-${tick}`"
+                :x="padL - 6"
+                :y="yLocal(tick) + 3"
+                text-anchor="end"
+              >
+                {{ tick === 0 ? '' : tickLabel(tick) }}
+              </text>
+            </template>
+          </g>
+          <g v-if="showLower" class="ysc-break" aria-hidden="true">
+            <line
+              :x1="padL - 16"
+              :x2="padL - 4"
+              :y1="geom.localBase + 6"
+              :y2="geom.adminTop - 4"
+            />
+            <line
+              :x1="padL - 16"
+              :x2="padL - 4"
+              :y1="geom.localBase + 11"
+              :y2="geom.adminTop + 1"
+            />
           </g>
         </svg>
         <div
@@ -446,37 +625,51 @@ watch(frameW, () => {
         >
           <svg
             class="ysc-svg"
-            :viewBox="`0 0 ${plotWidth} ${H}`"
+            :viewBox="`0 0 ${plotWidth} ${geom.H}`"
             :width="plotWidth"
-            :height="H"
+            :height="geom.H"
             aria-hidden="true"
           >
             <g class="ysc-grid">
-              <template v-for="tick in yTicks" :key="tick">
+              <line
+                v-for="tick in adminTicks"
+                :key="`a-${tick}`"
+                :x1="0"
+                :x2="plotWidth - padR"
+                :y1="yAdmin(tick)"
+                :y2="yAdmin(tick)"
+              />
+              <template v-if="showLower">
                 <line
+                  v-for="tick in localTicks"
+                  :key="`l-${tick}`"
                   :x1="0"
                   :x2="plotWidth - padR"
-                  :y1="yOf(tick)"
-                  :y2="yOf(tick)"
+                  :y1="yLocal(tick)"
+                  :y2="yLocal(tick)"
                 />
               </template>
             </g>
             <rect
               class="ysc-col"
               :x="activeBar.x - 1"
-              :y="padT"
+              :y="showLower ? geom.localTop : geom.adminTop"
               :width="activeBar.w + 2"
-              :height="plotH"
+              :height="
+                geom.adminBase - (showLower ? geom.localTop : geom.adminTop)
+              "
             />
             <template v-for="bar in bars" :key="bar.year">
-              <g v-if="bar.total == null" class="ysc-empty">
-                <circle
-                  :cx="bar.x + bar.w / 2"
-                  :cy="padT + plotH - 5"
-                  r="2.2"
-                />
+              <g v-if="!bar.drawn || (showLower && bar.adminTotal == null)">
+                <g class="ysc-empty">
+                  <circle
+                    :cx="bar.x + bar.w / 2"
+                    :cy="geom.adminBase - 5"
+                    r="2.2"
+                  />
+                </g>
               </g>
-              <g v-else>
+              <g v-if="bar.segments.length">
                 <rect
                   v-for="segment in bar.segments"
                   :key="segment.level"
@@ -493,7 +686,7 @@ watch(frameW, () => {
                 v-for="tick in xTicks"
                 :key="tick.year"
                 :x="tick.x"
-                :y="H - 6"
+                :y="geom.H - 6"
                 text-anchor="middle"
               >
                 {{ tick.year }}
@@ -514,7 +707,8 @@ watch(frameW, () => {
               {{
                 data.endYear
               }}
-              年省级、地级、县级、乡级、村级条数。横线表示该年没有这一级。无快照的年份没有画柱。
+              年省级、地级、县级、乡级、村级条数。横线表示该年没有这一级。省、地、县来自
+              GB2260，乡、村来自 NBS，合计是这两格相加。
             </caption>
             <thead>
               <tr>
@@ -534,10 +728,10 @@ watch(frameW, () => {
                 <th scope="row">
                   {{ year }}
                   <abbr
-                    v-if="omittedByYear.get(year)"
+                    v-if="missingAdmin(year)"
                     class="ysc-flag"
-                    :title="`${omittedByYear.get(year)!.rows} 条${omittedByYear.get(year)!.label}残片未计入`"
-                    >残缺</abbr
+                    :title="`GB2260.${year} 与 ${missingAdmin(year)!.sameAs} 字节相同，省、地、县不另画`"
+                    >无省地县</abbr
                   >
                 </th>
                 <td v-for="series in data.levels" :key="series.level">
@@ -589,6 +783,30 @@ watch(frameW, () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+.ysc-legend span.is-dim {
+  opacity: 0.4;
+}
+.ysc-toggle {
+  margin-left: auto;
+  border: 1px solid var(--kami-border, #e6e5e0);
+  background: transparent;
+  color: var(--kami-near-black, #26251e);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ysc-toggle[aria-pressed='true'] {
+  background: var(--kami-brand, #f54e00);
+  border-color: transparent;
+  color: #fff;
+}
+.ysc-break line {
+  stroke: var(--kami-stone, #807d72);
+  stroke-width: 1.25;
 }
 .swatch {
   display: inline-block;

@@ -14,6 +14,8 @@ on:
       - '.github/workflows/pages.yml'
       - 'scripts/pages-docs-redirect.mjs'
       - 'scripts/docs-home-data.mjs'
+      - 'scripts/count-release-snapshots.mjs'
+      - 'scripts/data/release-level-counts.json'
   workflow_dispatch:
 
 # GitHub Pages 部署所需权限
