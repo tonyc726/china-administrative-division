@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import KamiFigure from './KamiFigure.vue';
 
 // 真实数据：cache.db（hydrate 2023，NBS 五级全量）
@@ -18,53 +18,123 @@ const rows: Row[] = [
 ];
 
 const total = rows.reduce((s, r) => s + r.n, 0);
-const maxLog = Math.log10(Math.max(...rows.map((r) => r.n)));
-const bars = computed(() =>
-  rows.map((r, i) => ({
-    ...r,
-    pct: (Math.log10(r.n) / maxLog) * 100,
-    share:
-      r.n / total < 0.001 ? '<0.1%' : ((r.n / total) * 100).toFixed(1) + '%',
-    highlight: i === rows.length - 1, // 村级：唯一墨蓝
-  }))
-);
+const max = Math.max(...rows.map((r) => r.n));
 const fmt = (n: number) => n.toLocaleString('en-US');
+
+function shareOf(n: number) {
+  return n / total < 0.001 ? '<0.1%' : ((n / total) * 100).toFixed(1) + '%';
+}
+
+function tickStep(upper: number) {
+  const rough = upper / 4;
+  const pow = 10 ** Math.floor(Math.log10(rough));
+  const steps = [1, 2, 2.5, 5, 10].map((m) => m * pow);
+  return steps.find((step) => step >= rough) ?? steps[steps.length - 1]!;
+}
+
+const step = tickStep(max);
+const ticks: number[] = [];
+for (let value = 0; value <= max; value += step) ticks.push(value);
+
+function tickLabel(value: number) {
+  if (value === 0) return '0';
+  if (value % 10000 === 0) return `${value / 10000}万`;
+  return fmt(value);
+}
+
+// 先按文档栏的常见宽度判断；挂载后用真实轨道宽度再分一次内外标签。
+const plotWidth = ref(480);
+const root = ref<HTMLElement | null>(null);
+let observer: ResizeObserver | undefined;
+
+onMounted(() => {
+  const track = root.value?.querySelector<HTMLElement>('.lsc-track');
+  if (!track) return;
+  const apply = () => {
+    plotWidth.value = track.clientWidth;
+  };
+  apply();
+  observer = new ResizeObserver(apply);
+  observer.observe(track);
+});
+
+onBeforeUnmount(() => observer?.disconnect());
+
+function labelText(n: number) {
+  return `${fmt(n)}  ${shareOf(n)}`;
+}
+
+function fitsInside(n: number, ratio: number, track: number) {
+  const barPx = Math.max(2, ratio * track);
+  // 0.78rem 表格数字大约 8px 宽，再留出内边距。
+  const needed = labelText(n).length * 8 + 20;
+  return barPx >= needed;
+}
+
+const bars = computed(() =>
+  rows.map((row, index) => {
+    const ratio = row.n / max;
+    return {
+      ...row,
+      ratio,
+      pct: ratio * 100,
+      share: shareOf(row.n),
+      text: labelText(row.n),
+      inside: fitsInside(row.n, ratio, plotWidth.value),
+      highlight: index === rows.length - 1,
+    };
+  })
+);
+
+const village = rows[rows.length - 1]!;
+const caption = `横轴是线性的：条宽 = 这一级的条数 / 最多的一级。一共 ${fmt(total)} 条，村和社区 ${fmt(village.n)} 条，占 ${shareOf(village.n)}。`;
 </script>
 
 <template>
   <KamiFigure
     eyebrow="2023 年"
     title="从 31 个省级单位，到 62 万个村和社区"
-    caption="横轴是对数刻度（每格大约 ×10）。一共 665,271 条，其中村和社区 620,572 条。"
+    :caption="caption"
   >
-    <div class="lsc">
-      <!-- 数量级参考线 -->
-      <div class="lsc-grid">
+    <div ref="root" class="lsc">
+      <div class="lsc-grid" aria-hidden="true">
         <span
-          v-for="p in [2, 3, 4, 5]"
-          :key="p"
+          v-for="(tick, index) in ticks"
+          :key="tick"
           class="lsc-gridline"
-          :style="{ left: (p / maxLog) * 100 + '%' }"
+          :class="{
+            first: index === 0,
+            last: index === ticks.length - 1,
+          }"
+          :style="{ left: (tick / max) * 100 + '%' }"
         >
-          <i
-            >10<sup>{{ p }}</sup></i
-          >
+          <i>{{ tickLabel(tick) }}</i>
         </span>
       </div>
-      <div v-for="b in bars" :key="b.level" class="lsc-row">
+      <div v-for="bar in bars" :key="bar.level" class="lsc-row">
         <div class="lsc-label">
-          <span class="lsc-level">{{ b.level }}</span>
-          <span class="lsc-code">{{ b.code }}</span>
+          <span class="lsc-level">{{ bar.level }}</span>
+          <span class="lsc-code">{{ bar.code }}</span>
         </div>
         <div class="lsc-track">
           <div
             class="lsc-bar"
-            :class="{ hi: b.highlight }"
-            :style="{ width: b.pct + '%' }"
+            :class="{ hi: bar.highlight }"
+            :style="{ width: `max(2px, ${bar.pct}%)` }"
           >
-            <span class="lsc-value">{{ fmt(b.n) }}</span>
+            <span v-if="bar.inside" class="lsc-in">
+              <span class="lsc-count">{{ fmt(bar.n) }}</span>
+              <span class="lsc-share">{{ bar.share }}</span>
+            </span>
           </div>
-          <span class="lsc-share">{{ b.share }}</span>
+          <span
+            v-if="!bar.inside"
+            class="lsc-out"
+            :style="{ left: `max(2px, ${bar.pct}%)` }"
+          >
+            <span class="lsc-count">{{ fmt(bar.n) }}</span>
+            <span class="lsc-share">{{ bar.share }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -74,37 +144,46 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 <style scoped>
 .lsc {
   position: relative;
+  padding-bottom: 1.15rem;
   font-variant-numeric: lining-nums tabular-nums;
 }
 .lsc-grid {
   position: absolute;
   left: 148px;
-  right: 46px;
+  right: 0;
   top: 0;
-  bottom: 18px;
+  bottom: 1.15rem;
   pointer-events: none;
 }
 .lsc-gridline {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-left: 1px dashed var(--kami-border, #e8e6dc);
+  border-left: 1px dashed var(--vp-cursor-hairline-strong, #cfcdc4);
 }
 .lsc-gridline i {
   position: absolute;
-  bottom: -16px;
+  bottom: -1.05rem;
+  left: 0;
   transform: translateX(-50%);
   font-style: normal;
   font-size: 0.66rem;
-  color: var(--kami-stone, #6b6a64);
+  line-height: 1;
+  color: var(--kami-stone, #807d72);
   font-family: var(--kami-mono);
+  white-space: nowrap;
+}
+.lsc-gridline.first i {
+  transform: none;
+}
+.lsc-gridline.last i {
+  transform: translateX(-100%);
 }
 .lsc-row {
   display: grid;
   grid-template-columns: 148px 1fr;
   align-items: center;
-  gap: 0;
-  margin: 0.5rem 0;
+  margin: 0.55rem 0;
 }
 .lsc-label {
   display: flex;
@@ -119,54 +198,84 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 }
 .lsc-code {
   font-size: 0.68rem;
-  color: var(--kami-stone, #6b6a64);
+  color: var(--kami-stone, #807d72);
   line-height: 1.2;
 }
 .lsc-track {
   position: relative;
-  display: flex;
-  align-items: center;
-  padding-right: 46px;
+  height: 26px;
 }
 .lsc-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
   height: 26px;
-  min-width: 44px;
-  background: var(--kami-sand, #efeee8);
-  border-radius: 4px;
+  min-width: 2px;
+  background: var(--kami-olive, #5a5852);
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  overflow: hidden;
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .lsc-bar.hi {
   background: var(--kami-brand, #f54e00);
 }
-.lsc-value {
-  padding: 0 8px;
+.lsc-in,
+.lsc-out {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--kami-dark-warm, #5a5852);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: lining-nums tabular-nums;
 }
-.lsc-bar.hi .lsc-value {
+.lsc-in {
+  padding: 0 8px;
+  color: var(--kami-ivory, #ffffff);
+}
+.lsc-bar.hi .lsc-in {
   color: var(--kami-on-brand, #ffffff);
 }
-.lsc-share {
+.lsc-out {
   position: absolute;
-  right: 0;
-  font-size: 0.74rem;
-  color: var(--kami-olive, #504e49);
-  width: 42px;
-  text-align: right;
+  top: 0;
+  height: 26px;
+  align-items: center;
+  margin-left: 6px;
+  padding: 0 4px;
+  z-index: 1;
+  color: var(--kami-near-black, #26251e);
+  background: var(--kami-ivory, #ffffff);
+}
+.lsc-out .lsc-share {
+  color: var(--kami-olive, #5a5852);
+  font-weight: 500;
+}
+.lsc-in .lsc-share {
+  font-weight: 500;
+  opacity: 0.9;
 }
 @media (max-width: 640px) {
   .lsc-row {
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 72px 1fr;
   }
   .lsc-grid {
-    left: 96px;
+    left: 72px;
   }
   .lsc-code {
     display: none;
+  }
+  .lsc-level {
+    font-size: 0.92rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lsc-bar {
+    transition: none;
   }
 }
 </style>
