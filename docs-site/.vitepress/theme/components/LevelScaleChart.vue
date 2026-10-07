@@ -23,7 +23,8 @@ const bars = computed(() =>
   rows.map((r, i) => ({
     ...r,
     pct: (Math.log10(r.n) / maxLog) * 100,
-    share: r.n / total < 0.001 ? '<0.1%' : ((r.n / total) * 100).toFixed(1) + '%',
+    share:
+      r.n / total < 0.001 ? '<0.1%' : ((r.n / total) * 100).toFixed(1) + '%',
     highlight: i === rows.length - 1, // 村级：唯一墨蓝
   }))
 );
@@ -32,15 +33,22 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 
 <template>
   <KamiFigure
-    eyebrow="2023 · NBS 五级全量 · cache.db"
-    title="每下探一级，行政单元数量放大近一个数量级——村级独占全量 93%"
-    caption="对数刻度（横轴每格 ×10）。总量 665,271 条中村级 620,572 条，占 93.3%；这也是为什么「零爬虫、注水本地 SQLite」的分发方式必要——数据体量集中在最底层。"
+    eyebrow="2023 年"
+    title="从 31 个省级单位，到 62 万个村和社区"
+    caption="横轴是对数刻度（每格大约 ×10）。一共 665,271 条，其中村和社区 620,572 条。"
   >
     <div class="lsc">
       <!-- 数量级参考线 -->
       <div class="lsc-grid">
-        <span v-for="p in [2, 3, 4, 5]" :key="p" class="lsc-gridline" :style="{ left: (p / maxLog) * 100 + '%' }">
-          <i>10<sup>{{ p }}</sup></i>
+        <span
+          v-for="p in [2, 3, 4, 5]"
+          :key="p"
+          class="lsc-gridline"
+          :style="{ left: (p / maxLog) * 100 + '%' }"
+        >
+          <i
+            >10<sup>{{ p }}</sup></i
+          >
         </span>
       </div>
       <div v-for="b in bars" :key="b.level" class="lsc-row">
@@ -49,7 +57,11 @@ const fmt = (n: number) => n.toLocaleString('en-US');
           <span class="lsc-code">{{ b.code }}</span>
         </div>
         <div class="lsc-track">
-          <div class="lsc-bar" :class="{ hi: b.highlight }" :style="{ width: b.pct + '%' }">
+          <div
+            class="lsc-bar"
+            :class="{ hi: b.highlight }"
+            :style="{ width: b.pct + '%' }"
+          >
             <span class="lsc-value">{{ fmt(b.n) }}</span>
           </div>
           <span class="lsc-share">{{ b.share }}</span>

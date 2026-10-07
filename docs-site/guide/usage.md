@@ -1,53 +1,50 @@
 # 在代码中使用
 
-四个面向消费者的代码包，按需安装：
+可以复制运行的例子在 [常见用法](/guide/recipes)。名词在 [术语表](/guide/glossary)。
 
-| 我想… | 用 | 入口 |
+| 我想… | 安装 | 入口 |
 |---|---|---|
-| 校验/解析 12 位区划码（判级、取父码、补零） | [`@cndiv/core`](/reference/core) | 纯函数零依赖 |
-| 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](/reference/data-protocol) | `validatePatch` / `DATABASE_SCHEMA` |
-| 命令行注水、应用 patch、导出 | [`@cndiv/cli`](/reference/cli) | `cndiv` 命令 |
-| 在 JS 里查询注水后的区划数据 | [`@cndiv/reader`](/reference/reader) | `openCache().findByCode(...)` |
+| 检查、补零、判断 12 位码是哪一级 | [`@cndiv/core`](/reference/core) | 纯函数，不读数据库 |
+| 在 JS 里查已经装好的数据 | [`@cndiv/reader`](/reference/reader) | `openCache().findByCode(...)` |
+| 用命令装数据、导出 CSV | [`@cndiv/cli`](/reference/cli) | `cndiv` |
+| 检查一份 [Patch](/guide/glossary#patch) 的格式 | [`@cndiv/data-protocol`](/reference/data-protocol) | `validatePatch` |
 
-## 码工具（`@cndiv/core`，纯函数）
+## 拆码（`@cndiv/core`）
+
+它只处理数字本身，不知道这个码叫什么名字。
 
 ```ts
 import { validateCode, getLevelFromCode, getParentCode, DIVISION_LEVEL } from '@cndiv/core';
 
-validateCode('310115000000');                          // true（结构 + 省码白名单，不保证真实存在）
-getLevelFromCode('310115000000');                      // 3 (COUNTY)
-getParentCode('310115000000', DIVISION_LEVEL.COUNTY);  // '310100000000'
+validateCode('110101000000');                          // true（格式和省码，不保证这个地方存在）
+getLevelFromCode('110101000000');                      // 3（县 / 区）
+getParentCode('110101000000', DIVISION_LEVEL.COUNTY);  // '110100000000'
 ```
 
-::: tip 坑与全清单
-16 个导出全清单与坑（无「码→名」反查、`normalizeCode` 不校验省码、`getParentCode` 需先判级等）见 [`@cndiv/core` 参考](/reference/core)。可跑示例：`npx tsx packages/core/examples/code-tools.ts`。
-:::
+边界和完整函数表见 [`@cndiv/core`](/reference/core)。
 
-## 查询注水后的数据（`@cndiv/reader`）
+## 查询（`@cndiv/reader`）
 
-`cndiv hydrate` 把数据落到 `~/.cndiv/cache.db`（标准 SQLite）。用 [`@cndiv/reader`](/reference/reader) 查询——它薄封装 `better-sqlite3`、只读打开，并自动屏蔽两个坑：**复合主键 `(code, year)`**（所有查询强制 `year`）与**直辖市「市辖区」占位层**（`skipPlaceholder` 穿透到真实区县）。
+`cndiv hydrate` 之后打开 `~/.cndiv/cache.db`。每次查询都要带年份。直辖市要跳过 [市辖区占位层](/guide/glossary#placeholder)。
 
 ```ts
 import { openCache } from '@cndiv/reader';
 
-const cn = openCache(); // 默认 ~/.cndiv/cache.db，只读
-cn.findByCode('110101000000', 2023);                            // → Division（东城区）
-cn.getChildren('110000000000', 2023, { skipPlaceholder: true }); // → [东城区, 西城区]
-cn.getDescendants('110000000000', 2023);                        // 递归全部后代
+const cn = openCache();
+cn.findByCode('110101000000', 2023);                             // 东城区
+cn.getChildren('110000000000', 2023, { skipPlaceholder: true }); // 16 个区
 cn.close();
 ```
 
-::: tip 也可直接写 SQL
-不用 reader、自带 `better-sqlite3` 直接写 SQL 亦可（reader 即此封装）——底层范式（点查 / 子级 / 递归 CTE / 配合 `@cndiv/core` 码工具）见可跑示例：`npx tsx packages/cli/examples/query-cache.ts`。
-:::
+也可以自己写 SQL。表结构见 [区划码与表结构](/reference/data-model)。
 
-## 校验 Patch（`@cndiv/data-protocol`）
+## 检查 Patch（`@cndiv/data-protocol`）
 
 ```ts
 import { validatePatch } from '@cndiv/data-protocol';
 
 const r = validatePatch(JSON.parse(patchJson));
-if (!r.success) throw new Error(r.error); // success 为 true 时 r.data 是规范化后的 Patch
+if (!r.success) throw new Error(r.error);
 ```
 
-可跑示例：`npx tsx packages/data-protocol/examples/validate-patch.ts`。
+`r.error` 是校验器的原始 JSON，不是一句中文说明。文件怎么写见 [贡献 Patch](/contributors/patch)。

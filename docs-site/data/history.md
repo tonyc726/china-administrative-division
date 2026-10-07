@@ -14,6 +14,6 @@ GB2260 国标记录了 **1980–2021 年** 的省 / 市 / 县三级区划。下�
 
 如果只保存「某一版全量」，上面这些逐年变化就永久丢失了：你无法回答「2005 年的某个县级码当时是什么、后来去了哪」。v2 用复合主键 `(code, year)` 把**同一个码在不同年份的不同含义**逐年留存——这正是历年数据能被「回放」的前提。
 
-- 数据获取（`cndiv hydrate --year=history`）见 [快速上手](/guide/getting-started)
+- 数据获取（`cndiv hydrate --year=history`）见 [快速上手](/guide/getting-started)。「注水」这个词见 [术语表](/guide/glossary#hydrate)
 - 版本化存储范式见 [数据模型](/reference/data-model)
 - 完整快照与完整性校验见 [历年快照与下载](/data/snapshots)

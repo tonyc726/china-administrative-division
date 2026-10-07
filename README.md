@@ -21,7 +21,8 @@
 | 产品 | 说明 |
 |------|------|
 | **npm 包** (`@cndiv/*`) | 9 个包：数据快照、只读查询、CLI 注水导出、区划码校验、采集爬虫、法令抽取 |
-| **交互式站点** | [时光机](https://tonyc726.github.io/china-administrative-division/) -- 四十年县级变迁可视化；64 万个村庄可全文搜索 |
+| **文档站** | [全国行政区划代码](https://tonyc726.github.io/china-administrative-division/) -- Pages 根路径 |
+| **交互式站点** | [时光机](https://tonyc726.github.io/china-administrative-division/time-machine/) -- 四十年县级变迁可视化；64 万个村庄可全文搜索 |
 
 ---
 
@@ -60,7 +61,7 @@ cn.close();
 | 校验社区 Patch / 复用 SQLite schema | [`@cndiv/data-protocol`](./packages/data-protocol) |
 | 直接使用快照数据 | [`@cndiv/source-2023`](./packages/source-2023) · [`@cndiv/source-history`](./packages/source-history) · [`@cndiv/source-postal`](./packages/source-postal) |
 
-> 维护侧包（采集 `@cndiv/crawler`、公告抽取 `@cndiv/extractor`）见 [在线文档](https://tonyc726.github.io/china-administrative-division/)「包参考」章节。
+> 维护侧包（采集 `@cndiv/crawler`、公告抽取 `@cndiv/extractor`）见 [在线文档](https://tonyc726.github.io/china-administrative-division/)「贡献者」一节。
 
 ---
 
@@ -79,7 +80,7 @@ cn.close();
 
 行政区划变更（撤县设区、更名、新设社区等）以 JSON Patch 格式提交到 `patches/<YYYY>/`，PR 由 CI 自动校验。
 
-提交格式与本地校验见 [贡献指南](https://tonyc726.github.io/china-administrative-division/guide/contributing-patch)。
+提交格式与本地校验见 [贡献指南](https://tonyc726.github.io/china-administrative-division/contributors/patch)。
 
 ---
 

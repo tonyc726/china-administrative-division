@@ -20,8 +20,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '../dist');
 
 // 读取预构建数据
-const timeline = JSON.parse(fs.readFileSync(path.join(distDir, 'data/timeline.json'), 'utf-8'));
-const stats = JSON.parse(fs.readFileSync(path.join(distDir, 'data/stats.json'), 'utf-8'));
+const timeline = JSON.parse(
+  fs.readFileSync(path.join(distDir, 'data/timeline.json'), 'utf-8')
+);
+const stats = JSON.parse(
+  fs.readFileSync(path.join(distDir, 'data/stats.json'), 'utf-8')
+);
 
 // 服务端渲染 App
 const prerendered = { timeline, stats, baseUrl: process.env.WEB_BASE ?? '/' };
@@ -30,8 +34,10 @@ const appHtml = ReactDOMServer.renderToString(
 );
 
 // 将预渲染数据序列化为安全的 JSON（转义 </script>）
-const dataJson = JSON.stringify(prerendered)
-  .replace(/<\/script>/g, '<\\/script>');
+const dataJson = JSON.stringify(prerendered).replace(
+  /<\/script>/g,
+  '<\\/script>'
+);
 
 // SEO 标签和 JSON-LD
 const seoTags = generateSeoTags(stats);
@@ -41,10 +47,16 @@ let indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
 
 // 1. 注入预渲染数据脚本
 const dataScript = `<script type="application/json" id="__PRERENDERED_DATA__">${dataJson}</script>`;
-indexHtml = indexHtml.replace('</head>', `${dataScript}\n    ${seoTags}\n  </head>`);
+indexHtml = indexHtml.replace(
+  '</head>',
+  `${dataScript}\n    ${seoTags}\n  </head>`
+);
 
 // 2. 注入渲染后的 HTML 到 #root 中
-indexHtml = indexHtml.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+indexHtml = indexHtml.replace(
+  '<div id="root"></div>',
+  `<div id="root">${appHtml}</div>`
+);
 
 // 写回文件
 fs.writeFileSync(path.join(distDir, 'index.html'), indexHtml, 'utf-8');
@@ -53,7 +65,16 @@ console.log('✅ 预渲染完成');
 console.log(`   注入后 HTML 大小: ${(indexHtml.length / 1024).toFixed(1)} KB`);
 
 function generateSeoTags(statsData: { levels: Record<string, number> }) {
-  const SITE_URL = 'https://tonyc726.github.io/china-administrative-division';
+  // 文档站占 Pages 根路径；未设置 WEB_BASE 时，公开地址仍是 /time-machine/。
+  const origin = 'https://tonyc726.github.io';
+  const webBase = process.env.WEB_BASE ?? '';
+  const SITE_URL =
+    webBase && webBase !== '/'
+      ? `${origin}${webBase.startsWith('/') ? webBase : `/${webBase}`}`.replace(
+          /\/$/,
+          ''
+        )
+      : `${origin}/china-administrative-division/time-machine`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -66,11 +87,31 @@ function generateSeoTags(statsData: { levels: Record<string, number> }) {
       name: '中国行政区划历史数据',
       description: '1980 年至 2026 年中国五级行政区划变迁数据',
       variableMeasured: [
-        { '@type': 'PropertyValue', name: '省级', value: statsData.levels['1'] ?? 0 },
-        { '@type': 'PropertyValue', name: '地级', value: statsData.levels['2'] ?? 0 },
-        { '@type': 'PropertyValue', name: '县级', value: statsData.levels['3'] ?? 0 },
-        { '@type': 'PropertyValue', name: '乡级', value: statsData.levels['4'] ?? 0 },
-        { '@type': 'PropertyValue', name: '村级', value: statsData.levels['5'] ?? 0 },
+        {
+          '@type': 'PropertyValue',
+          name: '省级',
+          value: statsData.levels['1'] ?? 0,
+        },
+        {
+          '@type': 'PropertyValue',
+          name: '地级',
+          value: statsData.levels['2'] ?? 0,
+        },
+        {
+          '@type': 'PropertyValue',
+          name: '县级',
+          value: statsData.levels['3'] ?? 0,
+        },
+        {
+          '@type': 'PropertyValue',
+          name: '乡级',
+          value: statsData.levels['4'] ?? 0,
+        },
+        {
+          '@type': 'PropertyValue',
+          name: '村级',
+          value: statsData.levels['5'] ?? 0,
+        },
       ],
     },
   };
