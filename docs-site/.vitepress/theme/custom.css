@@ -398,8 +398,29 @@
   display: none;
 }
 
+.VPHero.has-image .image {
+  margin: 0 0 12px !important;
+}
+
 .VPHero .image-container {
-  max-width: 440px;
+  width: min(100%, 460px) !important;
+  max-width: 460px;
+  height: auto !important;
+  transform: none !important;
+}
+
+@media (min-width: 960px) {
+  .VPHero.has-image .container {
+    align-items: center !important;
+  }
+
+  .VPHero.has-image .image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    min-height: 0 !important;
+  }
 }
 
 body .VPButton {
