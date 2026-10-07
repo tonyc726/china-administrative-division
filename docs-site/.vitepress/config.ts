@@ -13,8 +13,8 @@ const siteUrl = (
 
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
 
-// 文档站现在是主站的辅助链接（主站部署在 GH Pages 根路径，文档站挂在 /docs/ 子路径）。
-// 只有 GH Pages 构建会设置这个变量，其它独立部署（Cloudflare/Vercel）没有主站，不渲染这条 nav。
+// GitHub Pages 上文档站占项目页根路径，时光机在 /time-machine/。
+// pages.yml 把 DOCS_HOME_URL 设成那个绝对地址；独立部署不设它，顶栏就不出现「时光机」。
 const homeUrl = process.env.DOCS_HOME_URL;
 
 const contributorSidebar = [

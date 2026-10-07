@@ -15,15 +15,24 @@ import { Explorer } from './components/Explorer';
 
 /**
  * Vite 构建时会把 import.meta.env.BASE_URL 静态替换为配置的 base 值；
- * 但 prerender.ts（SSR）直接用 Bun 执行，不存在 Vite 的替换——BASE_URL 为 undefined，
- * 导致 `${undefined}docs/` → "undefineddocs/"。
+ * 但 prerender.ts（SSR）直接用 Bun 执行，不存在 Vite 的替换——BASE_URL 为 undefined。
  * 因此通过 prerendered.baseUrl 透传部署基路径作为 fallback。
  */
 const BASE: string =
-  typeof import.meta.env.BASE_URL === 'string' && import.meta.env.BASE_URL !== ''
+  typeof import.meta.env.BASE_URL === 'string' &&
+  import.meta.env.BASE_URL !== ''
     ? import.meta.env.BASE_URL
     : '/';
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
+const DOCS_SITE = 'https://tonyc726.github.io/china-administrative-division/';
+
+/** 文档站在 Pages 根路径；本应用部署在其下的 time-machine/。本地预览没有这条前缀时，链到线上文档。 */
+export function docsHomeHref(appBase: string): string {
+  const base = appBase.endsWith('/') ? appBase : `${appBase}/`;
+  const suffix = 'time-machine/';
+  if (base.endsWith(suffix)) return base.slice(0, -suffix.length);
+  return DOCS_SITE;
+}
 
 function detectLang(): Lang {
   // 服务端渲染时 window/navigator 不存在，返回默认值
@@ -48,9 +57,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
   const [timeline, setTimeline] = useState<TimelineData | null>(
     prerendered?.timeline ?? null
   );
-  const [stats, setStats] = useState<Stats | null>(
-    prerendered?.stats ?? null
-  );
+  const [stats, setStats] = useState<Stats | null>(prerendered?.stats ?? null);
   const [names, setNames] = useState<Names | null>(null);
   const [geo, setGeo] = useState<Geo | null>(null);
   /**
@@ -87,7 +94,9 @@ export function App({ prerendered }: AppProps): JSX.Element {
 
     // 无预渲染数据时（开发环境 / 降级），走原有完整 fetch 逻辑
     void Promise.all([
-      fetch(`${BASE}data/timeline.json`).then((r) => r.json() as Promise<TimelineData>),
+      fetch(`${BASE}data/timeline.json`).then(
+        (r) => r.json() as Promise<TimelineData>
+      ),
       fetch(`${BASE}data/stats.json`).then((r) => r.json() as Promise<Stats>),
       fetch(`${BASE}data/names.json`).then((r) => r.json() as Promise<Names>),
       fetch(`${BASE}data/geo.json`).then((r) => r.json() as Promise<Geo>),
@@ -109,7 +118,9 @@ export function App({ prerendered }: AppProps): JSX.Element {
   }, [lang]);
 
   const t = COPY[lang];
-  const villages = stats ? (stats.levels['5'] ?? 0).toLocaleString() : '620,572';
+  const villages = stats
+    ? (stats.levels['5'] ?? 0).toLocaleString()
+    : '620,572';
 
   return (
     <div className="min-h-screen bg-paper text-ink-2 antialiased">
@@ -143,16 +154,26 @@ export function App({ prerendered }: AppProps): JSX.Element {
               aria-label="GitHub"
               className="hidden text-ink-3 transition hover:text-ink sm:block"
             >
-              <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden>
+              <svg
+                viewBox="0 0 16 16"
+                className="h-5 w-5"
+                fill="currentColor"
+                aria-hidden
+              >
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
               </svg>
             </a>
             <a
-              href={`${prerendered?.baseUrl ?? BASE}docs/`}
+              href={docsHomeHref(prerendered?.baseUrl ?? BASE)}
               aria-label="文档站"
               className="hidden text-ink-3 transition hover:text-ink sm:block"
             >
-              <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+              <svg
+                viewBox="0 0 16 16"
+                className="h-5 w-5"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <path d="M1 2.5A1.5 1.5 0 012.5 1H3v13h-.5A1.5 1.5 0 011 12.5v-10zM4 1h9.5A1.5 1.5 0 0115 2.5v10a1.5 1.5 0 01-1.5 1.5H4V1zm1 1.5v10h8.5a.5.5 0 00.5-.5v-10a.5.5 0 00-.5-.5H5zm1 1h6v1H6v-1zm0 2h6v1H6v-1zm0 2h3v1H6v-1z" />
               </svg>
             </a>
@@ -163,7 +184,12 @@ export function App({ prerendered }: AppProps): JSX.Element {
               aria-label="npm"
               className="hidden text-ink-3 transition hover:text-ink sm:block"
             >
-              <svg viewBox="0 0 16 16" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+              <svg
+                viewBox="0 0 16 16"
+                className="h-5 w-5"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <path d="M0 0v16h16V0H0zm13 13h-2V5H8v8H3V3h10v10z" />
               </svg>
             </a>
@@ -193,7 +219,9 @@ export function App({ prerendered }: AppProps): JSX.Element {
         <Hero data={timeline} geo={geo} lang={lang} />
       ) : (
         <section className="mx-auto max-w-5xl px-6 pb-24 pt-16 sm:pt-28">
-          <p className="font-mono text-sm tracking-[0.2em] text-clay">{t.heroKicker}</p>
+          <p className="font-mono text-sm tracking-[0.2em] text-clay">
+            {t.heroKicker}
+          </p>
           <h1 className="mt-8 flex flex-wrap items-baseline gap-x-5 gap-y-2">
             <span className="font-display text-[clamp(5rem,17vw,10.5rem)] leading-none tracking-tight tabular-nums text-clay">
               651
@@ -245,7 +273,9 @@ export function App({ prerendered }: AppProps): JSX.Element {
                   {t.levelNames[l]}
                 </dt>
                 <dd className="mt-2 font-display text-2xl tabular-nums text-ink">
-                  {stats ? (stats.levels[String(l)] ?? 0).toLocaleString() : '—'}
+                  {stats
+                    ? (stats.levels[String(l)] ?? 0).toLocaleString()
+                    : '—'}
                 </dd>
               </div>
             ))}
@@ -281,7 +311,7 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
               npm · @cndiv
             </a>
             <a
-              href={`${prerendered?.baseUrl ?? BASE}docs/`}
+              href={docsHomeHref(prerendered?.baseUrl ?? BASE)}
               className="rounded-md border border-line-2 bg-paper-3 px-5 py-2.5 text-sm text-ink transition hover:border-ink"
             >
               {t.devDocs}

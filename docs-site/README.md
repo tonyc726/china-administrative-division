@@ -7,7 +7,7 @@ VitePress 静态文档站，用于对外推广与集成参考。
 - **独立于 monorepo workspace**：根仓 `packages/*` 才是主 workspace 成员。本目录是嵌套 workspace（自有 `pnpm-workspace.yaml`），`pnpm install` 会把 VitePress（Vite 5）的依赖树与主仓（Vite 8）的 lockfile / `tsc -b` 完全隔离。不要加 `--ignore-workspace`：pnpm 11 会因此忽略 `allowBuilds`，esbuild 的 install 脚本无法放行。
 - **用户页自己写，包 README 留给 npm**：`reference/` 里 core、reader、cli、data-protocol 是给第一次使用者的短页（安装、函数表、一段例子），不要再 `@include` 整份包 README。包 README 仍是 npm 页面的原文，改 API 时两处一起改。
 - **维护者页继续 `@include`**：`contributors/crawler.md`、`contributors/extractor.md`、`contributors/publishing.md` 和 `ops/`、`data/snapshots.md` 直接引用 `packages/*/README.md` 或 `docs/*.md`。改那些长文改源文件即可。
-- **多平台可部署**：`base` 由环境变量 `DOCS_BASE` 控制——GitHub Pages 用 `/china-administrative-division/`，Vercel/Netlify/Cloudflare 用根 `/`（默认）。
+- **多平台可部署**：`base` 由环境变量 `DOCS_BASE` 控制。GitHub Pages 上本站在 `/china-administrative-division/`（项目页根路径），时光机在 `/time-machine/`。Vercel/Netlify/Cloudflare 用根 `/`（默认）。
 
 ## 本地开发
 
@@ -23,9 +23,9 @@ pnpm preview    # 预览构建产物
 
 ### GitHub Pages（已配置，开箱即用）
 
-`.github/workflows/docs.yml` 已就绪：push 到 `master` 且 `docs-site/**`、`packages/*/README.md`、`docs/**` 变更即自动构建部署。
+`.github/workflows/pages.yml` 把本站发到项目页根路径 `https://tonyc726.github.io/china-administrative-division/`。时光机在 `/time-machine/`。以前挂在 `/docs/` 的地址会跳到去掉这个前缀后的新路径。
 
-一次性开启：仓库 **Settings → Pages → Source 选 "GitHub Actions"** 即可。站点地址 `https://tonyc726.github.io/china-administrative-division/`。
+一次性开启：仓库 **Settings → Pages → Source 选 "GitHub Actions"** 即可。
 
 ### Cloudflare Pages（推荐，国内访问优）
 

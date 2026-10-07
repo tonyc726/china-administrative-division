@@ -1,8 +1,7 @@
 name: GitHub Pages
 
-# 主站（apps/web，时光机展示站）部署在仓库根路径；文档站（docs-site）挂在 /docs/ 子路径，
-# 作为面向开发者/维护者的辅助入口。两站独立构建，合并进同一个 Pages artifact 一次性发布。
-# 取代原先只发布 docs-site 到根路径的 docs.yml。
+# 文档站（docs-site）占项目页根路径；时光机（apps/web）挂在 /time-machine/。
+# 两站独立构建，合并进同一个 Pages artifact。旧的 /docs/ 地址由静态 HTML 跳到去掉该前缀后的新路径。
 on:
   push:
     branches: [master]
@@ -13,6 +12,7 @@ on:
       - 'docs/**'
       - 'patches/**'
       - '.github/workflows/pages.yml'
+      - 'scripts/pages-docs-redirect.mjs'
   workflow_dispatch:
 
 # GitHub Pages 部署所需权限
@@ -49,23 +49,24 @@ jobs:
       # composite action 同时做 manifest SHA-512 复核，与 ci.yml 的 verify 门禁共用。
       - uses: ./.github/actions/fetch-data-csvs
 
-      # apps/web 是嵌套 workspace（自有 lockfile，不进 monorepo）；部署到 GH Pages 项目页需要 /<repo>/ 前缀
-      - name: Build web (homepage)
+      # apps/web 是嵌套 workspace（自有 lockfile，不进 monorepo）。
+      # 项目页前缀之后再加 /time-machine/，把根路径留给文档站。
+      - name: Build web (time machine)
         working-directory: apps/web
         env:
-          WEB_BASE: /china-administrative-division/
+          WEB_BASE: /china-administrative-division/time-machine/
         run: |
           pnpm install --frozen-lockfile
           pnpm run build
 
       # docs-site 是嵌套 workspace（自有 pnpm-workspace.yaml + allowBuilds.esbuild），
       # 不要加 --ignore-workspace，否则 pnpm 11 会忽略 allowBuilds 并因 esbuild 脚本未放行而失败。
-      - name: Build docs-site (auxiliary, under /docs/)
+      - name: Build docs-site (site root)
         working-directory: docs-site
         env:
-          DOCS_BASE: /china-administrative-division/docs/
-          DOCS_SITE_URL: ${{ env.SITE_URL }}/docs
-          DOCS_HOME_URL: ${{ env.SITE_URL }}/
+          DOCS_BASE: /china-administrative-division/
+          DOCS_SITE_URL: ${{ env.SITE_URL }}
+          DOCS_HOME_URL: ${{ env.SITE_URL }}/time-machine/
         run: |
           pnpm install --frozen-lockfile
           pnpm build
@@ -73,9 +74,10 @@ jobs:
       - name: Combine into one Pages artifact
         run: |
           rm -rf dist
-          mkdir -p dist/docs
-          cp -r apps/web/dist/. dist/
-          cp -r docs-site/.vitepress/dist/. dist/docs/
+          mkdir -p dist/time-machine
+          cp -r docs-site/.vitepress/dist/. dist/
+          cp -r apps/web/dist/. dist/time-machine/
+          node scripts/pages-docs-redirect.mjs dist
 
       - uses: actions/configure-pages@v5
 

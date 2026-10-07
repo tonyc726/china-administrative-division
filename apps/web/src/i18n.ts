@@ -113,7 +113,12 @@ interface Copy {
   marksModeRate: string;
   marksModeRaw: string;
   marksModeNote: string;
-  marksCell: (prov: string, mark: string, count: number, rate: string) => string;
+  marksCell: (
+    prov: string,
+    mark: string,
+    count: number,
+    rate: string
+  ) => string;
   marksAxisProv: string;
   marksColorNote: string;
 
@@ -135,7 +140,7 @@ interface Copy {
   devTitle: string;
   devLead: string;
   devRepo: string;
-  /** 辅助链接：给开发者/维护者看的文档站——独立部署在 /docs/ 子路径，不与主站抢流量 */
+  /** 回到文档站。Pages 上文档在项目根路径，本应用在 /time-machine/。 */
   devDocs: string;
 
   sourceNote: string;
@@ -157,10 +162,12 @@ const zh: Copy = {
   heroDialCounty: '县',
   heroDialDistrict: '区',
   heroDialCity: '市',
-  heroField: '中国地图：被取消的县名在它所属的省份上烧成灰飘散，新的名字从同一块土地上长出来',
+  heroField:
+    '中国地图：被取消的县名在它所属的省份上烧成灰飘散，新的名字从同一块土地上长出来',
   heroGeoNote: '名字落在它所属的省内 · 精确到省，不到县',
   heroScrub: '拖动，回到任何一年',
-  scrubVol: (n) => (n === 0 ? '这一年，名册没有改动' : `这一年，${n} 个县从名册上消失`),
+  scrubVol: (n) =>
+    n === 0 ? '这一年，名册没有改动' : `这一年，${n} 个县从名册上消失`,
   scrubHint: '柱高 = 这一年消失的县数 · 拖动或按方向键',
   scrubCaveat: '口径变化，非行政变更',
   heroSkip: (year) => `跳到 ${year} →`,
@@ -201,7 +208,8 @@ const zh: Copy = {
   jumping: '正在翻到那一页…',
   resultTruncated: (total, shown) =>
     `全国共 ${total.toLocaleString()} 条命中，这里只列出前 ${shown} 条。`,
-  scopeUnresolved: (tokens) => `名册里没有「${tokens}」这个地方，已按全国搜索。`,
+  scopeUnresolved: (tokens) =>
+    `名册里没有「${tokens}」这个地方，已按全国搜索。`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;
@@ -230,7 +238,8 @@ const zh: Copy = {
   clickToSearch: '点任意一行，搜出全国所有同名的村',
 
   surnameTitle: '姓氏的村庄',
-  surnameSub: (total) => `${total} 个村子以「某家」命名。你家的姓，有多少个村？`,
+  surnameSub: (total) =>
+    `${total} 个村子以「某家」命名。你家的姓，有多少个村？`,
   surnameYours: '你的姓',
   surnameYoursPlaceholder: '姓',
   surnameFound: (sur, count, rank) =>
@@ -249,7 +258,8 @@ const zh: Copy = {
     '按「每万村」归一化：直接比原始村数，读到的只是「哪个省村多」（河北 5 万村，海南 2 千村）。切到「原始村数」看「沟」这一行——前三名会变成河北、河南、山东（清一色的村庄大省）；而按密度，「沟」真正的家在甘肃与陕西，黄土高原。省份体量是混淆变量，摘掉它，字才回到它自己的地理里。',
   marksCell: (prov, mark, count, rate) =>
     `${prov} · 「${mark}」：${count.toLocaleString()} 个村，每万村 ${rate} 个`,
-  marksAxisProv: '省份按「北方通名密度 − 南方通名密度」排序 —— 这条从北到南的谱是数据自己排出来的，不是我们指定的',
+  marksAxisProv:
+    '省份按「北方通名密度 − 南方通名密度」排序 —— 这条从北到南的谱是数据自己排出来的，不是我们指定的',
   marksColorNote:
     '颜色深浅 = 该字在该省的密度，按每一行自己的最大值归一 —— 回答的是「这个字集中在哪」，不是「哪个字更多」。跨行的量级请看行首的总数。',
 
@@ -295,10 +305,13 @@ const en: Copy = {
   heroDialCity: 'Cities',
   heroField:
     'Map of China: abolished county names burn to ash over their own province; new names grow from the same ground',
-  heroGeoNote: 'Placed within its province · province-accurate, not county-accurate',
+  heroGeoNote:
+    'Placed within its province · province-accurate, not county-accurate',
   heroScrub: 'Drag to any year',
   scrubVol: (n) =>
-    n === 0 ? 'Nothing changed this year' : `${n} ${n === 1 ? 'county' : 'counties'} vanished this year`,
+    n === 0
+      ? 'Nothing changed this year'
+      : `${n} ${n === 1 ? 'county' : 'counties'} vanished this year`,
   scrubHint: 'Bar height = counties lost that year · drag or use arrow keys',
   scrubCaveat: 'coding change, not a real reorganisation',
   heroSkip: (year) => `Skip to ${year} →`,
@@ -324,8 +337,10 @@ const en: Copy = {
   explorerTitle: 'Find your hometown',
   explorerSub: (v) =>
     `Provinces, prefectures, counties, townships, villages — all five levels are searchable (${v} villages and communities included). Chinese or pinyin.`,
-  searchPlaceholder: 'Search any level, e.g. "Liaoning Heping" or 新安村 / xinancun',
-  searchHint: 'Narrow a common name with a province/city, e.g. "Liaoning Heping"; pinyin works too',
+  searchPlaceholder:
+    'Search any level, e.g. "Liaoning Heping" or 新安村 / xinancun',
+  searchHint:
+    'Narrow a common name with a province/city, e.g. "Liaoning Heping"; pinyin works too',
   noResult: 'No such place in the registry',
   loading: 'Leafing through…',
   pickTown: 'Pick a township',
@@ -340,7 +355,8 @@ const en: Copy = {
   jumping: 'Turning to that page…',
   resultTruncated: (total, shown) =>
     `${total.toLocaleString()} matches nationwide; showing the first ${shown}.`,
-  scopeUnresolved: (tokens) => `No place named "${tokens}" in the registry — searched nationwide instead.`,
+  scopeUnresolved: (tokens) =>
+    `No place named "${tokens}" in the registry — searched nationwide instead.`,
 
   lineageStory: (events, sinceMin) => {
     if (events.length === 0) return null;
@@ -375,10 +391,12 @@ const en: Copy = {
   surnameYoursPlaceholder: '姓',
   surnameFound: (sur, count, rank) =>
     `${count.toLocaleString()} villages are named after the 「${sur}」 family — #${rank} among all surnames.`,
-  surnameMissing: (sur) => `No village in the registry is named after 「${sur}」.`,
+  surnameMissing: (sur) =>
+    `No village in the registry is named after 「${sur}」.`,
 
   marksTitle: 'Ponds in the south, hamlets in the north',
-  marksSub: 'One character in a village name tells you which half of China it sits in',
+  marksSub:
+    'One character in a village name tells you which half of China it sits in',
   marksNorth: 'Northern suffixes',
   marksSouth: 'Southern suffixes',
   marksLead:
@@ -406,7 +424,14 @@ const en: Copy = {
 
   statsTitle: 'The registry in full',
   statsLead: 'In 2023, the registry held 665,271 lines.',
-  levelNames: ['', 'Provinces', 'Prefectures', 'Counties', 'Townships', 'Villages'],
+  levelNames: [
+    '',
+    'Provinces',
+    'Prefectures',
+    'Counties',
+    'Townships',
+    'Villages',
+  ],
 
   devTitle: 'The registry is open source',
   devLead:
