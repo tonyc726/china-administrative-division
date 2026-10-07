@@ -1,8 +1,8 @@
 /**
  * 分享卡片：一张 1200×630 的「地名档案卡」（OG 标准尺寸）。
  *
- * 设计语言与站点一致：暖纸、墨字、赤陶橙、衬线——像从县志里裁下来的一页，
- * 而不是一张科技海报。若该县有 1980–2020 的名称变迁，卡片带上那句变迁史，
+ * 设计语言与站点一致：奶油底、墨字、Cursor Orange、Inter——像从县志里裁下来的一页。
+ * 若该县有 1980–2020 的名称变迁，卡片带上那句变迁史，
  * 这是它在朋友圈/小红书里的记忆点。
  *
  * 用 canvas 而非 html2canvas：零依赖、无跨域字体问题、导出即所见。
@@ -16,7 +16,7 @@ const CARD_H = 630;
 /** 卡片落款站点：部署时用 VITE_SITE_URL 注入真实域名；未配置则回落到仓库地址（不编造域名） */
 const SITE = import.meta.env.VITE_SITE_URL ?? 'github.com/tonyc726/china-administrative-division';
 
-const PAPER = '#f7f2e7'; /* 卡片专用纸色（比纸面深一档，印感），非界面 token */
+const PAPER = '#f7f7f4'; /* 与 --color-paper 同色：分享图本身就是那张奶油页面 */
 
 /** Canvas 2D 不吃 CSS var() —— 从 token 现场解析，与 styles.css 保持单一真相源 */
 function cssVar(name: string, fallback: string): string {
@@ -70,21 +70,19 @@ function draw(
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const INK = cssVar('--color-ink', '#141413');
-  const INK_SOFT = cssVar('--color-ink-2', '#3d3d3a');
-  const INK_FAINT = cssVar('--color-ink-3', '#6c6a64');
-  const CLAY = cssVar('--color-clay', '#cc785c');
-  const BORDER = cssVar('--color-line-2', '#d5cec0');
+  const INK = cssVar('--color-ink', '#26251e');
+  const INK_SOFT = cssVar('--color-ink-2', '#5a5852');
+  const INK_FAINT = cssVar('--color-ink-3', '#807d72');
+  const CLAY = cssVar('--color-clay', '#f54e00');
+  const BORDER = cssVar('--color-line-2', '#cfcdc4');
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = CARD_W * dpr;
   canvas.height = CARD_H * dpr;
   ctx.scale(dpr, dpr);
 
-  const serif = (size: number, weight = '400'): string =>
-    `${weight} ${size}px Georgia, "Songti SC", "STSong", serif`;
   const sans = (size: number, weight = '400'): string =>
-    `${weight} ${size}px "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif`;
+    `${weight} ${size}px Inter, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif`;
 
   // 纸面
   ctx.fillStyle = PAPER;
@@ -110,19 +108,19 @@ function draw(
   ctx.lineTo(CARD_W - 72, 116);
   ctx.stroke();
 
-  // 主体：末级名称（衬线大字 400，自适应字号 —— DESIGN.md：display serif 永不加粗）
+  // 主体：末级名称（Inter 400，自适应字号 —— DESIGN.md：display 不加粗）
   ctx.fillStyle = INK;
   let size = 88;
-  ctx.font = serif(size);
+  ctx.font = sans(size);
   while (ctx.measureText(leaf.name).width > CARD_W - 144 && size > 40) {
     size -= 4;
-    ctx.font = serif(size);
+    ctx.font = sans(size);
   }
   ctx.fillText(leaf.name, 72, 218);
 
   // 上级链路
   ctx.fillStyle = INK_SOFT;
-  ctx.font = serif(26);
+  ctx.font = sans(26);
   const chainText = chain.slice(0, -1).map((d) => d.name).join(' · ');
   ctx.fillText(chainText, 72, 268);
 
@@ -132,7 +130,7 @@ function draw(
   ctx.fillText(t.cardCode, 72, 352);
 
   // 区划码逐段绘制：下划线按每段的**实际文字宽度**画，与数字严格等宽对齐
-  ctx.font = serif(58);
+  ctx.font = sans(58);
   const segs = codeSegments(leaf.code);
   const gap = ctx.measureText('0').width * 0.55;
   let sx = 72;
@@ -144,7 +142,7 @@ function draw(
     bounds.push({ x: sx, w });
     sx += w + gap;
   }
-  // 每段正下方一条等长横线：已确定的层级用赤陶，未及的层级用淡边框
+  // 每段正下方一条等长横线：已确定的层级用橙色，未及的层级用淡边框
   bounds.forEach((b, i) => {
     ctx.fillStyle = i < chain.length ? CLAY : BORDER;
     ctx.globalAlpha = i < chain.length ? 0.9 - i * 0.1 : 0.5;
@@ -152,7 +150,7 @@ function draw(
     ctx.globalAlpha = 1;
   });
 
-  // 稀有度徽章（右上）：独一无二 → 赤陶实心印章；有重名 → 淡框
+  // 稀有度徽章（右上）：独一无二 → 橙色实心印章；有重名 → 淡框
   if (dup > 0) {
     const unique = dup === 1;
     const label = unique ? t.rarityUnique : t.rarityShared(dup);
@@ -165,7 +163,7 @@ function draw(
     ctx.lineWidth = 1.5;
     if (unique) ctx.fillRect(bx, by, tw + 32, 44);
     else ctx.strokeRect(bx, by, tw + 32, 44);
-    ctx.fillStyle = unique ? PAPER : INK_SOFT;
+    ctx.fillStyle = unique ? '#ffffff' : INK_SOFT;
     ctx.fillText(label, bx + 16, by + 29);
   }
 
@@ -173,7 +171,7 @@ function draw(
   const story = lineageLine(lineage, lang);
   if (story) {
     ctx.fillStyle = INK_SOFT;
-    ctx.font = serif(24);
+    ctx.font = sans(24);
     ctx.fillText(story, 72, 502);
   }
 
@@ -185,7 +183,7 @@ function draw(
   ctx.stroke();
 
   ctx.fillStyle = INK_SOFT;
-  ctx.font = serif(22, '500');
+  ctx.font = sans(22, '500');
   ctx.fillText(t.brand, 72, CARD_H - 68);
 
   ctx.fillStyle = INK_FAINT;
@@ -229,13 +227,13 @@ export function ShareCard({ lang, chain, leaf, lineage, dup }: Props): JSX.Eleme
       <canvas
         ref={ref}
         style={{ aspectRatio: `${CARD_W} / ${CARD_H}` }}
-        className="w-full rounded-md border border-line-2 shadow-[0_2px_16px_rgba(20,20,19,0.08)]"
+        className="w-full rounded-lg border border-line"
       />
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={download}
-          className="h-10 rounded-md bg-clay px-5 text-sm font-medium text-paper outline-none transition hover:bg-clay-2 focus-visible:ring-2 focus-visible:ring-clay/40"
+          className="h-10 rounded-md bg-clay px-5 text-sm font-medium text-white outline-none transition hover:bg-clay-2 focus-visible:ring-2 focus-visible:ring-clay/40"
         >
           {t.download}
         </button>

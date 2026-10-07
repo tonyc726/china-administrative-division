@@ -194,10 +194,9 @@ const tip = computed(() => {
 .he {
   margin: 2rem 0;
   padding: 1.4rem 1.5rem 1.2rem;
-  background: var(--kami-ivory, #faf9f5);
-  border: 1px solid var(--kami-border, #e8e6dc);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(60, 56, 44, 0.06);
+  background: var(--kami-ivory, #ffffff);
+  border: 1px solid var(--kami-border, #e6e5e0);
+  border-radius: 12px;
   font-variant-numeric: lining-nums tabular-nums;
 }
 .he-head {
@@ -216,11 +215,12 @@ const tip = computed(() => {
   margin-bottom: 0.4rem;
 }
 .he-title {
-  font-family: var(--kami-serif);
+  font-family: var(--kami-sans);
   font-weight: 500;
   font-size: 1.08rem;
   line-height: 1.4;
-  color: var(--kami-near-black, #141413);
+  letter-spacing: -0.01em;
+  color: var(--kami-near-black, #26251e);
   max-width: 40em;
 }
 .he-tabs {
@@ -244,8 +244,8 @@ const tip = computed(() => {
   transition: all 0.18s ease;
 }
 .he-tabs button.on {
-  background: var(--kami-brand, #1b365d);
-  color: #faf9f5;
+  background: var(--kami-brand, #f54e00);
+  color: var(--kami-on-brand, #ffffff);
 }
 .he-readout {
   display: flex;
@@ -269,10 +269,11 @@ const tip = computed(() => {
   margin-left: 0.4rem;
 }
 .he-n {
-  font-family: var(--kami-serif);
+  font-family: var(--kami-sans);
   font-size: 1.9rem;
   font-weight: 500;
-  color: var(--kami-near-black, #141413);
+  letter-spacing: -0.02em;
+  color: var(--kami-near-black, #26251e);
 }
 .he-unit {
   font-size: 0.86rem;
@@ -292,8 +293,8 @@ const tip = computed(() => {
   color: var(--kami-stone, #6b6a64);
 }
 .he-d.up {
-  background: var(--kami-tag, #e4ecf5);
-  color: var(--kami-brand, #1b365d);
+  background: var(--kami-tag, rgba(159, 187, 224, 0.28));
+  color: var(--kami-series, #5c86c4);
 }
 .he-d.down {
   background: var(--kami-breaking-bg, #f0e0d8);
@@ -326,7 +327,7 @@ const tip = computed(() => {
 }
 .he-line {
   fill: none;
-  stroke: var(--kami-brand, #1b365d);
+  stroke: var(--kami-series, #5c86c4);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -344,21 +345,21 @@ const tip = computed(() => {
   fill: var(--kami-olive, #504e49);
 }
 .he-cursor line {
-  stroke: var(--kami-brand, #1b365d);
+  stroke: var(--kami-brand, #f54e00);
   stroke-width: 1;
-  opacity: 0.4;
+  opacity: 0.55;
 }
 .he-cursor circle {
-  fill: var(--kami-brand, #1b365d);
-  stroke: var(--kami-ivory, #faf9f5);
+  fill: var(--kami-brand, #f54e00);
+  stroke: var(--kami-ivory, #ffffff);
   stroke-width: 2;
 }
 .he-tip {
   position: absolute;
   top: 6px;
   transform: translateX(-50%);
-  background: var(--kami-near-black, #141413);
-  color: #faf9f5;
+  background: var(--kami-near-black, #26251e);
+  color: var(--vp-c-bg, #f7f7f4);
   font-size: 0.76rem;
   padding: 4px 9px;
   border-radius: 6px;
@@ -392,42 +393,8 @@ const tip = computed(() => {
   color: var(--kami-olive, #504e49);
 }
 .he-cap b {
-  color: var(--kami-brand, #1b365d);
+  color: var(--kami-brand, #f54e00);
   font-weight: 600;
-}
-
-.dark .he {
-  background: #201f1d;
-  border-color: #3a3931;
-}
-.dark .he-title,
-.dark .he-n {
-  color: #f2f0e8;
-}
-.dark .he-tabs {
-  background: #141413;
-}
-.dark .he-tabs button.on {
-  background: #4a6c96;
-}
-.dark .he-area {
-  fill: rgba(126, 163, 207, 0.14);
-}
-.dark .he-line,
-.dark .he-cursor line,
-.dark .he-cursor circle {
-  stroke: #7ea3cf;
-}
-.dark .he-cursor circle {
-  fill: #7ea3cf;
-  stroke: #201f1d;
-}
-.dark .he-grid line {
-  stroke: #33322d;
-}
-.dark .he-d.up {
-  background: rgba(126, 163, 207, 0.18);
-  color: #9bbbde;
 }
 
 @media (max-width: 640px) {

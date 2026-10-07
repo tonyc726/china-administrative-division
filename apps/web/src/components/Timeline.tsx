@@ -304,7 +304,7 @@ export function Timeline({ data, lang }: Props): JSX.Element {
          * 位移全部走 sm: 前缀的 Tailwind class，inline style 只留 left（static 下自动失效）。
          */}
         <div
-          className={`z-10 w-full rounded-lg border border-line-2 bg-paper/95 p-3 shadow-lg backdrop-blur-sm sm:pointer-events-none sm:absolute sm:top-1/2 sm:mt-0 sm:w-44 sm:-translate-y-1/2 ${
+          className={`z-10 w-full rounded-lg border border-line bg-paper-3 p-3 sm:pointer-events-none sm:absolute sm:top-1/2 sm:mt-0 sm:w-44 sm:-translate-y-1/2 ${
             readIdx / last > 0.62
               ? 'sm:-translate-x-[calc(100%+14px)]'
               : 'sm:translate-x-[14px]'

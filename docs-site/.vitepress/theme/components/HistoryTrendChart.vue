@@ -88,7 +88,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
   display: block;
 }
 .htc-grid line {
-  stroke: var(--kami-border, #e8e6dc);
+  stroke: var(--kami-border, #e6e5e0);
   stroke-width: 1;
   stroke-dasharray: 3 3;
 }
@@ -96,40 +96,28 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 .htc-xaxis text {
   font-family: var(--kami-mono);
   font-size: 11px;
-  fill: var(--kami-stone, #6b6a64);
+  fill: var(--kami-stone, #807d72);
 }
 .htc-area {
-  fill: var(--kami-tint, #eef2f7);
+  fill: var(--kami-tint, rgba(159, 187, 224, 0.32));
   opacity: 0.9;
 }
 .htc-line {
   fill: none;
-  stroke: var(--kami-brand, #1b365d);
+  stroke: var(--kami-series, #5c86c4);
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .htc-mark circle {
-  fill: var(--kami-olive, #504e49);
+  fill: var(--kami-olive, #5a5852);
 }
 .htc-mark circle.hi {
-  fill: var(--kami-brand, #1b365d);
+  fill: var(--kami-brand, #f54e00);
 }
 .htc-mark text {
   font-family: var(--kami-mono);
   font-size: 10.5px;
-  fill: var(--kami-olive, #504e49);
-}
-.dark .htc-area {
-  fill: rgba(126, 163, 207, 0.14);
-}
-.dark .htc-line {
-  stroke: #7ea3cf;
-}
-.dark .htc-grid line {
-  stroke: #33322d;
-}
-.dark .htc-mark circle.hi {
-  fill: #7ea3cf;
+  fill: var(--kami-olive, #5a5852);
 }
 </style>

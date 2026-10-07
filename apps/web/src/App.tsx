@@ -113,7 +113,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
 
   return (
     <div className="min-h-screen bg-paper text-ink-2 antialiased">
-      {/* 页眉：赤陶方印 + 刊名 + 副题，随页滚动常驻（双轨叙事的入口）
+      {/* 页眉：橙色方印 + 刊名 + 副题，随页滚动常驻（双轨叙事的入口）
           z-40：高于地图 Canvas(1)、寻根搜索浮层(10)，低于模态框(50) */}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
@@ -126,7 +126,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
           >
             <BrandMark className="h-9 w-9 shrink-0 transition group-hover:opacity-85" />
             <span className="min-w-0">
-              <span className="block truncate font-display text-[15px] font-medium tracking-wide text-ink">
+              <span className="block truncate font-display text-[15px] font-medium tracking-tight text-ink">
                 {t.brand}
               </span>
               <span className="mt-0.5 hidden text-[11px] tabular-nums tracking-wide text-ink-3 sm:block">
@@ -176,7 +176,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
                   aria-pressed={lang === l}
                   className={`rounded px-2.5 py-1 transition ${
                     lang === l
-                      ? 'bg-ink text-paper'
+                      ? 'bg-clay text-white'
                       : 'text-ink-3 hover:bg-paper-3 hover:text-ink-2'
                   }`}
                 >
@@ -240,7 +240,7 @@ export function App({ prerendered }: AppProps): JSX.Element {
           <p className="mt-2 text-sm text-ink-3">{t.statsLead}</p>
           <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-5">
             {[1, 2, 3, 4, 5].map((l) => (
-              <div key={l} className="bg-paper px-5 py-6">
+              <div key={l} className="bg-paper-3 px-5 py-6">
                 <dt className="text-xs uppercase tracking-wider text-ink-3">
                   {t.levelNames[l]}
                 </dt>
@@ -253,15 +253,15 @@ export function App({ prerendered }: AppProps): JSX.Element {
         </div>
       </section>
 
-      {/* ---------- 开发者转化：深藏青卡片（DESIGN.md cta-band-dark）—— 全页唯一的深色带 ---------- */}
+      {/* ---------- 开发者转化：白卡片 + 橙色主按钮（DESIGN.md feature-card / button-primary） ---------- */}
       <section className="border-t border-line px-6 py-24">
-        <div className="mx-auto max-w-5xl rounded-xl bg-night px-6 py-12 sm:px-12 sm:py-16">
-          <h2 className="font-display text-2xl text-on-night sm:text-3xl">
+        <div className="mx-auto max-w-5xl rounded-lg border border-line bg-paper-3 px-6 py-12 sm:px-12 sm:py-16">
+          <h2 className="font-display text-2xl tracking-tight text-ink sm:text-3xl">
             {t.devTitle}
           </h2>
-          <p className="mt-4 font-display leading-relaxed text-on-night-soft">{t.devLead}</p>
+          <p className="mt-4 leading-relaxed text-ink-2">{t.devLead}</p>
 
-          <pre className="mt-8 overflow-x-auto rounded-lg bg-night-2 p-5 font-mono text-sm text-on-night">
+          <pre className="mt-8 overflow-x-auto rounded-lg border border-line bg-paper-2 p-5 font-mono text-sm text-ink">
             <code>{`npm i @cndiv/source-2023    # 2023 全量五级快照
 npm i @cndiv/source-history # GB/T 2260 · 1980–2020
 npm i @cndiv/reader         # 只读查询 API`}</code>
@@ -270,19 +270,19 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
               href={REPO}
-              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
+              className="rounded-md bg-clay px-5 py-2.5 text-sm font-medium text-white transition hover:bg-clay-2"
             >
               {t.devRepo}
             </a>
             <a
               href="https://www.npmjs.com/org/cndiv"
-              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
+              className="rounded-md border border-line-2 bg-paper-3 px-5 py-2.5 text-sm text-ink transition hover:border-ink"
             >
               npm · @cndiv
             </a>
             <a
               href={`${prerendered?.baseUrl ?? BASE}docs/`}
-              className="rounded-md bg-night-2 px-5 py-2.5 text-sm text-on-night transition hover:bg-night-3"
+              className="rounded-md border border-line-2 bg-paper-3 px-5 py-2.5 text-sm text-ink transition hover:border-ink"
             >
               {t.devDocs}
             </a>
@@ -290,8 +290,8 @@ npm i @cndiv/reader         # 只读查询 API`}</code>
         </div>
       </section>
 
-      {/* 页脚深藏青收束（DESIGN.md footer）：明暗交替节奏的终点，永不反白 */}
-      <footer className="bg-night px-6 py-16 text-on-night-soft">
+      {/* 页脚停在奶油画布上，发丝线收束（DESIGN.md footer） */}
+      <footer className="border-t border-line bg-paper px-6 py-16 text-ink-3">
         <div className="mx-auto max-w-5xl text-xs leading-relaxed">
           <p>{t.sourceNote}</p>
           <p className="mt-2">{t.footer}</p>

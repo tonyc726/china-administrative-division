@@ -100,10 +100,10 @@ const fmt = (n: number) => n.toLocaleString('en-US');
   padding-right: 12px;
 }
 .lsc-level {
-  font-family: var(--kami-serif);
-  font-weight: 500;
+  font-family: var(--kami-sans);
+  font-weight: 600;
   font-size: 0.98rem;
-  color: var(--kami-near-black, #141413);
+  color: var(--kami-near-black, #26251e);
 }
 .lsc-code {
   font-size: 0.68rem;
@@ -119,7 +119,7 @@ const fmt = (n: number) => n.toLocaleString('en-US');
 .lsc-bar {
   height: 26px;
   min-width: 44px;
-  background: var(--kami-sand, #e8e6dc);
+  background: var(--kami-sand, #efeee8);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -127,16 +127,16 @@ const fmt = (n: number) => n.toLocaleString('en-US');
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .lsc-bar.hi {
-  background: var(--kami-brand, #1b365d);
+  background: var(--kami-brand, #f54e00);
 }
 .lsc-value {
   padding: 0 8px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--kami-dark-warm, #3d3d3a);
+  color: var(--kami-dark-warm, #5a5852);
 }
 .lsc-bar.hi .lsc-value {
-  color: #faf9f5;
+  color: var(--kami-on-brand, #ffffff);
 }
 .lsc-share {
   position: absolute;
@@ -145,15 +145,6 @@ const fmt = (n: number) => n.toLocaleString('en-US');
   color: var(--kami-olive, #504e49);
   width: 42px;
   text-align: right;
-}
-.dark .lsc-bar {
-  background: #33322d;
-}
-.dark .lsc-bar.hi {
-  background: #4a6c96;
-}
-.dark .lsc-level {
-  color: #f2f0e8;
 }
 @media (max-width: 640px) {
   .lsc-row {

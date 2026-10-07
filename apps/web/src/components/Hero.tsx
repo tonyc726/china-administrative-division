@@ -61,19 +61,19 @@ const ASH_STEP = 1;
 
 /** styles.css token 的像素镜像（rgba 插值必须拿数值）：ink / ink-3 / clay + 数据色 gold/pine */
 const PALETTE = {
-  ink: [20, 20, 19],
-  ash: [108, 106, 100],
-  clay: [204, 120, 92],
-  gold: [168, 137, 78],
+  ink: [38, 37, 30],
+  ash: [128, 125, 114],
+  clay: [245, 78, 0],
+  gold: [192, 133, 50],
   pine: [47, 109, 104],
 } as const;
 
 /** 地图：淡到几乎只是一层底纹 —— 主角是名字，不是省界 */
 const MAP = {
-  land: '#f0ebde',
-  edge: '#d8d0ba',
+  land: '#efeee8',
+  edge: '#cfcdc4',
   /** 南海断续线：国界，画细但必须画 */
-  border: '#b9ae93',
+  border: '#a09c92',
 } as const;
 
 const reducedMotion = (): boolean =>
