@@ -502,6 +502,7 @@ onBeforeUnmount(() => {
   line-height: inherit;
   letter-spacing: -0.01em;
   text-align: center;
+  text-wrap: balance;
   color: var(--vp-c-text-2);
 }
 

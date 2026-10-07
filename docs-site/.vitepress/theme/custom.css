@@ -411,25 +411,25 @@
   margin: 0 !important;
 }
 
-/* 与下方三列功能卡共用 1152 容器。≥960 时标题占前两列，区划码卡占第三列，
-   列间距 16px，和外沿与功能卡网格对齐。卡片顶和标题顶对齐。 */
+/* 与下方功能卡共用 1152 容器和 16px 间距，左右外沿对齐。
+   桌面两列大约 1 : 1.2，1152 宽时卡片约 620px，标题仍留得下。顶对齐。 */
 @media (min-width: 960px) {
   .VPHero.has-image .container {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) !important;
     column-gap: 16px !important;
     align-items: start !important;
   }
 
   .VPHero.has-image .main {
-    grid-column: 1 / span 2;
+    grid-column: 1;
     width: auto !important;
     max-width: none !important;
     order: 1;
   }
 
   .VPHero.has-image .image {
-    grid-column: 3;
+    grid-column: 2;
     display: block !important;
     width: auto !important;
     margin: 0 !important;
