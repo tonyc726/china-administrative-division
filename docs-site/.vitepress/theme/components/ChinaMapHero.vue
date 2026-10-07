@@ -52,14 +52,15 @@ async function draw() {
   if (!ctx) return;
   ctx.scale(dpr, dpr);
 
-  // Fetch geo JSON from main site (docs is under /docs/ subpath)
+  // 省级边界由时光机构建为 time-machine/data/geo.json。
+  // 文档以前在 /<repo>/docs/，这里去掉 /docs 去读时光机根上的 /data/geo.json。
+  // 文档改到 /<repo>/ 之后，那条路径变成了空目录；文件在 /<repo>/time-machine/data/geo.json。
   let provs: Province[] = [];
   try {
-    // Deployed GH Pages: BASE=/china-administrative-division/docs/ → parent=/china-administrative-division
-    // Local dev:         BASE=/ → parent='' → url='/data/geo.json' (needs copy in public/)
     const docsBase = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-    const parentBase = docsBase.replace(/\/docs$/, '');
-    const url = parentBase ? `${parentBase}/data/geo.json` : '/data/geo.json';
+    const url = docsBase.endsWith('/docs')
+      ? `${docsBase.slice(0, -'/docs'.length)}/data/geo.json`
+      : `${docsBase}/time-machine/data/geo.json`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const geo = await resp.json();
@@ -74,7 +75,10 @@ async function draw() {
   }
 
   // Compute lat/lng bounding box
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
   for (const p of provs) {
     for (const ring of p.r) {
       for (let i = 0; i < ring.length; i += 2) {
@@ -127,18 +131,24 @@ async function draw() {
 
 function insets(
   ctx: CanvasRenderingContext2D,
-  w: number, h: number,
+  w: number,
+  h: number,
   provs: Province[],
   proj: (lng: number, lat: number) => [number, number]
 ) {
-  const hainan = provs.find(p => p.c === '46');
+  const hainan = provs.find((p) => p.c === '46');
   if (!hainan) return;
 
   const r = hainan.r.flat();
-  let mnX = Infinity, mxX = -Infinity, mnY = Infinity, mxY = -Infinity;
+  let mnX = Infinity,
+    mxX = -Infinity,
+    mnY = Infinity,
+    mxY = -Infinity;
   for (let i = 0; i < r.length; i += 2) {
-    mnX = Math.min(mnX, r[i]); mxX = Math.max(mxX, r[i]);
-    mnY = Math.min(mnY, r[i + 1]); mxY = Math.max(mxY, r[i + 1]);
+    mnX = Math.min(mnX, r[i]);
+    mxX = Math.max(mxX, r[i]);
+    mnY = Math.min(mnY, r[i + 1]);
+    mxY = Math.max(mxY, r[i + 1]);
   }
 
   const ix = w * 0.11;
@@ -159,11 +169,18 @@ function insets(
   for (const p of provs) {
     const flat = p.r.flat();
     let inside = false;
-    let pMinX = Infinity, pMaxX = -Infinity, pMinY = Infinity, pMaxY = -Infinity;
+    let pMinX = Infinity,
+      pMaxX = -Infinity,
+      pMinY = Infinity,
+      pMaxY = -Infinity;
     for (let i = 0; i < flat.length; i += 2) {
-      if (flat[i] >= 105 && flat[i + 1] <= 23) { inside = true; }
-      pMinX = Math.min(pMinX, flat[i]); pMaxX = Math.max(pMaxX, flat[i]);
-      pMinY = Math.min(pMinY, flat[i + 1]); pMaxY = Math.max(pMaxY, flat[i + 1]);
+      if (flat[i] >= 105 && flat[i + 1] <= 23) {
+        inside = true;
+      }
+      pMinX = Math.min(pMinX, flat[i]);
+      pMaxX = Math.max(pMaxX, flat[i]);
+      pMinY = Math.min(pMinY, flat[i + 1]);
+      pMaxY = Math.max(pMaxY, flat[i + 1]);
     }
     if (!inside) continue;
 
