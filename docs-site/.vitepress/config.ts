@@ -6,7 +6,10 @@ const base = process.env.DOCS_BASE ?? '/';
 
 // OG/分享图与 canonical 需要绝对 URL。默认 GH Pages 地址（含项目名路径，与 DOCS_BASE 对应）；
 // 部署到 Cloudflare/Vercel/Netlify 根域时用 DOCS_SITE_URL 覆盖（同时把 DOCS_BASE 设回 /）。
-const siteUrl = (process.env.DOCS_SITE_URL ?? 'https://tonyc726.github.io/china-administrative-division').replace(/\/$/, '');
+const siteUrl = (
+  process.env.DOCS_SITE_URL ??
+  'https://tonyc726.github.io/china-administrative-division'
+).replace(/\/$/, '');
 
 const REPO = 'https://github.com/tonyc726/china-administrative-division';
 
@@ -14,16 +17,41 @@ const REPO = 'https://github.com/tonyc726/china-administrative-division';
 // 只有 GH Pages 构建会设置这个变量，其它独立部署（Cloudflare/Vercel）没有主站，不渲染这条 nav。
 const homeUrl = process.env.DOCS_HOME_URL;
 
+const contributorSidebar = [
+  {
+    text: '贡献者',
+    items: [
+      { text: '从这里开始', link: '/contributors/' },
+      { text: '贡献 Patch', link: '/contributors/patch' },
+      { text: '发布到 npm', link: '/contributors/publishing' },
+      { text: '@cndiv/crawler', link: '/contributors/crawler' },
+      { text: '@cndiv/extractor', link: '/contributors/extractor' },
+    ],
+  },
+  {
+    text: '设计与运维',
+    items: [
+      { text: '架构设计', link: '/ops/architecture' },
+      { text: '采集运维手册', link: '/ops/crawl-runbook' },
+      { text: '采集现状评估', link: '/ops/collection-assessment' },
+      { text: 'Patch 校验', link: '/ops/patch-verify' },
+      { text: '统计用区划代码编制规则', link: '/ops/rule-nbs' },
+      { text: '县以下区划代码编制规则', link: '/ops/rule-sub-county' },
+    ],
+  },
+];
+
 export default defineConfig({
   lang: 'zh-CN',
-  title: '中国行政区划数据基础设施',
+  title: '全国行政区划代码',
   description:
-    '中华人民共和国行政区划代码的历史数据库与可持续更新基础设施 · GB2260(1980–2023) + NBS 统计用区划代码五级(2009–2023) 历年快照 · 后统计局时代的社区 Patch 增量方案',
+    '全国五级行政区划代码，1980–2023 历年版本，一条命令装到本地 SQLite。',
   base,
 
-  // 首轮全量迁移：包 README / docs 设计稿含大量跨包与 examples 相对链接，
-  // 经 @include 拼接后无法在站点内解析。先放开死链检查，后续按页收敛为绝对/站内链。
-  ignoreDeadLinks: true,
+  // 用户页用站内绝对路径，死链会让构建失败。
+  // 仍 @include 的维护者原文（docs/ 与包 README）里有给 GitHub 看的相对链接，
+  // 那些邻居文件不在站点路由上。只放过 ./ 与 ../，不放过 /guide 这类站内路径。
+  ignoreDeadLinks: [(url) => url.startsWith('./') || url.startsWith('../')],
 
   lastUpdated: true,
   cleanUrls: true,
@@ -38,9 +66,15 @@ export default defineConfig({
   },
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
+    [
+      'link',
+      { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` },
+    ],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
-    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+    ],
     [
       'link',
       {
@@ -48,17 +82,38 @@ export default defineConfig({
         href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
       },
     ],
-    ['meta', { name: 'keywords', content: '中国行政区划,行政区划代码,GB2260,统计用区划代码,NBS,城乡划分代码,国家地名信息库,dmfw,邮编,区号,SQLite,行政区划历史数据' }],
+    [
+      'meta',
+      {
+        name: 'keywords',
+        content:
+          '中国行政区划,行政区划代码,GB2260,统计用区划代码,NBS,城乡划分代码,国家地名信息库,dmfw,邮编,区号,SQLite,行政区划历史数据',
+      },
+    ],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: '中国行政区划数据基础设施 · @cndiv' }],
-    ['meta', { property: 'og:description', content: 'stats.gov.cn 停更后的替代方案：2023 基线快照 + 社区 Patch 增量 + 多源合成。历年版本化，数据与代码解耦。' }],
+    ['meta', { property: 'og:title', content: '全国行政区划代码 · @cndiv' }],
+    [
+      'meta',
+      {
+        property: 'og:description',
+        content:
+          '全国五级行政区划代码，1980–2023 历年版本，一条命令装到本地 SQLite。',
+      },
+    ],
     ['meta', { property: 'og:url', content: `${siteUrl}/` }],
     ['meta', { property: 'og:image', content: `${siteUrl}/og.png` }],
     ['meta', { property: 'og:image:width', content: '1200' }],
     ['meta', { property: 'og:image:height', content: '630' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: '中国行政区划数据基础设施 · @cndiv' }],
-    ['meta', { name: 'twitter:description', content: 'stats.gov.cn 停更后的替代方案：2023 基线 + 社区 Patch 增量 + 多源合成。' }],
+    ['meta', { name: 'twitter:title', content: '全国行政区划代码 · @cndiv' }],
+    [
+      'meta',
+      {
+        name: 'twitter:description',
+        content:
+          '全国五级行政区划代码，1980–2023 历年版本，一条命令装到本地 SQLite。',
+      },
+    ],
     ['meta', { name: 'twitter:image', content: `${siteUrl}/og.png` }],
     ['link', { rel: 'canonical', href: `${siteUrl}/` }],
   ],
@@ -74,32 +129,28 @@ export default defineConfig({
           modal: {
             noResultsText: '无法找到相关结果',
             resetButtonTitle: '清除查询条件',
-            footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' },
+            footer: {
+              selectText: '选择',
+              navigateText: '切换',
+              closeText: '关闭',
+            },
           },
         },
       },
     },
 
     nav: [
-      ...(homeUrl ? [{ text: '← 时光机主站', link: homeUrl }] : []),
-      { text: '指南', link: '/guide/why-v2' },
-      { text: '包参考', link: '/reference/core' },
+      ...(homeUrl ? [{ text: '时光机', link: homeUrl }] : []),
+      { text: '指南', link: '/guide/getting-started' },
+      { text: 'API', link: '/reference/core' },
       {
         text: '数据',
         items: [
-          { text: '历年区划变化（交互）', link: '/data/history' },
+          { text: '历年区划变化', link: '/data/history' },
           { text: '历年快照与下载', link: '/data/snapshots' },
         ],
       },
-      { text: '运维/架构', link: '/ops/architecture' },
-      {
-        text: 'v2.0.0',
-        items: [
-          { text: '发布指南', link: '/reference/publishing' },
-          { text: 'Changesets', link: `${REPO}/tree/master/.changeset` },
-          { text: 'npm @cndiv', link: 'https://www.npmjs.com/org/cndiv' },
-        ],
-      },
+      { text: '贡献者', link: '/contributors/' },
     ],
 
     sidebar: {
@@ -107,71 +158,44 @@ export default defineConfig({
         {
           text: '指南',
           items: [
-            { text: '为什么是 v2', link: '/guide/why-v2' },
             { text: '快速上手', link: '/guide/getting-started' },
+            { text: '常见用法', link: '/guide/recipes' },
             { text: '在代码中使用', link: '/guide/usage' },
-            { text: '贡献 Patch', link: '/guide/contributing-patch' },
+            { text: '术语表', link: '/guide/glossary' },
+            { text: '项目背景', link: '/guide/background' },
           ],
         },
       ],
       '/reference/': [
         {
-          text: '面向消费者的包',
+          text: 'API',
           items: [
-            { text: '@cndiv/core · 码工具', link: '/reference/core' },
-            { text: '@cndiv/data-protocol · 协议', link: '/reference/data-protocol' },
-            { text: '@cndiv/cli · 命令行', link: '/reference/cli' },
-            { text: '@cndiv/reader · 只读查询', link: '/reference/reader' },
+            { text: '@cndiv/core', link: '/reference/core' },
+            { text: '@cndiv/reader', link: '/reference/reader' },
+            { text: '@cndiv/cli', link: '/reference/cli' },
+            { text: '@cndiv/data-protocol', link: '/reference/data-protocol' },
           ],
         },
         {
-          text: '维护者的包',
+          text: '数据怎么存',
           items: [
-            { text: '@cndiv/crawler · 增量采集', link: '/reference/crawler' },
-            { text: '@cndiv/extractor · 公告抽取', link: '/reference/extractor' },
-          ],
-        },
-        {
-          text: '数据模型',
-          items: [
-            { text: '区划码结构与数据模型', link: '/reference/data-model' },
+            { text: '区划码与表结构', link: '/reference/data-model' },
             { text: 'SQLite 数据字典', link: '/reference/data-dictionary' },
-            { text: '发布指南（npm）', link: '/reference/publishing' },
           ],
         },
       ],
       '/data/': [
         {
-          text: '数据资产',
+          text: '数据',
           items: [
-            { text: '历年区划变化（交互）', link: '/data/history' },
+            { text: '历年区划变化', link: '/data/history' },
             { text: '历年快照与下载', link: '/data/snapshots' },
+            { text: 'SQLite 数据字典', link: '/reference/data-dictionary' },
           ],
         },
       ],
-      '/ops/': [
-        {
-          text: '架构',
-          items: [
-            { text: '下一代基础设施架构设计', link: '/ops/architecture' },
-          ],
-        },
-        {
-          text: '采集运维',
-          items: [
-            { text: '采集运维手册', link: '/ops/crawl-runbook' },
-            { text: '采集现状评估与提升路径', link: '/ops/collection-assessment' },
-            { text: 'Patch 校验与交叉校验', link: '/ops/patch-verify' },
-          ],
-        },
-        {
-          text: '编制规则（参考）',
-          items: [
-            { text: '统计用区划代码编制规则', link: '/ops/rule-nbs' },
-            { text: '县以下区划代码编制规则', link: '/ops/rule-sub-county' },
-          ],
-        },
-      ],
+      '/contributors/': contributorSidebar,
+      '/ops/': contributorSidebar,
     },
 
     socialLinks: [{ icon: 'github', link: REPO }],
@@ -188,7 +212,8 @@ export default defineConfig({
     darkModeSwitchLabel: '外观',
 
     footer: {
-      message: '数据来源于公开政府网站（国家统计局、民政部国家地名信息库），仅供学习与研究使用。代码以 MIT 许可。',
+      message:
+        '数据来源于公开政府网站（国家统计局、民政部国家地名信息库），仅供学习与研究使用。代码以 MIT 许可。',
       copyright: `MIT Licensed · <a href="${REPO}">tonyc726/china-administrative-division</a>`,
     },
   },

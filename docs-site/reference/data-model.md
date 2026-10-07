@@ -51,7 +51,7 @@ official_nbs  >  mca_decree  >  community  >  shadow_map
 ## 两个必须知道的坑
 
 1. **复合主键 `(code, year)`**：任何点查都要带 `year`，否则跨年份多条会歧义。[`@cndiv/reader`](/reference/reader) 已强制。
-2. **直辖市「市辖区」占位层**：北京/上海等在 市→区 之间有一层「市辖区」占位。reader 的 `skipPlaceholder` 可穿透到真实区县。
+2. **直辖市「市辖区」占位层**：北京、上海等在省和区之间有一层名叫「市辖区」的记录。它不是真实的区。说明和跳过方法见 [术语表](/guide/glossary#placeholder)。
 
 ## 编制规则（官方口径）
 

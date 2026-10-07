@@ -79,7 +79,7 @@ cn.close();
 
 行政区划变更（撤县设区、更名、新设社区等）以 JSON Patch 格式提交到 `patches/<YYYY>/`，PR 由 CI 自动校验。
 
-提交格式与本地校验见 [贡献指南](https://tonyc726.github.io/china-administrative-division/guide/contributing-patch)。
+提交格式与本地校验见 [贡献指南](https://tonyc726.github.io/china-administrative-division/contributors/patch)。
 
 ---
 
