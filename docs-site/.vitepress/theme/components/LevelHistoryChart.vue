@@ -3,117 +3,85 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import KamiFigure from './KamiFigure.vue';
 import levelCounts from '../data/generated/level-counts.json';
 
-interface LevelSeries {
+interface RankSeries {
   level: number;
   label: string;
   short: string;
   hint: string;
-  counts: (number | null)[];
+  counts: number[];
 }
 
-interface OmittedYear {
-  year: number;
-  label: string;
-  rows: number;
-}
-
-interface ProvinceGap {
-  historyCount: number;
-  snapshotCount: number;
-  fromYear: number;
-  toYear: number;
-  onlyInHistory: string[];
-}
-
-interface DuplicateYear {
+interface CarriedYear {
   year: number;
   sameAs: number;
 }
 
-interface ReleaseSources {
-  release: string;
-  nbsTownshipYears: number[];
-  gb2260FilledYears: number[];
-  gb2260Extras: { year: number; names: string[] }[];
-  csvFragments: OmittedYear[];
-  gb2260Duplicates: DuplicateYear[];
-  nbsSnapshotSqlite: number[] | null;
+interface ChartEvent {
+  year: number;
+  label: string;
 }
 
-const data = levelCounts as {
-  startYear: number;
-  endYear: number;
-  snapshotYear: number;
-  levels: LevelSeries[];
-  omitted: OmittedYear[];
-  emptyYears: number[];
-  provinceGap: ProvinceGap | null;
-  sources?: ReleaseSources;
-};
+interface ChartModel {
+  adminStart: number;
+  adminEnd: number;
+  admin: RankSeries[];
+  localStart: number;
+  localEnd: number;
+  local: RankSeries[];
+  carried: CarriedYear[];
+  events: ChartEvent[];
+  publishedAdmin2023: number[];
+}
 
-const padL = 48;
-const padR = 8;
-const padT = 8;
-const padB = 26;
-const yearCount = data.endYear - data.startYear + 1;
-const showLower = ref(false);
-const defaultIndex = data.snapshotYear - data.startYear;
-const omittedByYear = new Map(data.omitted.map((item) => [item.year, item]));
+const chart = (levelCounts as { chart: ChartModel }).chart;
 
-const frameW = ref(768);
-const frameEl = ref<HTMLElement | null>(null);
-const scrollEl = ref<HTMLElement | null>(null);
+type Mode = 'admin' | 'local';
+
+const mode = ref<Mode>('admin');
 const hoverIndex = ref<number | null>(null);
 const keyIndex = ref<number | null>(null);
-let observer: ResizeObserver | undefined;
+const stageEl = ref<HTMLElement | null>(null);
+const scrollEl = ref<HTMLElement | null>(null);
+const tipEl = ref<HTMLElement | null>(null);
+const tipX = ref(0);
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 
+const view = computed(() => {
+  if (mode.value === 'local') {
+    return {
+      start: chart.localStart,
+      end: chart.localEnd,
+      series: chart.local,
+    };
+  }
+  return {
+    start: chart.adminStart,
+    end: chart.adminEnd,
+    series: chart.admin,
+  };
+});
+
+const yearCount = computed(() => view.value.end - view.value.start + 1);
+
 function yearAt(index: number) {
-  return data.startYear + index;
+  return view.value.start + index;
 }
 
-function sumAt(index: number, include: (level: number) => boolean) {
-  let sum = 0;
-  let any = false;
-  for (const series of data.levels) {
-    if (!include(series.level)) continue;
-    const count = series.counts[index];
-    if (count != null) {
-      sum += count;
-      any = true;
-    }
-  }
-  return any ? sum : null;
+function countsAt(index: number) {
+  return view.value.series.map((series) => series.counts[index] ?? 0);
 }
 
 function totalAt(index: number) {
-  return sumAt(index, () => true);
+  return countsAt(index).reduce((sum, count) => sum + count, 0);
 }
 
-function adminAt(index: number) {
-  return sumAt(index, (level) => level <= 3);
-}
-
-function localAt(index: number) {
-  return sumAt(index, (level) => level >= 4);
-}
-
-function coverage(counts: (number | null)[]) {
-  const parts: string[] = [];
-  let index = 0;
-  while (index < counts.length) {
-    while (index < counts.length && counts[index] == null) index += 1;
-    if (index >= counts.length) break;
-    const from = yearAt(index);
-    let end = index;
-    while (end + 1 < counts.length && counts[end + 1] != null) end += 1;
-    const to = yearAt(end);
-    parts.push(from === to ? `${from}` : `${from}–${to}`);
-    index = end + 1;
-  }
-  return parts.join('、');
-}
+const maxTotal = computed(() =>
+  Math.max(
+    1,
+    ...Array.from({ length: yearCount.value }, (_, index) => totalAt(index))
+  )
+);
 
 function tickStep(upper: number) {
   const rough = upper / 4;
@@ -125,355 +93,180 @@ function tickStep(upper: number) {
 
 function tickLabel(value: number) {
   if (value === 0) return '0';
-  if (value % 10000 === 0) return `${value / 10000}万`;
+  if (value >= 10000 && value % 10000 === 0) return `${value / 10000}万`;
   return fmt(value);
 }
 
-function ticksFor(upper: number) {
-  const step = tickStep(upper);
-  const ticks: number[] = [];
-  for (let value = 0; value <= upper; value += step) ticks.push(value);
-  return ticks;
-}
+const ticks = computed(() => {
+  const step = tickStep(maxTotal.value);
+  const values: number[] = [];
+  for (let value = 0; value <= maxTotal.value; value += step)
+    values.push(value);
+  return values;
+});
 
-const adminMax = Math.max(
-  1,
-  ...Array.from({ length: yearCount }, (_, index) => adminAt(index) ?? 0)
+const focusSeries = computed(() =>
+  mode.value === 'local'
+    ? chart.local.find((series) => series.level === 5)!
+    : chart.admin.find((series) => series.level === 3)!
 );
-const localMax = Math.max(
-  1,
-  ...Array.from({ length: yearCount }, (_, index) => localAt(index) ?? 0)
-);
-const adminTicks = ticksFor(adminMax);
-const localTicks = ticksFor(localMax);
 
-const geom = computed(() => {
-  if (!showLower.value) {
-    const adminH = 214;
-    return {
-      H: padT + adminH + padB,
-      adminTop: padT,
-      adminH,
-      adminBase: padT + adminH,
-      localTop: padT,
-      localH: 0,
-      localBase: padT,
-      gap: 0,
-    };
-  }
-  const localH = 128;
-  const gap = 22;
-  const adminH = 86;
-  const adminTop = padT + localH + gap;
+const headline = computed(() => {
+  const series = focusSeries.value;
+  const first = series.counts[0]!;
+  const last = series.counts[series.counts.length - 1]!;
+  const delta = last - first;
+  const fromYear = mode.value === 'local' ? chart.localStart : chart.adminStart;
+  const toYear = mode.value === 'local' ? chart.localEnd : chart.adminEnd;
+  const span = toYear - fromYear;
+  const verb = delta === 0 ? '持平' : delta > 0 ? '增加' : '减少';
+  const change =
+    delta === 0 ? '数量持平' : `${verb} ${fmt(Math.abs(delta))} 个`;
   return {
-    H: adminTop + adminH + padB,
-    adminTop,
-    adminH,
-    adminBase: adminTop + adminH,
-    localTop: padT,
-    localH,
-    localBase: padT + localH,
-    gap,
+    value: fmt(last),
+    unit: series.label,
+    sentence: `${series.label}从 ${fromYear} 年的 ${fmt(first)} 个到 ${toYear} 年的 ${fmt(last)} 个，${span} 年来${change}。`,
   };
 });
 
-const plotWidth = computed(() => {
-  const available = Math.max(0, frameW.value - padL);
-  return available >= 520 ? available : 600;
+function carriedFor(year: number) {
+  if (mode.value !== 'admin') return null;
+  return chart.carried.find((item) => item.year === year) ?? null;
+}
+
+const labeledYears = computed(() => {
+  const start = view.value.start;
+  const end = view.value.end;
+  const years: number[] = [];
+  for (let year = start; year <= end; year += 1) {
+    const endpoint = year === start || year === end;
+    const grid = year % 5 === 0;
+    if (!endpoint && !grid) continue;
+    if (!endpoint && (year - start < 3 || end - year < 3)) continue;
+    years.push(year);
+  }
+  return new Set(years);
 });
-const plotPadL = 16;
-const slot = computed(() => (plotWidth.value - padR - plotPadL) / yearCount);
 
-function yAdmin(value: number) {
-  const g = geom.value;
-  return g.adminBase - (value / adminMax) * g.adminH;
-}
-
-function yLocal(value: number) {
-  const g = geom.value;
-  return g.localBase - (value / localMax) * g.localH;
-}
-
-const bars = computed(() => {
-  const gap = slot.value;
-  const barW = Math.max(3, gap * 0.62);
-  const g = geom.value;
-  const split = showLower.value;
-  return Array.from({ length: yearCount }, (_, index) => {
-    const adminTotal = adminAt(index);
-    const localTotal = localAt(index);
-    const x = plotPadL + index * gap + (gap - barW) / 2;
-    const omitted = omittedByYear.get(yearAt(index)) ?? null;
-    const segments: {
-      level: number;
-      short: string;
-      label: string;
-      count: number;
-      y: number;
-      h: number;
-    }[] = [];
-    if (adminTotal != null) {
-      let cursor = g.adminBase;
-      for (const series of data.levels) {
-        if (series.level > 3) continue;
-        const count = series.counts[index];
-        if (count == null || count <= 0) continue;
-        const h = (count / adminMax) * g.adminH;
-        cursor -= h;
-        segments.push({
-          level: series.level,
-          short: series.short,
-          label: series.label,
-          count,
-          y: cursor,
-          h,
-        });
-      }
-    }
-    if (split && localTotal != null) {
-      let cursor = g.localBase;
-      for (const series of data.levels) {
-        if (series.level < 4) continue;
-        const count = series.counts[index];
-        if (count == null || count <= 0) continue;
-        const h = (count / localMax) * g.localH;
-        cursor -= h;
-        segments.push({
-          level: series.level,
-          short: series.short,
-          label: series.label,
-          count,
-          y: cursor,
-          h,
-        });
-      }
-    }
-    const drawn = split
-      ? adminTotal != null || localTotal != null
-      : adminTotal != null;
+const bars = computed(() =>
+  Array.from({ length: yearCount.value }, (_, index) => {
+    const year = yearAt(index);
+    const counts = countsAt(index);
+    const total = counts.reduce((sum, count) => sum + count, 0);
+    const carried = carriedFor(year);
     return {
       index,
-      year: yearAt(index),
-      adminTotal,
-      localTotal,
-      omitted,
-      drawn,
-      x,
-      w: barW,
-      segments,
+      year,
+      total,
+      pct: (total / maxTotal.value) * 100,
+      showLabel: labeledYears.value.has(year),
+      carried,
+      segments: view.value.series.map((series, levelIndex) => ({
+        level: series.level,
+        short: series.short,
+        label: series.label,
+        count: counts[levelIndex]!,
+      })),
     };
-  });
-});
+  })
+);
 
-const xTicks = computed(() => {
-  const ticks: { year: number; x: number }[] = [];
-  for (let year = data.startYear; year <= data.endYear; year += 1) {
-    if ((year - data.startYear) % 5 !== 0) continue;
-    const bar = bars.value[year - data.startYear];
-    if (!bar) continue;
-    ticks.push({ year, x: bar.x + bar.w / 2 });
-  }
-  return ticks;
-});
-
+const defaultIndex = computed(() => yearCount.value - 1);
 const activeIndex = computed(
-  () => hoverIndex.value ?? keyIndex.value ?? defaultIndex
+  () => hoverIndex.value ?? keyIndex.value ?? defaultIndex.value
 );
 const activeBar = computed(
   () => bars.value[activeIndex.value] ?? bars.value[0]!
 );
 
-const title = computed(() => {
-  const snapAdmin = adminAt(defaultIndex);
-  let priorIndex = -1;
-  for (let index = defaultIndex - 1; index >= 0; index -= 1) {
-    if (adminAt(index) != null) {
-      priorIndex = index;
-      break;
-    }
-  }
-  const prior = priorIndex >= 0 ? adminAt(priorIndex) : null;
-  const adminLine =
-    snapAdmin != null && prior != null
-      ? `${data.snapshotYear} 年省、地、县 ${fmt(snapAdmin)}，${yearAt(priorIndex)} 年 ${fmt(prior)}`
-      : '省、地、县按条数线性堆叠';
-  if (!showLower.value) return adminLine;
-  const snap = totalAt(defaultIndex);
-  return snap == null
-    ? adminLine
-    : `${data.snapshotYear} 年五级合计 ${fmt(snap)}。上轴是乡、村，下轴是省、地、县`;
+const activeDelta = computed(() => {
+  const index = activeBar.value.index;
+  if (index <= 0) return null;
+  return activeBar.value.total - (bars.value[index - 1]?.total ?? 0);
 });
 
-function rangesFrom(years: number[]) {
-  const parts: string[] = [];
-  const sorted = [...years].sort((a, b) => a - b);
-  let cursor = 0;
-  while (cursor < sorted.length) {
-    const from = sorted[cursor]!;
-    let end = cursor;
-    while (end + 1 < sorted.length && sorted[end + 1] === sorted[end]! + 1) {
-      end += 1;
-    }
-    const to = sorted[end]!;
-    parts.push(from === to ? `${from}` : `${from}–${to}`);
-    cursor = end + 1;
-  }
-  return parts.join('、');
-}
-
-const caption = computed(() => {
-  const upperOnly: number[] = [];
-  const withLower: number[] = [];
-  for (let index = 0; index < yearCount; index += 1) {
-    const hasUpper = adminAt(index) != null;
-    const hasLower = localAt(index) != null;
-    if (hasUpper && !hasLower) upperOnly.push(yearAt(index));
-    if (hasLower) withLower.push(yearAt(index));
-  }
-  const covered = data.levels
-    .map((series) => `${series.label} ${coverage(series.counts) || '无'}`)
-    .join('；');
-  const historyText = upperOnly.length
-    ? `${rangesFrom(upperOnly)} 只有省、地、县`
-    : '';
-  const snapshotText = withLower.length
-    ? `乡、村在 ${rangesFrom(withLower)} 有数`
-    : '';
-  const ratio = adminMax > 0 ? Math.round(localMax / adminMax) : 0;
-  const scaleText = showLower.value
-    ? `上轴是乡、村（0 到 ${fmt(localMax)}），下轴是省、地、县（0 到 ${fmt(adminMax)}）。两段各自线性，中间断开。`
-    : `现在只画省、地、县，纵轴 0 到 ${fmt(adminMax)}，柱高和这三级的合计成比例。乡、村的峰值大约是这根轴的 ${ratio} 倍，打开「包含乡、村」后分到上面一根轴，而不是压成底线上的一条线。`;
-  const fragments = (data.sources?.csvFragments ?? [])
-    .map(
-      (item) =>
-        `${item.year} 年历史 CSV 里有 ${fmt(item.rows)} 条${item.label}残片，没有用；这一年的省、地、县来自 GB2260 年度库`
-    )
-    .join('。');
-  const duplicates = (data.sources?.gb2260Duplicates ?? [])
-    .map((item) => {
-      const plotted = adminAt(item.year - data.startYear) != null;
-      return plotted
-        ? `${item.year} 年的 GB2260 库与 ${item.sameAs} 字节相同`
-        : `${item.year} 年的 GB2260 库与 ${item.sameAs} 字节相同，省、地、县不另画，乡、村仍用这一年的 NBS 库`;
-    })
-    .join('。');
-  const extras = (data.sources?.gb2260Extras ?? [])
-    .map((item) => {
-      const count = data.levels[0]?.counts[item.year - data.startYear];
-      if (count == null) return '';
-      return `${item.year} 年省级是 ${fmt(count)}，多出来的是${item.names.join('、')}`;
-    })
-    .filter(Boolean)
-    .join('。');
-  const gap = data.provinceGap
-    ? `${data.provinceGap.fromYear}–${data.provinceGap.toYear} 年省级是 ${fmt(data.provinceGap.historyCount)}，${data.snapshotYear} 年是 ${fmt(data.provinceGap.snapshotCount)}，多出来的是${data.provinceGap.onlyInHistory.join('、')}`
-    : '';
-  const sqlite = data.sources?.nbsSnapshotSqlite;
-  let placeholder = '';
-  if (sqlite) {
-    const csvSum = totalAt(defaultIndex) ?? 0;
-    const sqliteSum = sqlite.reduce((sum, count) => sum + count, 0);
-    const delta = sqliteSum - csvSum;
-    if (delta > 0) {
-      placeholder = `${data.snapshotYear} 年五级用的是已发布 CSV，比 NBS sqlite 少 ${fmt(delta)} 条自指向占位`;
-    }
-  }
-  return [
-    scaleText,
-    covered ? `${covered}。` : '',
-    historyText ? `${historyText}。` : '',
-    snapshotText ? `${snapshotText}。` : '',
-    '乡、村来自 NBS 年度库。1980–2021 的省、地、县来自 GB2260，和 NBS 的县级口径不一样，没有合成一条县级曲线。',
-    fragments ? `${fragments}。` : '',
-    duplicates ? `${duplicates}。` : '',
-    gap ? `${gap}。` : '',
-    extras ? `${extras}。` : '',
-    placeholder ? `${placeholder}。` : '',
-  ]
-    .filter(Boolean)
-    .join('');
+const events = computed(() => {
+  if (mode.value !== 'admin') return [];
+  return chart.events.map((event) => {
+    const index = event.year - view.value.start;
+    return {
+      ...event,
+      left: ((index + 0.5) / yearCount.value) * 100,
+    };
+  });
 });
 
-const tipLines = computed(() => {
+const footnote = computed(() => {
+  const carried = chart.carried
+    .map((item) => `${item.year} 沿用 ${item.sameAs}`)
+    .join('，');
+  const gbCounty = chart.admin
+    .find((series) => series.level === 3)!
+    .counts.at(-1)!;
+  const published = chart.publishedAdmin2023[2];
+  return `GB2260 · ${chart.adminStart}–${chart.adminEnd}（${carried}）。乡、村 NBS · ${chart.localStart}–${chart.localEnd}，${chart.localEnd} 年用已发布 CSV。${chart.adminEnd} 年县级 GB2260 ${fmt(gbCounty)}，五级 CSV ${fmt(published)}，未并入省地县这根轴。`;
+});
+
+const readout = computed(() => {
   const bar = activeBar.value;
-  return data.levels
-    .filter((series) => showLower.value || series.level <= 3)
-    .map((series) => {
-      const count = series.counts[bar.index];
-      return {
-        level: series.level,
-        short: series.short,
-        label: series.label,
-        text: count == null ? '—' : fmt(count),
-      };
-    });
-});
-
-const tipNote = computed(() => {
-  const bar = activeBar.value;
-  if (bar.drawn) return '';
-  const duplicate = data.sources?.gb2260Duplicates?.find(
-    (item) => item.year === bar.year
+  const parts = bar.segments.map(
+    (segment) => `${segment.label} ${fmt(segment.count)}`
   );
-  if (duplicate) {
-    return `${bar.year} 年没有独立的省、地、县快照，GB2260 库与 ${duplicate.sameAs} 字节相同`;
-  }
-  if (bar.omitted) {
-    return `${bar.omitted.year} 年只有 ${fmt(bar.omitted.rows)} 条${bar.omitted.label}残片，没有画柱`;
-  }
-  return `${bar.year} 年没有快照`;
+  const delta = activeDelta.value;
+  const deltaText =
+    delta == null
+      ? ''
+      : `，较 ${bar.year - 1} 年 ${delta > 0 ? '+' : delta < 0 ? '−' : ''}${fmt(Math.abs(delta))}`;
+  const note = bar.carried ? `，当年无变更，沿用 ${bar.carried.sameAs}` : '';
+  return `${bar.year} 年，${parts.join('，')}，合计 ${fmt(bar.total)}${deltaText}${note}`;
 });
 
-function missingAdmin(year: number) {
-  const item = data.sources?.gb2260Duplicates?.find(
-    (entry) => entry.year === year
+function placeTip() {
+  const stage = stageEl.value;
+  const scroll = scrollEl.value;
+  if (!stage || !scroll) return;
+  const column =
+    scroll.querySelectorAll<HTMLElement>('.col')[activeIndex.value];
+  if (!column) return;
+  const stageBox = stage.getBoundingClientRect();
+  const columnBox = column.getBoundingClientRect();
+  const card = tipEl.value?.offsetWidth ?? 196;
+  const center = columnBox.left + columnBox.width / 2 - stageBox.left;
+  const raw = center - card / 2;
+  tipX.value = Math.min(
+    Math.max(raw, 4),
+    Math.max(4, stageBox.width - card - 4)
   );
-  if (!item || adminAt(year - data.startYear) != null) return null;
-  return item;
-}
-
-const eyebrow = computed(() =>
-  showLower.value
-    ? `${data.startYear}–${data.endYear} · 两段各自线性`
-    : `${data.startYear}–${data.endYear} · 省、地、县线性`
-);
-
-const readoutLabel = computed(() => {
-  if (tipNote.value) return tipNote.value;
-  const bar = activeBar.value;
-  const parts = tipLines.value.map((line) => `${line.label} ${line.text}`);
-  const totals = [
-    bar.adminTotal != null ? `省地县 ${fmt(bar.adminTotal)}` : '',
-    showLower.value && bar.localTotal != null
-      ? `乡村 ${fmt(bar.localTotal)}`
-      : '',
-  ].filter(Boolean);
-  return `${bar.year} 年，${parts.join('，')}${totals.length ? `，${totals.join('，')}` : ''}`;
-});
-
-function setFromPointer(event: PointerEvent) {
-  const svg = scrollEl.value?.querySelector('svg');
-  if (!svg) return;
-  const rect = svg.getBoundingClientRect();
-  if (rect.width <= 0) return;
-  const viewX = ((event.clientX - rect.left) / rect.width) * plotWidth.value;
-  if (viewX < plotPadL || viewX > plotWidth.value - padR) return;
-  const index = Math.floor((viewX - plotPadL) / slot.value);
-  hoverIndex.value = Math.min(Math.max(index, 0), yearCount - 1);
 }
 
 function reveal(index: number) {
   const host = scrollEl.value;
-  const svg = host?.querySelector('svg');
-  const bar = bars.value[index];
-  if (!host || !svg || !bar) return;
-  const scale = svg.clientWidth / plotWidth.value;
-  const center = (bar.x + bar.w / 2) * scale;
-  const left = host.scrollLeft;
-  const right = left + host.clientWidth;
-  if (center < left + 24 || center > right - 24) {
-    host.scrollLeft = center - host.clientWidth / 2;
+  const column = host?.querySelectorAll<HTMLElement>('.col')[index];
+  if (!host || !column) return;
+  const left = column.offsetLeft;
+  const right = left + column.offsetWidth;
+  const viewLeft = host.scrollLeft;
+  const viewRight = viewLeft + host.clientWidth;
+  if (left < viewLeft + 12 || right > viewRight - 12) {
+    host.scrollLeft = left - host.clientWidth / 2 + column.offsetWidth / 2;
   }
+}
+
+function setFromPointer(event: PointerEvent) {
+  const host = scrollEl.value;
+  if (!host) return;
+  const columns = host.querySelectorAll<HTMLElement>('.col');
+  if (!columns.length) return;
+  const box = host.getBoundingClientRect();
+  const x = event.clientX - box.left + host.scrollLeft;
+  const width = host.scrollWidth;
+  if (width <= 0) return;
+  const index = Math.min(
+    columns.length - 1,
+    Math.max(0, Math.floor((x / width) * columns.length))
+  );
+  hoverIndex.value = index;
+  keyIndex.value = null;
 }
 
 function onKey(event: KeyboardEvent) {
@@ -487,262 +280,286 @@ function onKey(event: KeyboardEvent) {
     return;
   }
   event.preventDefault();
-  const current = keyIndex.value ?? hoverIndex.value ?? defaultIndex;
+  const current = keyIndex.value ?? hoverIndex.value ?? defaultIndex.value;
   const next =
     key === 'ArrowRight'
-      ? Math.min(yearCount - 1, current + 1)
+      ? Math.min(yearCount.value - 1, current + 1)
       : key === 'ArrowLeft'
         ? Math.max(0, current - 1)
         : key === 'Home'
           ? 0
-          : yearCount - 1;
+          : yearCount.value - 1;
   keyIndex.value = next;
   hoverIndex.value = null;
   reveal(next);
 }
 
-const years = computed(() =>
-  Array.from({ length: yearCount }, (_, index) => yearAt(index))
-);
+function selectMode(next: Mode) {
+  if (mode.value === next) return;
+  const year = activeBar.value.year;
+  mode.value = next;
+  const start = next === 'local' ? chart.localStart : chart.adminStart;
+  const end = next === 'local' ? chart.localEnd : chart.adminEnd;
+  const clamped = Math.min(end, Math.max(start, year));
+  keyIndex.value = clamped - start;
+  hoverIndex.value = null;
+}
 
-onMounted(() => {
-  const host = frameEl.value;
-  if (!host) return;
-  const apply = () => {
-    frameW.value = host.clientWidth || frameW.value;
-  };
-  apply();
-  observer = new ResizeObserver(apply);
-  observer.observe(host);
+const tableRows = computed(() => {
+  const rows = [];
+  for (let year = chart.adminStart; year <= chart.adminEnd; year += 1) {
+    const adminIndex = year - chart.adminStart;
+    const localIndex = year - chart.localStart;
+    const admin = chart.admin.map((series) => series.counts[adminIndex]!);
+    const inLocal = year >= chart.localStart && year <= chart.localEnd;
+    const local = inLocal
+      ? chart.local.map((series) => series.counts[localIndex]!)
+      : [null, null];
+    const carried = chart.carried.find((item) => item.year === year) ?? null;
+    rows.push({
+      year,
+      admin,
+      adminTotal: admin.reduce((sum, count) => sum + count, 0),
+      local,
+      localTotal: inLocal
+        ? local.reduce((sum, count) => sum + (count ?? 0), 0)
+        : null,
+      carried,
+    });
+  }
+  return rows;
 });
 
-onBeforeUnmount(() => observer?.disconnect());
+let resizeObserver: ResizeObserver | undefined;
 
-watch(frameW, () => {
-  if (keyIndex.value != null) reveal(keyIndex.value);
+onMounted(() => {
+  const stage = stageEl.value;
+  if (!stage) return;
+  const apply = () => {
+    reveal(activeIndex.value);
+    placeTip();
+  };
+  apply();
+  resizeObserver = new ResizeObserver(apply);
+  resizeObserver.observe(stage);
+});
+
+onBeforeUnmount(() => resizeObserver?.disconnect());
+
+watch([activeIndex, mode, () => yearCount.value], () => {
+  requestAnimationFrame(() => {
+    reveal(activeIndex.value);
+    placeTip();
+  });
 });
 </script>
 
 <template>
-  <KamiFigure :eyebrow="eyebrow" :title="title" :caption="caption">
-    <div class="ysc">
-      <div class="ysc-legend">
-        <span
-          v-for="series in data.levels"
-          :key="series.level"
-          :class="{ 'is-dim': !showLower && series.level >= 4 }"
-        >
-          <i class="swatch" :class="`seg-${series.level}`" />{{ series.label }}
-        </span>
-        <span><i class="swatch empty" />无省地县快照</span>
-        <button
-          type="button"
-          class="ysc-toggle"
-          :aria-pressed="showLower"
-          @click="showLower = !showLower"
-        >
-          包含乡、村
-        </button>
-      </div>
-      <div class="ysc-tip" role="tooltip">
-        <p class="ysc-tip-year">{{ activeBar.year }}</p>
-        <template v-if="activeBar.drawn">
-          <p v-for="line in tipLines" :key="line.level" class="ysc-tip-row">
-            <i class="swatch" :class="`seg-${line.level}`" />
-            <span>{{ line.short }}</span>
-            <b>{{ line.text }}</b>
+  <KamiFigure>
+    <template #header>
+      <div class="ysc-head">
+        <div class="ysc-lead">
+          <p class="ysc-kicker">
+            {{
+              mode === 'local'
+                ? `${chart.localStart}–${chart.localEnd}`
+                : `${chart.adminStart}–${chart.adminEnd}`
+            }}
+            · {{ headline.unit }}
           </p>
-          <p v-if="activeBar.adminTotal != null" class="ysc-tip-row total">
-            <span>省地县</span>
-            <b>{{ fmt(activeBar.adminTotal) }}</b>
+          <p class="ysc-num">
+            {{ headline.value }}<span>{{ headline.unit }}</span>
           </p>
-          <p
-            v-if="showLower && activeBar.localTotal != null"
-            class="ysc-tip-row total"
+          <p class="ysc-insight">{{ headline.sentence }}</p>
+        </div>
+        <div class="ysc-switch" role="tablist" aria-label="切换统计口径">
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="mode === 'admin'"
+            @click="selectMode('admin')"
           >
-            <span>乡村</span>
-            <b>{{ fmt(activeBar.localTotal) }}</b>
-          </p>
-        </template>
-        <p v-else class="ysc-tip-note">{{ tipNote }}</p>
-      </div>
-      <p class="sr-only" aria-live="polite">{{ readoutLabel }}</p>
-      <div ref="frameEl" class="ysc-body">
-        <svg
-          class="ysc-axis"
-          :viewBox="`0 0 ${padL} ${geom.H}`"
-          :width="padL"
-          :height="geom.H"
-          aria-hidden="true"
-        >
-          <g class="ysc-grid">
-            <text
-              v-for="tick in adminTicks"
-              :key="`a-${tick}`"
-              :x="padL - 6"
-              :y="yAdmin(tick) + 3"
-              text-anchor="end"
-            >
-              {{ tickLabel(tick) }}
-            </text>
-            <template v-if="showLower">
-              <text
-                v-for="tick in localTicks"
-                :key="`l-${tick}`"
-                :x="padL - 6"
-                :y="yLocal(tick) + 3"
-                text-anchor="end"
-              >
-                {{ tick === 0 ? '' : tickLabel(tick) }}
-              </text>
-            </template>
-          </g>
-          <g v-if="showLower" class="ysc-break" aria-hidden="true">
-            <line
-              :x1="padL - 16"
-              :x2="padL - 4"
-              :y1="geom.localBase + 6"
-              :y2="geom.adminTop - 4"
-            />
-            <line
-              :x1="padL - 16"
-              :x2="padL - 4"
-              :y1="geom.localBase + 11"
-              :y2="geom.adminTop + 1"
-            />
-          </g>
-        </svg>
-        <div
-          ref="scrollEl"
-          class="ysc-scroll"
-          tabindex="0"
-          role="group"
-          aria-label="1980 到 2023 年堆叠条数，左右方向键切换年份"
-          @pointerdown="setFromPointer"
-          @pointermove="setFromPointer"
-          @pointerleave="hoverIndex = null"
-          @keydown="onKey"
-        >
-          <svg
-            class="ysc-svg"
-            :viewBox="`0 0 ${plotWidth} ${geom.H}`"
-            :width="plotWidth"
-            :height="geom.H"
-            aria-hidden="true"
+            省·地·县
+          </button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="mode === 'local'"
+            @click="selectMode('local')"
           >
-            <g class="ysc-grid">
-              <line
-                v-for="tick in adminTicks"
-                :key="`a-${tick}`"
-                :x1="0"
-                :x2="plotWidth - padR"
-                :y1="yAdmin(tick)"
-                :y2="yAdmin(tick)"
-              />
-              <template v-if="showLower">
-                <line
-                  v-for="tick in localTicks"
-                  :key="`l-${tick}`"
-                  :x1="0"
-                  :x2="plotWidth - padR"
-                  :y1="yLocal(tick)"
-                  :y2="yLocal(tick)"
-                />
-              </template>
-            </g>
-            <rect
-              class="ysc-col"
-              :x="activeBar.x - 1"
-              :y="showLower ? geom.localTop : geom.adminTop"
-              :width="activeBar.w + 2"
-              :height="
-                geom.adminBase - (showLower ? geom.localTop : geom.adminTop)
-              "
-            />
-            <template v-for="bar in bars" :key="bar.year">
-              <g v-if="!bar.drawn || (showLower && bar.adminTotal == null)">
-                <g class="ysc-empty">
-                  <circle
-                    :cx="bar.x + bar.w / 2"
-                    :cy="geom.adminBase - 5"
-                    r="2.2"
-                  />
-                </g>
-              </g>
-              <g v-if="bar.segments.length">
-                <rect
-                  v-for="segment in bar.segments"
-                  :key="segment.level"
-                  :class="`seg-${segment.level}`"
-                  :x="bar.x"
-                  :y="segment.y"
-                  :width="bar.w"
-                  :height="Math.max(segment.h, 0)"
-                />
-              </g>
-            </template>
-            <g class="ysc-xaxis">
-              <text
-                v-for="tick in xTicks"
-                :key="tick.year"
-                :x="tick.x"
-                :y="geom.H - 6"
-                text-anchor="middle"
-              >
-                {{ tick.year }}
-              </text>
-            </g>
-          </svg>
+            乡·村 (2009–2023)
+          </button>
         </div>
       </div>
+    </template>
+
+    <div class="ysc">
+      <div class="ysc-legend">
+        <span v-for="series in view.series" :key="series.level">
+          <i class="swatch" :data-level="series.level" />{{ series.label }}
+        </span>
+      </div>
+
+      <div ref="stageEl" class="ysc-stage">
+        <div class="ysc-tip-lane">
+          <div
+            ref="tipEl"
+            class="ysc-tip"
+            :style="{ transform: `translateX(${tipX}px)` }"
+          >
+            <div class="ysc-tip-top">
+              <p class="ysc-tip-year">{{ activeBar.year }}</p>
+              <p v-if="activeDelta != null" class="ysc-tip-delta">
+                较 {{ activeBar.year - 1 }}
+                <b
+                  >{{ activeDelta > 0 ? '+' : activeDelta < 0 ? '−' : ''
+                  }}{{ fmt(Math.abs(activeDelta)) }}</b
+                >
+              </p>
+            </div>
+            <p v-if="activeBar.carried" class="ysc-tip-note">
+              当年无变更，沿用 {{ activeBar.carried.sameAs }}
+            </p>
+            <p
+              v-for="segment in activeBar.segments"
+              :key="segment.level"
+              class="ysc-tip-row"
+            >
+              <i class="swatch" :data-level="segment.level" />
+              <span>{{ segment.short }}</span>
+              <b>{{ fmt(segment.count) }}</b>
+            </p>
+            <p class="ysc-tip-row total">
+              <span>合计</span>
+              <b>{{ fmt(activeBar.total) }}</b>
+            </p>
+          </div>
+        </div>
+
+        <p class="sr-only" aria-live="polite">{{ readout }}</p>
+
+        <div class="ysc-body">
+          <div
+            class="ysc-y"
+            :class="{ 'has-anno': events.length > 0 }"
+            aria-hidden="true"
+          >
+            <span
+              v-for="tick in ticks"
+              :key="tick"
+              :style="{ bottom: `${(tick / maxTotal) * 100}%` }"
+              >{{ tickLabel(tick) }}</span
+            >
+          </div>
+          <div
+            ref="scrollEl"
+            class="ysc-scroll"
+            tabindex="0"
+            role="group"
+            :aria-label="`${view.start} 到 ${view.end} 年条数，左右方向键切换年份`"
+            @pointerdown="setFromPointer"
+            @pointermove="setFromPointer"
+            @pointerleave="hoverIndex = null"
+            @scroll="placeTip"
+            @keydown="onKey"
+          >
+            <div class="ysc-plot" :style="{ minWidth: `${yearCount * 14}px` }">
+              <div v-if="events.length" class="ysc-annos" aria-hidden="true">
+                <div
+                  v-for="event in events"
+                  :key="event.year"
+                  class="ysc-anno"
+                  :style="{ left: `${event.left}%` }"
+                >
+                  <span>{{ event.label }}</span>
+                </div>
+              </div>
+              <div class="ysc-bars">
+                <i
+                  v-for="tick in ticks"
+                  :key="`g-${tick}`"
+                  class="ysc-grid"
+                  :class="{ zero: tick === 0 }"
+                  :style="{ bottom: `${(tick / maxTotal) * 100}%` }"
+                />
+                <div
+                  v-for="bar in bars"
+                  :key="bar.year"
+                  class="col"
+                  :class="{ 'is-hot': bar.index === activeIndex }"
+                >
+                  <div class="stack" :style="{ height: `${bar.pct}%` }">
+                    <i
+                      v-for="segment in bar.segments"
+                      :key="segment.level"
+                      class="seg"
+                      :data-level="segment.level"
+                      :style="{ flexGrow: segment.count }"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="ysc-x" aria-hidden="true">
+                <span v-for="bar in bars" :key="bar.year">{{
+                  bar.showLabel ? bar.year : ''
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="ysc-source">{{ footnote }}</p>
+
       <details class="ysc-details">
         <summary>按年份查看条数</summary>
         <div class="ysc-table-wrap">
           <table>
             <caption class="sr-only">
               {{
-                data.startYear
+                chart.adminStart
               }}
               到
               {{
-                data.endYear
+                chart.adminEnd
               }}
-              年省级、地级、县级、乡级、村级条数。横线表示该年没有这一级。省、地、县来自
-              GB2260，乡、村来自 NBS，合计是这两格相加。
+              年省级、地级、县级来自 GB2260。 乡级、村级从
+              {{
+                chart.localStart
+              }}
+              年起，来自 NBS。2008 年沿用 2007，2022 年沿用 2021。
             </caption>
             <thead>
               <tr>
                 <th scope="col">年</th>
-                <th
-                  v-for="series in data.levels"
-                  :key="series.level"
-                  scope="col"
-                >
-                  {{ series.label }}
-                </th>
-                <th scope="col">合计</th>
+                <th scope="col">省</th>
+                <th scope="col">地</th>
+                <th scope="col">县</th>
+                <th scope="col">省地县</th>
+                <th scope="col">乡</th>
+                <th scope="col">村</th>
+                <th scope="col">乡村</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(year, index) in years" :key="year">
+              <tr v-for="row in tableRows" :key="row.year">
                 <th scope="row">
-                  {{ year }}
+                  {{ row.year }}
                   <abbr
-                    v-if="missingAdmin(year)"
+                    v-if="row.carried"
                     class="ysc-flag"
-                    :title="`GB2260.${year} 与 ${missingAdmin(year)!.sameAs} 字节相同，省、地、县不另画`"
-                    >无省地县</abbr
+                    :title="`当年无变更，沿用 ${row.carried.sameAs}`"
+                    >沿用</abbr
                   >
                 </th>
-                <td v-for="series in data.levels" :key="series.level">
-                  {{
-                    series.counts[index] == null
-                      ? '—'
-                      : fmt(series.counts[index]!)
-                  }}
-                </td>
+                <td>{{ fmt(row.admin[0]!) }}</td>
+                <td>{{ fmt(row.admin[1]!) }}</td>
+                <td>{{ fmt(row.admin[2]!) }}</td>
+                <td>{{ fmt(row.adminTotal) }}</td>
+                <td>{{ row.local[0] == null ? '—' : fmt(row.local[0]) }}</td>
+                <td>{{ row.local[1] == null ? '—' : fmt(row.local[1]) }}</td>
                 <td>
-                  {{ totalAt(index) == null ? '—' : fmt(totalAt(index)!) }}
+                  {{ row.localTotal == null ? '—' : fmt(row.localTotal) }}
                 </td>
               </tr>
             </tbody>
@@ -754,29 +571,108 @@ watch(frameW, () => {
 </template>
 
 <style scoped>
+.ysc-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 1.15rem;
+}
+.ysc-kicker {
+  margin: 0 0 6px;
+  font-family: var(--kami-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--kami-stone, #807d72);
+}
+.ysc-num {
+  margin: 0;
+  font-family: var(--kami-sans);
+  font-size: clamp(2.35rem, 4.6vw, 3.15rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--kami-near-black, #26251e);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ysc-num span {
+  margin-left: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--kami-olive, #5a5852);
+}
+.ysc-insight {
+  margin: 10px 0 0;
+  max-width: 38rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--kami-olive, #5a5852);
+}
+.ysc-switch {
+  display: inline-flex;
+  flex: none;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--vp-cursor-hairline-soft, #efeee8);
+  gap: 2px;
+}
+.ysc-switch button {
+  border: 0;
+  background: transparent;
+  color: var(--kami-olive, #5a5852);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+.ysc-switch button[aria-selected='true'] {
+  background: #fff;
+  color: var(--kami-near-black, #26251e);
+  box-shadow: 0 1px 2px rgba(38, 37, 30, 0.08);
+}
+.ysc-switch button:focus-visible {
+  outline: 2px solid var(--kami-brand, #f54e00);
+  outline-offset: 2px;
+}
 .ysc {
-  --seg-1: #c4c0b4;
-  --seg-2: #807d72;
-  --seg-3: #5a5852;
-  --seg-4: #c08532;
-  --seg-5: var(--vp-cursor-primary, #f54e00);
+  --ink-1: rgba(38, 37, 30, 0.2);
+  --ink-2: rgba(38, 37, 30, 0.42);
+  --ink-3: rgba(38, 37, 30, 0.82);
+  --ink-4: rgba(38, 37, 30, 0.28);
+  --ink-5: rgba(38, 37, 30, 0.82);
+  --hot-1: rgba(245, 78, 0, 0.38);
+  --hot-2: rgba(245, 78, 0, 0.66);
+  --hot-3: #f54e00;
+  --hot-4: rgba(245, 78, 0, 0.42);
+  --hot-5: #f54e00;
   font-variant-numeric: lining-nums tabular-nums;
 }
 :global(html.dark) .ysc {
-  --seg-1: #6e6b62;
-  --seg-2: #9a968a;
-  --seg-3: #c9c7bc;
-  --seg-4: #e0b56a;
-  --seg-5: var(--vp-cursor-primary, #ff6b2c);
+  --ink-1: rgba(247, 247, 244, 0.22);
+  --ink-2: rgba(247, 247, 244, 0.42);
+  --ink-3: rgba(247, 247, 244, 0.82);
+  --ink-4: rgba(247, 247, 244, 0.3);
+  --ink-5: rgba(247, 247, 244, 0.82);
+  --hot-1: rgba(255, 107, 44, 0.42);
+  --hot-2: rgba(255, 107, 44, 0.7);
+  --hot-3: #ff6b2c;
+  --hot-4: rgba(255, 107, 44, 0.45);
+  --hot-5: #ff6b2c;
+}
+:global(html.dark) .ysc-switch button[aria-selected='true'] {
+  background: var(--vp-cursor-ink, #f7f7f4);
+  color: #1a1914;
 }
 .ysc-legend {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  margin: 0 0 10px;
-  color: var(--kami-olive, #5a5852);
-  font-size: 0.78rem;
+  gap: 14px;
+  margin: 0 0 8px;
+  color: var(--kami-stone, #807d72);
+  font-size: 0.75rem;
 }
 .ysc-legend span,
 .ysc-tip-row {
@@ -784,148 +680,279 @@ watch(frameW, () => {
   align-items: center;
   gap: 6px;
 }
-.ysc-legend span.is-dim {
-  opacity: 0.4;
-}
-.ysc-toggle {
-  margin-left: auto;
-  border: 1px solid var(--kami-border, #e6e5e0);
-  background: transparent;
-  color: var(--kami-near-black, #26251e);
-  border-radius: 999px;
-  padding: 3px 12px;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ysc-toggle[aria-pressed='true'] {
-  background: var(--kami-brand, #f54e00);
-  border-color: transparent;
-  color: #fff;
-}
-.ysc-break line {
-  stroke: var(--kami-stone, #807d72);
-  stroke-width: 1.25;
-}
 .swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex: none;
-}
-.swatch.empty,
-.ysc-empty circle {
-  fill: none;
-  stroke: var(--kami-stone, #807d72);
-  stroke-width: 1.25;
-}
-.swatch.empty {
   width: 8px;
   height: 8px;
-  border: 1.25px solid var(--kami-stone, #807d72);
-  border-radius: 99px;
-  background: transparent;
-  box-sizing: border-box;
+  border-radius: 2px;
+  background: var(--ink-3);
+  flex: none;
 }
-.seg-1 {
-  fill: var(--seg-1);
-  background: var(--seg-1);
+.swatch[data-level='1'] {
+  background: var(--ink-1);
 }
-.seg-2 {
-  fill: var(--seg-2);
-  background: var(--seg-2);
+.swatch[data-level='2'] {
+  background: var(--ink-2);
 }
-.seg-3 {
-  fill: var(--seg-3);
-  background: var(--seg-3);
+.swatch[data-level='3'] {
+  background: var(--ink-3);
 }
-.seg-4 {
-  fill: var(--seg-4);
-  background: var(--seg-4);
+.swatch[data-level='4'] {
+  background: var(--ink-4);
 }
-.seg-5 {
-  fill: var(--seg-5);
-  background: var(--seg-5);
+.swatch[data-level='5'] {
+  background: var(--ink-5);
+}
+.ysc-stage {
+  position: relative;
+}
+.ysc-tip-lane {
+  position: relative;
+  height: 148px;
 }
 .ysc-tip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 14px;
-  margin: 0 0 10px;
-  padding: 8px 10px;
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(280px, calc(100% - 8px));
+  padding: 8px 10px 7px;
   border: 1px solid var(--kami-border, #e6e5e0);
-  border-radius: 8px;
-  background: var(--kami-parchment-2, #fafaf7);
-  color: var(--kami-near-black, #26251e);
-  font-size: 0.78rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(38, 37, 30, 0.07);
+  pointer-events: none;
 }
-.ysc-tip-year {
-  margin: 0;
-  font-family: var(--kami-mono);
-  font-weight: 600;
+:global(html.dark) .ysc-tip {
+  background: rgba(38, 37, 30, 0.94);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
+.ysc-tip-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ysc-tip-year,
+.ysc-tip-delta,
+.ysc-tip-note,
 .ysc-tip-row {
   margin: 0;
+}
+.ysc-tip-year {
   font-family: var(--kami-mono);
-}
-.ysc-tip-row b {
+  font-size: 13px;
   font-weight: 600;
+  color: var(--kami-near-black, #26251e);
 }
-.ysc-tip-row.total {
-  margin-left: auto;
+.ysc-tip-delta {
+  font-family: var(--kami-mono);
+  font-size: 10px;
+  color: var(--kami-stone, #807d72);
+}
+.ysc-tip-delta b {
+  font-weight: 600;
+  color: var(--kami-near-black, #26251e);
 }
 .ysc-tip-note {
-  margin: 0;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
   color: var(--kami-olive, #5a5852);
+}
+.ysc-tip-row {
+  display: flex;
+  margin-top: 3px;
+  font-family: var(--kami-mono);
+  font-size: 11px;
+  color: var(--kami-olive, #5a5852);
+}
+.ysc-tip-row b {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--kami-near-black, #26251e);
+}
+.ysc-tip-row.total {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--kami-border-soft, #efeee8);
 }
 .ysc-body {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
 }
-.ysc-axis {
+.ysc-y {
+  position: relative;
+  width: 46px;
   flex: none;
-  display: block;
+  height: 228px;
+  margin-top: 0;
+}
+.ysc-y.has-anno {
+  margin-top: 26px;
+}
+.ysc-y span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(50%);
+  font-family: var(--kami-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--kami-stone, #807d72);
 }
 .ysc-scroll {
+  position: relative;
   flex: 1;
   min-width: 0;
   overflow-x: auto;
   outline: none;
-  touch-action: pan-x pan-y;
   cursor: crosshair;
+  touch-action: pan-x pan-y;
 }
 .ysc-scroll:focus-visible {
   outline: 2px solid var(--kami-brand, #f54e00);
-  outline-offset: 3px;
+  outline-offset: 4px;
   border-radius: 6px;
 }
-.ysc-svg {
+.ysc-plot {
+  position: relative;
+}
+.ysc-annos {
+  position: relative;
+  height: 26px;
+}
+.ysc-anno {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--kami-olive, #5a5852);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ysc-anno::after {
+  content: '';
   display: block;
-  max-width: none;
+  width: 1px;
+  height: 8px;
+  margin: 3px auto 0;
+  background: var(--kami-border, #e6e5e0);
 }
-.ysc-grid line {
-  stroke: var(--kami-border, #e6e5e0);
-  stroke-width: 1;
+.ysc-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 228px;
 }
-.ysc-grid text,
-.ysc-xaxis text {
+.ysc-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--kami-border-soft, #efeee8);
+  pointer-events: none;
+}
+.ysc-grid.zero {
+  background: var(--kami-border, #e6e5e0);
+}
+.col {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  opacity: 0.72;
+  transition: opacity 180ms ease;
+}
+.col.is-hot {
+  opacity: 1;
+  z-index: 1;
+}
+.col.is-hot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: color-mix(in srgb, var(--hot-3) 28%, transparent);
+  pointer-events: none;
+}
+.stack {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 7px;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+  transition: height 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.seg {
+  display: block;
+  flex-basis: 0;
+  min-height: 0;
+  width: 100%;
+}
+.seg[data-level='1'] {
+  background: var(--ink-1);
+}
+.seg[data-level='2'] {
+  background: var(--ink-2);
+}
+.seg[data-level='3'] {
+  background: var(--ink-3);
+}
+.seg[data-level='4'] {
+  background: var(--ink-4);
+}
+.seg[data-level='5'] {
+  background: var(--ink-5);
+}
+.col.is-hot .seg[data-level='1'] {
+  background: var(--hot-1);
+}
+.col.is-hot .seg[data-level='2'] {
+  background: var(--hot-2);
+}
+.col.is-hot .seg[data-level='3'] {
+  background: var(--hot-3);
+}
+.col.is-hot .seg[data-level='4'] {
+  background: var(--hot-4);
+}
+.col.is-hot .seg[data-level='5'] {
+  background: var(--hot-5);
+}
+.ysc-x {
+  display: flex;
+  height: 22px;
+  margin-top: 6px;
+}
+.ysc-x span {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--kami-mono);
+  font-size: 10px;
+  line-height: 22px;
+  color: var(--kami-stone, #807d72);
+}
+.ysc-source {
+  margin: 12px 0 0;
   font-family: var(--kami-mono);
   font-size: 11px;
-  fill: var(--kami-stone, #807d72);
-}
-.ysc-col {
-  fill: var(--kami-brand, #f54e00);
-  opacity: 0.12;
+  line-height: 1.55;
+  color: var(--kami-stone, #807d72);
 }
 .ysc-details {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 .ysc-details summary {
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--kami-near-black, #26251e);
 }
@@ -936,16 +963,17 @@ watch(frameW, () => {
 .ysc-details table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.75rem;
   font-family: var(--kami-mono);
+  font-size: 11px;
 }
 .ysc-details th,
 .ysc-details td {
   padding: 4px 8px;
-  border-bottom: 1px solid var(--kami-border, #e6e5e0);
+  border-bottom: 1px solid var(--kami-border-soft, #efeee8);
   text-align: right;
   white-space: nowrap;
   font-weight: 500;
+  color: var(--kami-olive, #5a5852);
 }
 .ysc-details th:first-child,
 .ysc-details tbody th {
@@ -955,11 +983,11 @@ watch(frameW, () => {
 .ysc-flag {
   margin-left: 4px;
   font-family: var(--kami-sans);
-  font-size: 0.66rem;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0;
   text-decoration: none;
-  color: var(--kami-brand, #f54e00);
+  color: var(--kami-stone, #807d72);
 }
 .sr-only {
   position: absolute;
@@ -972,14 +1000,26 @@ watch(frameW, () => {
   white-space: nowrap;
   border: 0;
 }
-@media (max-width: 640px) {
-  .ysc-legend,
-  .ysc-tip {
-    font-size: 0.72rem;
-    gap: 6px 10px;
+@media (prefers-reduced-motion: reduce) {
+  .stack,
+  .col {
+    transition: none;
   }
-  .ysc-tip-row.total {
-    margin-left: 0;
+}
+@media (max-width: 720px) {
+  .ysc-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .ysc-switch {
+    width: 100%;
+  }
+  .ysc-switch button {
+    flex: 1;
+  }
+  .ysc-tip-lane {
+    height: 168px;
   }
 }
 </style>

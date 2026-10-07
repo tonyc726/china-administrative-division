@@ -177,12 +177,55 @@ describe('docs home data matches the source CSVs', () => {
       release.nbs.years['2021'][4],
     ]);
     expect(at(2022)).toEqual([
-      null,
-      null,
-      null,
+      release.gb2260.years['2021'].counts[0],
+      release.gb2260.years['2021'].counts[1],
+      release.gb2260.years['2021'].counts[2],
       release.nbs.years['2022'][3],
       release.nbs.years['2022'][4],
     ]);
+    expect(at(2008)?.slice(0, 3)).toEqual(release.gb2260.years['2007'].counts);
+
+    const chart = merged.chart;
+    const adminAt = (year: number) =>
+      chart.admin.map(
+        (series: { counts: number[] }) => series.counts[year - START]
+      );
+    expect(chart.adminStart).toBe(1980);
+    expect(chart.adminEnd).toBe(2023);
+    expect(chart.admin[0].counts).toHaveLength(END - START + 1);
+    for (const series of chart.admin) {
+      expect(series.counts.every((count: number) => count > 0)).toBe(true);
+    }
+    expect(adminAt(1980)).toEqual(release.gb2260.years['1980'].counts);
+    expect(adminAt(2008)).toEqual(release.gb2260.years['2007'].counts);
+    expect(adminAt(2007)).toEqual(release.gb2260.years['2007'].counts);
+    expect(adminAt(2022)).toEqual(release.gb2260.years['2021'].counts);
+    expect(adminAt(2021)).toEqual(release.gb2260.years['2021'].counts);
+    expect(adminAt(2023)).toEqual(release.gb2260.years['2023'].counts);
+    expect(adminAt(2023)[2]).not.toBe(y2023?.[2]);
+    expect(adminAt(1988)[0]).toBe(adminAt(1987)[0] + 1);
+    expect(adminAt(1997)[0]).toBe(adminAt(1996)[0] + 1);
+    expect(adminAt(2013)[0]).toBe(adminAt(2012)[0] + 3);
+    const countyDip = [2014, 2015, 2016].map((year) => adminAt(year)[2]);
+    expect(Math.max(...countyDip) - Math.min(...countyDip)).toBeLessThan(10);
+    expect(chart.events).toEqual([
+      { year: 1988, label: '海南建省' },
+      { year: 1997, label: '重庆直辖' },
+      { year: 2013, label: '含台港澳' },
+    ]);
+    expect(chart.carried).toEqual([
+      { year: 2008, sameAs: 2007 },
+      { year: 2022, sameAs: 2021 },
+    ]);
+    expect(chart.localStart).toBe(2009);
+    expect(chart.localEnd).toBe(2023);
+    expect(chart.local[0].counts).toHaveLength(2023 - 2009 + 1);
+    for (const series of chart.local) {
+      expect(series.counts.every((count: number) => count > 0)).toBe(true);
+    }
+    expect(chart.local[1].counts[0]).toBe(release.nbs.years['2009'][4]);
+    expect(chart.local[1].counts.at(-1)).toBe(y2023?.[4]);
+    expect(chart.publishedAdmin2023).toEqual(y2023?.slice(0, 3));
     expect(at(2023)).toEqual(y2023);
     expect(merged.omitted).toEqual([]);
     expect(merged.emptyYears).toEqual([]);
