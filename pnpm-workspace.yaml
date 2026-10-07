@@ -8,10 +8,15 @@ packages:
   # pnpm 11 不再读取 package.json#pnpm；overrides / allowBuilds 写在这里。
 overrides:
   brace-expansion: ^5.0.12
+  # got → cacheable-request 的传递依赖。pnpm audit 把 >=4.2.1 视为已修补；
+  # npm 上没有 4.2.1，最新 4.x 是 4.3.0（仍满足 cacheable-request 的 ^4.2.0）。
+  http-cache-semantics: ^4.3.0
   js-yaml@3: ^3.15.2
   js-yaml@4: ^4.3.2
   nanoid@3: ^3.3.18
   postcss: ^8.5.26
+  shell-quote: ^1.11.0
+  source-map-js: ^1.2.2
   undici: ^7.29.1
 
 # pnpm 10+ 默认不跑依赖 lifecycle；原生/二进制包须显式放行。

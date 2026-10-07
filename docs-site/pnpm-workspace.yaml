@@ -11,7 +11,20 @@ overrides:
   brace-expansion: ^5.0.12
   nanoid@3: ^3.3.18
   postcss: ^8.5.26
+  source-map-js: ^1.2.2
   vite: ^6.4.3
+  # GHSA-g2v6-rqmx-r4w6：@vue/server-renderer <3.5.42。与 vue 核心包锁在同一 3.5.x，
+  # 不升到 Vue 4。devtools 仍是 7.x，不在此列。
+  vue: ^3.5.42
+  '@vue/compiler-core': ^3.5.42
+  '@vue/compiler-dom': ^3.5.42
+  '@vue/compiler-sfc': ^3.5.42
+  '@vue/compiler-ssr': ^3.5.42
+  '@vue/reactivity': ^3.5.42
+  '@vue/runtime-core': ^3.5.42
+  '@vue/runtime-dom': ^3.5.42
+  '@vue/server-renderer': ^3.5.42
+  '@vue/shared': ^3.5.42
 
 allowBuilds:
   esbuild: true
