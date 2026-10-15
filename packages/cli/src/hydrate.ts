@@ -173,7 +173,8 @@ async function extractAndImport(
     const base = path.basename(header.name);
     if (base === 'manifest.json' || header.name.endsWith('.csv')) {
       const chunks: Buffer[] = [];
-      stream.on('data', (chunk) => chunks.push(chunk));
+      // tar-stream 3.2 自带 streamx 类型，data 块是 unknown；Node 上实际仍是 Buffer。
+      stream.on('data', (chunk) => chunks.push(chunk as Buffer));
       stream.on('end', () => {
         if (base === 'manifest.json')
           manifestRaw = Buffer.concat(chunks).toString('utf-8');
