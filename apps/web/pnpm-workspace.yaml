@@ -3,6 +3,12 @@
 packages:
   - '.'
 
+# pnpm 11 默认 minimumReleaseAge 为 1440 分钟。react / react-dom 19.3.1
+# 发布于 2026-10-14，安装时须点名放行。安全 overrides 仍与根 workspace 对齐。
+minimumReleaseAgeExclude:
+  - react-dom@19.3.1
+  - react@19.3.1
+
 # 与根 workspace 安全 overrides 同步（仅前端依赖链路命中的条目；见根 pnpm-workspace.yaml）。
 overrides:
   brace-expansion: ^5.0.12

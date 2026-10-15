@@ -22,17 +22,17 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
-    "@changesets/cli": "^3.0.0",
+    "@changesets/cli": "^3.0.3",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.2.0",
-    "eslint": "^10.5.0",
+    "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
-    "jsdom": "^30.0.1",
-    "prettier": "^3.8.5",
-    "tsx": "^4.22.4",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.0",
-    "vite": "^8.2.2",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
     "vitest": "^4.1.11"
   }
 }
