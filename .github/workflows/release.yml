@@ -20,13 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js (LTS 22)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -38,6 +38,10 @@ jobs:
       # 发布前门禁：构建 + 测试必须绿，杜绝发布坏包
       - name: Build
         run: pnpm build
+
+      # 与 ci.yml 相同：divisions.csv 被 gitignore，测试要对照已发布 npm 包里的 CSV。
+      # 没有这一步时 scripts/docs-home-data.test.ts 在干净 checkout 上直接 ENOENT。
+      - uses: ./.github/actions/fetch-data-csvs
 
       - name: Test
         run: pnpm test
