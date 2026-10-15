@@ -1,6 +1,6 @@
 {
   "name": "@cndiv/data-protocol",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Protocol definitions for patches, schemas and data validation",
   "type": "module",
   "main": "dist/index.js",

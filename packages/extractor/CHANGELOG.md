@@ -1,5 +1,12 @@
 # @cndiv/extractor
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [fceaabd]
+  - @cndiv/data-protocol@1.0.1
+
 ## 0.2.0
 
 ### Minor Changes
